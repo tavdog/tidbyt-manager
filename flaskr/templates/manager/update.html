@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block header %}
+<h1>{% block title %}Edit "{{ device['name'] }}"{% endblock %}</h1>
+{% endblock %}
+{% block content %}
+<form method="post">
+<label for="name">Name</label>
+<input name="name" id="name"
+value="{{ request.form['name'] or device['name'] }}" required>
+<label for="api_id">API ID</label>
+<input name="api_id" id="api_id"
+value="{{ request.form['api_id'] or device['api_id'] }}" required>
+<label for="api_key">API KEY</label>
+<input name="api_key" id="api_key"
+value="{{ request.form['api_key'] or device['api_key'] }}" required>
+<label for="body">Notes</label>
+<textarea name="notes" id="notes">{{ request.form['notes'] or device['notes'] }}</textarea>
+<input type="submit" value="Save">
+</form>
+<hr>
+<form action="{{ url_for('manager.delete', id=device['id']) }}" method="post">
+<input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+</form>
+{% endblock %}
