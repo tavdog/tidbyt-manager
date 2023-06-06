@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 {% block header %}
-<h1>{% block title %}Posts{% endblock %}</h1>
+<h1>{% block title %}Tidbyts{% endblock %}</h1>
 {% if g.user %}
-<a class="action" href="{{ url_for('manager.create') }}">New</a>
+<a class="action" href="{{ url_for('manager.create') }}">New Tidbyt</a>
 {% endif %}
 {% endblock %}
 {% block content %}
@@ -11,11 +11,7 @@
 <header>
 <div>
 <h1>{{ post['name'] }}</h1>
-<div class="about">Created {{ post['created'].strftime('%Y-%m-%d') }}</div>
-</div>
-{% if g.user['id'] == post['owner_id'] %}
-<a class="action" href="{{ url_for('manager.update', id=post['id']) }}">Edit</a>
-{% endif %}
+<a class="action" href="{{ url_for('manager.update', name=post['name']) }}">Edit</a>
 </header>
 <p class="body">{{ post['api_id'] }}</p>
 <p class="body">{{ post['api_key'] }}</p>

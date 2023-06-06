@@ -3,18 +3,17 @@ from flask import (
 )
 from werkzeug.exceptions import abort
 from flaskr.auth import login_required
-from flaskr.db import get_db
+import flaskr.db as db
+
 
 bp = Blueprint('manager', __name__)
 
 @bp.route('/')
+@login_required
 def index():
-    db = get_db()
-    devices = db.execute(
-        'SELECT p.id, name, notes, api_id, api_key , owner_id, username, created'
-        ' FROM device p JOIN user u ON p.owner_id = u.id'
-        ' ORDER BY created DESC'
-    ).fetchall()
+    devices = dict()
+    if "devices" in g.user:
+        devices = g.user["devices"].values()
     return render_template('manager/index.html', devices=devices)
 
 @bp.route('/create', methods=('GET', 'POST'))
@@ -31,12 +30,23 @@ def create():
         if error is not None:
             flash(error)
         else:
-            db = get_db()
-            db.execute(
-                'INSERT INTO device (name, api_id, api_key, notes, owner_id)'
-                ' VALUES (?, ?, ?, ?, ?)', (name, api_id, api_key, notes,  g.user['id'])
-            )
-            db.commit()
+#            db = get_db()
+            # db.execute(
+            #     'INSERT INTO device (name, api_id, api_key, notes, owner_id)'
+            #     ' VALUES (?, ?, ?, ?, ?)', (name, api_id, api_key, notes,  g.user['id'])
+            # )
+            # db.commit()
+            device = dict()
+            device["name"] = name
+            device["api_id"] = api_id
+            device["api_key"] = api_key
+            device["notes"] = notes
+            user = g.user
+            if "devices" not in user:
+                user["devices"] = {}
+            user["devices"][name] = device
+            db.save_user(user)
+
             return redirect(url_for('manager.index'))
     return render_template('manager/create.html')
 
@@ -65,10 +75,9 @@ def get_device(id, check_author=True):
         abort(403)
     return device
 
-@bp.route('/<int:id>/update', methods=('GET', 'POST'))
+@bp.route('/<string:name>/update', methods=('GET', 'POST'))
 @login_required
-def update(id):
-    device = get_device(id)
+def update(name):
     if request.method == 'POST':
         name = request.form['name']
         notes = request.form['notes']
@@ -80,20 +89,23 @@ def update(id):
         if error is not None:
             flash(error)
         else:
-            db = get_db()
-            db.execute(
-                'UPDATE device SET name = ?, api_id = ?, api_key = ?, notes = ? WHERE id = ?', 
-                (name, api_id, api_key, notes, id)
-            )
-            db.commit()
+            device = dict()
+            device["name"] = name
+            device["api_id"] = api_id
+            device["api_key"] = api_key
+            device["notes"] = notes
+            
+            user = g.user
+            user["devices"][name] = device
+            db.save_user(user)
+
             return redirect(url_for('manager.index'))
+    device = g.user["devices"][name]
     return render_template('manager/update.html', device=device)
 
-@bp.route('/<int:id>/delete', methods=('POST',))
+@bp.route('/<string:name>/delete', methods=('POST',))
 @login_required
-def delete(id):
-    get_device(id)
-    db = get_db()
-    db.execute('DELETE FROM device WHERE id = ?', (id,))
-    db.commit()
+def delete(name):
+    g.user["devices"].pop(name)
+    db.save_user(g.user)
     return redirect(url_for('manager.index'))

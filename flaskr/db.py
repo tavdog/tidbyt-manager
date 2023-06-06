@@ -9,7 +9,18 @@ def user_exists(username):
         return False
     return False
 
-def get_user(username,password):
+def get_user(username):
+    print("username :{}".format(username))
+    try:
+        with open("{}.json".format(username)) as file:
+            user = json.load(file)
+            print("return user")
+            return user
+    except():
+        print("problem with get_user")
+        return False
+
+def auth_user(username,password):
     try:
         with open("{}.json".format(username)) as file:
             user = json.load(file)
@@ -32,6 +43,7 @@ def save_user(user):
         except:
             print("couldn't save {}".format(user))
             return False
+
 
 # import sqlite3
 # import click
