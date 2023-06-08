@@ -53,7 +53,10 @@ def load_logged_in_user():
     if username is None:
         g.user = None
     else:
-        g.user = db.get_user(username)
+        if db.user_exists(username):
+            g.user = db.get_user(username)
+        else:
+            g.user = None
 
 @bp.route('/logout')
 def logout():

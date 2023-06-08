@@ -4,6 +4,7 @@ from flask import (
 from werkzeug.exceptions import abort
 from flaskr.auth import login_required
 import flaskr.db as db
+import uuid
 
 
 bp = Blueprint('manager', __name__)
@@ -37,6 +38,8 @@ def create():
             # )
             # db.commit()
             device = dict()
+            device["id"] = str(uuid.uuid4())
+            print("id is :" + str(device["id"]))
             device["name"] = name
             device["api_id"] = api_id
             device["api_key"] = api_key
@@ -44,68 +47,70 @@ def create():
             user = g.user
             if "devices" not in user:
                 user["devices"] = {}
-            user["devices"][name] = device
+        
+            user["devices"][device["id"]] = device
             db.save_user(user)
 
             return redirect(url_for('manager.index'))
     return render_template('manager/create.html')
 
-def get_post(id, check_author=True):
-    post = get_db().execute(
-        'SELECT p.id, title, body, created, owner_id, username'
-        ' FROM post p JOIN user u ON p.owner_id = u.id'
-        ' WHERE p.id = ?',(id,)).fetchone()
+# def get_post(id, check_author=True):
+#     post = get_db().execute(
+#         'SELECT p.id, title, body, created, owner_id, username'
+#         ' FROM post p JOIN user u ON p.owner_id = u.id'
+#         ' WHERE p.id = ?',(id,)).fetchone()
 
-    if post is None:
-        abort(404, "Post id {0} doesn't exist.".format(id))
-    if check_author and post['owner_id'] != g.user['id']:
-        abort(403)
-    return post
+#     if post is None:
+#         abort(404, "Post id {0} doesn't exist.".format(id))
+#     if check_author and post['owner_id'] != g.user['id']:
+#         abort(403)
+#     return post
 
-def get_device(id, check_author=True):
-    device = get_db().execute(
-        'SELECT p.id, name, notes, api_id, api_key, created, owner_id, username'
-        ' FROM device p JOIN user u ON p.owner_id = u.id'
-        ' WHERE p.id = ?',
-        (id,)
-    ).fetchone()
-    if device is None:
-        abort(404, "Post id {0} doesn't exist.".format(id))
-    if check_author and device['owner_id'] != g.user['id']:
-        abort(403)
-    return device
+# def get_device(id, check_author=True):
+#     device = get_db().execute(
+#         'SELECT p.id, name, notes, api_id, api_key, created, owner_id, username'
+#         ' FROM device p JOIN user u ON p.owner_id = u.id'
+#         ' WHERE p.id = ?',
+#         (id,)
+#     ).fetchone()
+#     if device is None:
+#         abort(404, "Post id {0} doesn't exist.".format(id))
+#     if check_author and device['owner_id'] != g.user['id']:
+#         abort(403)
+#     return device
 
-@bp.route('/<string:name>/update', methods=('GET', 'POST'))
+@bp.route('/<string:id>/update', methods=('GET', 'POST'))
 @login_required
-def update(name):
+def update(id):
     if request.method == 'POST':
         name = request.form['name']
         notes = request.form['notes']
         api_id = request.form['api_id']
         api_key = request.form['api_key']
         error = None
-        if not name:
-            error = 'Name is required.'
+        if not name or not id:
+            error = 'Id and Name is required.'
         if error is not None:
             flash(error)
         else:
             device = dict()
+            device["id"] = id
             device["name"] = name
             device["api_id"] = api_id
             device["api_key"] = api_key
             device["notes"] = notes
             
             user = g.user
-            user["devices"][name] = device
+            user["devices"][id] = device
             db.save_user(user)
 
             return redirect(url_for('manager.index'))
-    device = g.user["devices"][name]
+    device = g.user["devices"][id]
     return render_template('manager/update.html', device=device)
 
-@bp.route('/<string:name>/delete', methods=('POST',))
+@bp.route('/<string:id>/delete', methods=('POST',))
 @login_required
-def delete(name):
-    g.user["devices"].pop(name)
+def delete(id):
+    g.user["devices"].pop(id)
     db.save_user(g.user)
     return redirect(url_for('manager.index'))

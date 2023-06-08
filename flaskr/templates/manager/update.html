@@ -4,6 +4,7 @@
 {% endblock %}
 {% block content %}
 <form method="post">
+<input type="hidden" name="id" id="id" value="device['id']">
 <label for="name">Name</label>
 <input name="name" id="name"
 value="{{ request.form['name'] or device['name'] }}" required>
@@ -18,7 +19,7 @@ value="{{ request.form['api_key'] or device['api_key'] }}" required>
 <input type="submit" value="Save">
 </form>
 <hr>
-<form action="{{ url_for('manager.delete', name=device['name']) }}" method="post">
+<form action="{{ url_for('manager.delete', id=device['id']) }}" method="post">
 <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
 </form>
 {% endblock %}

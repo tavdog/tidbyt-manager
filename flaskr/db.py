@@ -1,8 +1,8 @@
 import os,json
-
+user_path = "users/{}.json"
 def user_exists(username):
     try:
-        with open("{}.json".format(username)) as file:
+        with open(user_path.format(username)) as file:
             print("username: {} exists.".format(username))
             return True
     except:
@@ -12,7 +12,7 @@ def user_exists(username):
 def get_user(username):
     print("username :{}".format(username))
     try:
-        with open("{}.json".format(username)) as file:
+        with open(user_path.format(username)) as file:
             user = json.load(file)
             print("return user")
             return user
@@ -22,7 +22,7 @@ def get_user(username):
 
 def auth_user(username,password):
     try:
-        with open("{}.json".format(username)) as file:
+        with open(user_path.format(username)) as file:
             user = json.load(file)
             print(user)
             if user.get("password") == password:
@@ -37,7 +37,7 @@ def auth_user(username,password):
 def save_user(user):
      if "username" in user:
         try:
-            with open("{}.json".format(user["username"]),"w") as file:
+            with open(user_path.format(user["username"]),"w") as file:
                 json.dump(user,file)
             return True      
         except:

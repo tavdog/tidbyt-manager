@@ -11,7 +11,7 @@
 <header>
 <div>
 <h1>{{ post['name'] }}</h1>
-<a class="action" href="{{ url_for('manager.update', name=post['name']) }}">Edit</a>
+<a class="action" href="{{ url_for('manager.update', id=post['id']) }}">Edit</a>
 </header>
 <p class="body">{{ post['api_id'] }}</p>
 <p class="body">{{ post['api_key'] }}</p>
