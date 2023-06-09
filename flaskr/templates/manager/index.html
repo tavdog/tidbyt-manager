@@ -6,16 +6,39 @@
 {% endif %}
 {% endblock %}
 {% block content %}
-{% for post in devices %}
+{% for device in devices %}
 <article class="post">
 <header>
 <div>
-<h1>{{ post['name'] }}</h1>
-<a class="action" href="{{ url_for('manager.update', id=post['id']) }}">Edit</a>
+<h1>{{ device['name'] }}</h1>
+<a class="action" href="{{ url_for('manager.update', id=device['id']) }}">Edit</a>
 </header>
-<p class="body">{{ post['api_id'] }}</p>
-<p class="body">{{ post['api_key'] }}</p>
-<p class="body">{{ post['notes'] }}</p>
+<p class="body">API ID: {{ device['api_id'] }}</p>
+<p class="body">API KEY: {{ device['api_key'] }}</p>
+<p class="body">Notes: {{ device['notes'] }}</p>
+
+{% if 'apps' in device %}
+<ul>
+{% for app in device['apps'].values() %}
+<li>
+<div class="post">
+    <header>
+    <h1>{{ app['iname'] }}</h1>
+    <a class="action" href="{{ url_for('manager.updateapp', id=device['id'], iname=app['iname']) }}">Edit</a>
+    </header>
+    <p class="body">App: {{ app['name'] }}</p>
+    <p class="body">Installation ID: {{ app['iname'] }}</p>
+    <p class="body">Update Interval (secs): {{ app['uinterval'] }}</p>
+    <p class="body">Notes: {{ app['notes'] }}</p>
+</div>
+</li>
+{% if not loop.last %}
+<hr>
+{% endif %}
+{% endfor %}
+</ul>
+{% endif %}
+<a class="action" href="{{ url_for('manager.addapp', id=device['id']) }}">Add App</a>
 </article>
 {% if not loop.last %}
 <hr>

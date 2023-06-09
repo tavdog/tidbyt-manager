@@ -101,6 +101,8 @@ def update(id):
             device["notes"] = notes
             
             user = g.user
+            if "apps" in user["devices"][id]:
+                device["apps"] = user["devices"][id]["apps"]
             user["devices"][id] = device
             db.save_user(user)
 
@@ -114,3 +116,64 @@ def delete(id):
     g.user["devices"].pop(id)
     db.save_user(g.user)
     return redirect(url_for('manager.index'))
+
+@bp.route('/<string:id>/addapp', methods=('GET','POST'))
+@login_required
+def addapp(id):
+    if request.method == 'POST':
+        name = request.form['name']
+        iname = request.form['iname']
+        uinterval = request.form['uinterval']
+        notes = request.form['notes']
+        error = None
+        if not name or not iname:
+            error = 'Name and installation_id is required.'
+        if error is not None:
+            flash(error)
+        else:
+            app = dict()
+            app["iname"] = iname
+            print("iname is :" + str(app["iname"]))
+            app["name"] = name
+            app["uinterval"] = uinterval
+            app["notes"] = notes
+            user = g.user
+            if "apps" not in user["devices"][id]:
+                user["devices"][id]["apps"] = {}
+        
+            user["devices"][id]["apps"][iname] = app
+            db.save_user(user)
+
+            return redirect(url_for('manager.index'))
+    return render_template('manager/addapp.html')    
+
+@bp.route('/<string:id>/<string:iname>/updateapp', methods=('GET','POST'))
+@login_required
+def updateapp(id,iname):
+    if request.method == 'POST':
+        name = request.form['name']
+        #iname = request.form['iname']
+        uinterval = request.form['uinterval']
+        notes = request.form['notes']
+        error = None
+        if not name or not iname:
+            error = 'Name and installation_id is required.'
+        if error is not None:
+            flash(error)
+        else:
+            app = dict()
+            app["iname"] = iname
+            print("iname is :" + str(app["iname"]))
+            app["name"] = name
+            app["uinterval"] = uinterval
+            app["notes"] = notes
+            user = g.user
+        
+            user["devices"][id]["apps"][iname] = app
+            db.save_user(user)
+
+            return redirect(url_for('manager.index'))
+    app = g.user["devices"][id]['apps'][iname]
+    return render_template('manager/updateapp.html', app=app)    
+
+

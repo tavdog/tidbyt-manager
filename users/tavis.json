@@ -1,1 +1,1 @@
-{"username": "tavis", "password": "jungle", "devices": {}}
+{"username": "tavis", "password": "jungle", "devices": {"d402aae8-0208-46bc-9385-1c190e3682c6": {"id": "d402aae8-0208-46bc-9385-1c190e3682c6", "name": "KitchenByt", "api_id": "hasbro-jamby-crumbo", "api_key": "3a9fdebc-47e1-48f6-9c21-87157041eeaa", "notes": "This one is on the kitchen counter", "apps": {"t1": {"iname": "t1", "name": "Trouble", "uinterval": "1", "notes": ""}}}}}

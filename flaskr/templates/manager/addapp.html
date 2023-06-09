@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block header %}
+<h1>{% block title %}Add App{% endblock %}</h1>
+{% endblock %}
+{% block content %} <form method="post">
+<label for="name">App Name (eg. analogclock)</label>
+<input name="name" id="name" value="{{ request.form['name'] }}" required> 
+<label for="iname">Installation Id (eg. clock1)</label>
+<input name="iname" id="iname" value="{{ request.form['iname'] }}" required> 
+<label for="uinterval">Update Interval (sec)</label>
+<input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] }}" required> 
+<textarea name="notes" id="notes">{{ request.form['notes'] }}</textarea>
+<input type="submit" value="Save">
+</form>
+{% endblock %}
