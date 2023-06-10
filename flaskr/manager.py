@@ -176,4 +176,19 @@ def updateapp(id,iname):
     app = g.user["devices"][id]['apps'][iname]
     return render_template('manager/updateapp.html', app=app)    
 
+@bp.route('/<string:id>/<string:iname>/configapp', methods=('GET','POST'))
+@login_required
+def configapp(id,iname):
+    import subprocess
+    app = g.user["devices"][id]['apps'][iname]
+
+    if request.method == 'POST':
+        pass
+    #   do something to confirm configuration ?
+
+    
+    # execute the pixlet serve process and then redirect to it
+    subprocess.Popen(["bash", "pixlet_serve.sh {} {}".format(app['name'], app['iname'])], shell=True)
+    return render_template('manager/configapp.html', app=app)
+
 

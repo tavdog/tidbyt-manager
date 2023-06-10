@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block header %}
+<h1>{% block title %}Edit "{{ app['iname'] }}"{% endblock %}</h1>
+{% endblock %}
+{% block content %} <form method="post">
+<label for="iname">Configuring {{app["iname"]}}</label>
+<input name="iname" id="iname" value="{{ request.form['iname'] or app['iname'] }}" readonly> 
+<input type="submit" value="Save">
+</form>
+<iframe src="http://localhost:8989" width=100% height=2000 title="Pixlet Serve"></iframe>
+{% endblock %}
