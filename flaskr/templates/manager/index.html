@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block header %}
-<h1>{% block title %}Tidbyts{% endblock %}</h1>
+<h1>{% block title %}{% endblock %}</h1>
 {% if g.user %}
 <a class="action" href="{{ url_for('manager.create') }}">New Tidbyt</a>
 {% endif %}
@@ -15,21 +15,25 @@
 </header>
 <p class="body">API ID: {{ device['api_id'] }}</p>
 <p class="body">API KEY: {{ device['api_key'] }}</p>
+{% if device['notes'] != '' %}
 <p class="body">Notes: {{ device['notes'] }}</p>
-
+{% endif %}
 {% if 'apps' in device %}
 <ul>
 {% for app in device['apps'].values() %}
 <li>
 <div class="post">
     <header>
-    <h1>{{ app['iname'] }}</h1>
+    <h1>{{ app['iname'] }}</h1>&nbsp(installation id)
     <a class="action" href="{{ url_for('manager.updateapp', id=device['id'], iname=app['iname']) }}">Edit</a>
+    <a class="action" href="{{ url_for('manager.configapp', id=device['id'], iname=app['iname']) }}">Configure</a>
     </header>
     <p class="body">App: {{ app['name'] }}</p>
-    <p class="body">Installation ID: {{ app['iname'] }}</p>
+    <!-- <p class="body">Installation ID: {{ app['iname'] }}</p> -->
     <p class="body">Update Interval (secs): {{ app['uinterval'] }}</p>
+    {% if app['notes'] != '' %}
     <p class="body">Notes: {{ app['notes'] }}</p>
+    {% endif %}
 </div>
 </li>
 {% if not loop.last %}
