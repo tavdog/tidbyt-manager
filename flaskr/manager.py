@@ -179,16 +179,23 @@ def updateapp(id,iname):
 @bp.route('/<string:id>/<string:iname>/configapp', methods=('GET','POST'))
 @login_required
 def configapp(id,iname):
-    import subprocess
+    import subprocess, time, os
     app = g.user["devices"][id]['apps'][iname]
 
     if request.method == 'POST':
-        pass
-    #   do something to confirm configuration ?
+        os.system("pkill -f pixlet") # kill any pixlet processes
 
-    
+    #   do something to confirm configuration ?
+        
+        
+
+
+    # ./pixlet serve --saveconfig "noaa_buoy.config" --host 0.0.0.0 src/apps/noaa_buoy.star 
     # execute the pixlet serve process and then redirect to it
-    subprocess.Popen(["bash", "pixlet_serve.sh {} {}".format(app['name'], app['iname'])], shell=True)
+    subprocess.Popen(["/pixlet/pixlet", "--saveconfig", app['iname']+'.json', "serve", 'apps/'+app['name']+'.star' , '--host=0.0.0.0', '--port=8080'], shell=False)
+    
+    # give pixlet some time to start up 
+    time.sleep(3)
     return render_template('manager/configapp.html', app=app)
 
 
