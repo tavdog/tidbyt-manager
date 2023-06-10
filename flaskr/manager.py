@@ -186,7 +186,7 @@ def configapp(id,iname):
         os.system("pkill -f pixlet") # kill any pixlet processes
 
     #   do something to confirm configuration ?
-        
+        return redirect(url_for('manager.index'))
         
 
 
