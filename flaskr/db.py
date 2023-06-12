@@ -9,6 +9,12 @@ def user_exists(username):
         return False
     return False
 
+def file_exists(file_path):
+    if os.path.exists(file_path):
+        return True
+    else:
+        return False
+
 def get_user(username):
     print("username :{}".format(username))
     try:

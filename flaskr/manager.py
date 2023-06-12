@@ -192,10 +192,15 @@ def configapp(id,iname):
 
     # ./pixlet serve --saveconfig "noaa_buoy.config" --host 0.0.0.0 src/apps/noaa_buoy.star 
     # execute the pixlet serve process and then redirect to it
-    subprocess.Popen(["/pixlet/pixlet", "--saveconfig", app['iname']+'.json', "serve", 'apps/'+app['name']+'.star' , '--host=0.0.0.0', '--port=8080'], shell=False)
-    
-    # give pixlet some time to start up 
-    time.sleep(3)
-    return render_template('manager/configapp.html', app=app)
+    app_path = 'tidbyt-apps/app/'+app['name']+'.star'
+    if db.file_exists(app_path):
+        subprocess.Popen(["/pixlet/pixlet", "--saveconfig", app_path, "serve", 'apps/'+app['name']+'.star' , '--host=0.0.0.0', '--port=8080'], shell=False)
 
+        # give pixlet some time to start up 
+        time.sleep(3)
+        return render_template('manager/configapp.html', app=app)
+
+    else:
+        flash("App Not Found")
+        return redirect(url_for('manager.index'))
 
