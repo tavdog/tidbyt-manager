@@ -3,7 +3,7 @@ user_path = "users/{}.json"
 def user_exists(username):
     try:
         with open(user_path.format(username)) as file:
-            print("username: {} exists.".format(username))
+            # print("username: {} exists.".format(username))
             return True
     except:
         return False
@@ -20,7 +20,7 @@ def get_user(username):
     try:
         with open(user_path.format(username)) as file:
             user = json.load(file)
-            print("return user")
+            #print("return user")
             return user
     except():
         print("problem with get_user")
@@ -49,6 +49,12 @@ def save_user(user):
         except:
             print("couldn't save {}".format(user))
             return False
+        
+def get_apps_list():
+    with open("tidbyt-apps/apps.txt",'r') as f:
+        apps = f.read().split('\n')
+        print(apps)
+        return apps
 
 
 # import sqlite3

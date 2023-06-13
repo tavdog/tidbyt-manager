@@ -4,7 +4,7 @@ from flask import (
 from werkzeug.exceptions import abort
 from flaskr.auth import login_required
 import flaskr.db as db
-import uuid
+import uuid,os
 
 
 bp = Blueprint('manager', __name__)
@@ -12,6 +12,9 @@ bp = Blueprint('manager', __name__)
 @bp.route('/')
 @login_required
 def index():
+
+    os.system("pkill -f pixlet") # kill any pixlet processes
+
     devices = dict()
     if "devices" in g.user:
         devices = g.user["devices"].values()
@@ -117,6 +120,13 @@ def delete(id):
     db.save_user(g.user)
     return redirect(url_for('manager.index'))
 
+@bp.route('/<string:id>/<string:iname>/delete', methods=('POST',))
+@login_required
+def deleteapp(id,iname):
+    g.user["devices"][id]["apps"].pop(iname)
+    db.save_user(g.user)
+    return redirect(url_for('manager.index'))
+
 @bp.route('/<string:id>/addapp', methods=('GET','POST'))
 @login_required
 def addapp(id):
@@ -126,8 +136,14 @@ def addapp(id):
         uinterval = request.form['uinterval']
         notes = request.form['notes']
         error = None
-        if not name or not iname:
-            error = 'Name and installation_id is required.'
+        if iname == "":
+            # generate an iname based on the appname
+            import random
+            iname = name + "_" + str(random.randint(1000,9999))
+        if not name:
+            error = 'App name required.'
+        if db.file_exists("configs/{}_{}.json".format(name,iname)):
+            error = "That installation id already exists"
         if error is not None:
             flash(error)
         else:
@@ -145,7 +161,11 @@ def addapp(id):
             db.save_user(user)
 
             return redirect(url_for('manager.index'))
-    return render_template('manager/addapp.html')    
+        
+    else:
+        # build the list of apps. 
+        apps_list = db.get_apps_list()
+        return render_template('manager/addapp.html', apps_list=apps_list)    
 
 @bp.route('/<string:id>/<string:iname>/updateapp', methods=('GET','POST'))
 @login_required
@@ -174,31 +194,54 @@ def updateapp(id,iname):
 
             return redirect(url_for('manager.index'))
     app = g.user["devices"][id]['apps'][iname]
-    return render_template('manager/updateapp.html', app=app)    
+    return render_template('manager/updateapp.html', app=app,device_id=id)    
 
 @bp.route('/<string:id>/<string:iname>/configapp', methods=('GET','POST'))
 @login_required
 def configapp(id,iname):
-    import subprocess, time, os
+    import subprocess, time
     app = g.user["devices"][id]['apps'][iname]
+    app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
+    config_path = "configs/{}_{}.json".format(app['name'],app["iname"])
+    tmp_config_path = "configs/{}_{}.tmp".format(app['name'],app["iname"])
+
+    # always kill pixlet procs first thing.
+    os.system("pkill -f pixlet") # kill any pixlet processes
 
     if request.method == 'POST':
-        os.system("pkill -f pixlet") # kill any pixlet processes
 
     #   do something to confirm configuration ?
-        return redirect(url_for('manager.index'))
+        print("checking for : " + tmp_config_path)
+        if db.file_exists(tmp_config_path):
+            print("file exists")
+            with open(tmp_config_path,'r') as c:
+                new_config = c.read()                
+            flash(new_config)
+            with open(config_path, 'w') as config_file:
+                config_file.write(new_config)
+            return redirect(url_for('manager.index'))
         
 
-
+    url_params = ""
+    if db.file_exists(config_path):
+        import urllib.parse,json
+        with open(config_path,'r') as c:
+            config_dict = json.load(c)
+        
+        url_params = urllib.parse.urlencode(config_dict)
+        print(url_params)
+        if len(url_params) > 2:
+            flash(url_params)
     # ./pixlet serve --saveconfig "noaa_buoy.config" --host 0.0.0.0 src/apps/noaa_buoy.star 
     # execute the pixlet serve process and then redirect to it
-    app_path = 'tidbyt-apps/app/'+app['name']+'.star'
+    app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
+    print(app_path)
     if db.file_exists(app_path):
-        subprocess.Popen(["/pixlet/pixlet", "--saveconfig", app_path, "serve", 'apps/'+app['name']+'.star' , '--host=0.0.0.0', '--port=8080'], shell=False)
+        subprocess.Popen(["/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port=8080'], shell=False)
 
         # give pixlet some time to start up 
-        time.sleep(3)
-        return render_template('manager/configapp.html', app=app)
+        time.sleep(2)
+        return render_template('manager/configapp.html', app=app,url_params=url_params)
 
     else:
         flash("App Not Found")

@@ -4,11 +4,16 @@
 {% endblock %}
 {% block content %} <form method="post">
 <label for="name">App Name (eg. analogclock)</label>
-<input name="name" id="name" value="{{ request.form['name'] }}" required> 
+<select id=name name="name">
+    {% for app in apps_list %}
+      <option value="{{app.replace('.star','')}}">{{app.replace('.star','')}}</option>
+    {% endfor %}
+  </select>
+<!-- <input name="name" id="name" value="{{ request.form['name'] }}" required>  -->
 <label for="iname">Installation Id (eg. clock1)</label>
-<input name="iname" id="iname" value="{{ request.form['iname'] }}" required> 
+<input name="iname" id="iname" value="{{ request.form['iname']}}" placeholder="optional"> 
 <label for="uinterval">Update Interval (sec)</label>
-<input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] }}" required> 
+<input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 300}} " required> 
 <textarea name="notes" id="notes">{{ request.form['notes'] }}</textarea>
 <input type="submit" value="Save">
 </form>
