@@ -1,2 +1,3 @@
+configs/*
 *.pyc
 venv/*
