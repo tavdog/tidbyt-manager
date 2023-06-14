@@ -6,7 +6,7 @@
 <label for="name">App Name (eg. analogclock)</label>
 <select id=name name="name">
     {% for app in apps_list %}
-      <option value="{{app.replace('.star','')}}">{{app.replace('.star','')}}</option>
+      <option value="{{app['name'].replace('.star','')}}">{{app['name'].replace('.star','')}} - {{app['summary']}}</option>
     {% endfor %}
   </select>
 <!-- <input name="name" id="name" value="{{ request.form['name'] }}" required>  -->

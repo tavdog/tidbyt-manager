@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, url_for
+    Blueprint, flash, g, redirect, render_template, request, url_for, send_file
 )
 from werkzeug.exceptions import abort
 from flaskr.auth import login_required
@@ -120,9 +120,19 @@ def delete(id):
     db.save_user(g.user)
     return redirect(url_for('manager.index'))
 
-@bp.route('/<string:id>/<string:iname>/delete', methods=('POST',))
+@bp.route('/<string:id>/<string:iname>/delete', methods=('POST','GET'))
 @login_required
 def deleteapp(id,iname):
+    # delete the config file
+    config_path = "configs/{}-{}.json".format(g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
+    if os.path.isfile(config_path):
+        os.remove(config_path)
+    # delete the webp file
+    webp_path = "flaskr/webp/{}-{}.webp".format(g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
+    # if file exists remove it
+    if os.path.isfile(webp_path):
+        os.remove(webp_path)
+    # pop the app from the user object
     g.user["devices"][id]["apps"].pop(iname)
     db.save_user(g.user)
     return redirect(url_for('manager.index'))
@@ -132,17 +142,17 @@ def deleteapp(id,iname):
 def addapp(id):
     if request.method == 'POST':
         name = request.form['name']
-        iname = request.form['iname']
+        iname = db.sanitize(request.form['iname'])
         uinterval = request.form['uinterval']
         notes = request.form['notes']
         error = None
         if iname == "":
             # generate an iname based on the appname
             import random
-            iname = name + "_" + str(random.randint(1000,9999))
+            iname = str(random.randint(1000,9999))
         if not name:
             error = 'App name required.'
-        if db.file_exists("configs/{}_{}.json".format(name,iname)):
+        if db.file_exists("configs/{}-{}.json".format(name,iname)):
             error = "That installation id already exists"
         if error is not None:
             flash(error)
@@ -160,7 +170,7 @@ def addapp(id):
             user["devices"][id]["apps"][iname] = app
             db.save_user(user)
 
-            return redirect(url_for('manager.index'))
+            return redirect(url_for('manager.configapp', id=id,iname=iname))
         
     else:
         # build the list of apps. 
@@ -201,9 +211,11 @@ def updateapp(id,iname):
 def configapp(id,iname):
     import subprocess, time
     app = g.user["devices"][id]['apps'][iname]
+    app_basename = "{}-{}".format(app['name'],app["iname"])
     app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
-    config_path = "configs/{}_{}.json".format(app['name'],app["iname"])
-    tmp_config_path = "configs/{}_{}.tmp".format(app['name'],app["iname"])
+    config_path = "configs/{}.json".format(app_basename)
+    tmp_config_path = "configs/{}.tmp".format(app_basename)
+    webp_path = "flaskr/webp/{}.webp".format(app_basename)
 
     # always kill pixlet procs first thing.
     os.system("pkill -f pixlet") # kill any pixlet processes
@@ -219,6 +231,15 @@ def configapp(id,iname):
             flash(new_config)
             with open(config_path, 'w') as config_file:
                 config_file.write(new_config)
+
+            # delete the tmp file
+            os.remove(tmp_config_path)
+
+            # run pixlet render with the new config file
+            print("rendering")
+            result = os.system("/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path))
+            print(result)
+            # give pixlet some time to
             return redirect(url_for('manager.index'))
         
 
@@ -246,4 +267,17 @@ def configapp(id,iname):
     else:
         flash("App Not Found")
         return redirect(url_for('manager.index'))
+
+@bp.route('/<string:id>/<string:iname>/appwebp')
+@login_required
+def appwebp(id,iname):
+    app = g.user["devices"][id]['apps'][iname]
+    app_basename = "{}-{}".format(app['name'],app["iname"])
+    webp_path = "/app/flaskr/webp/{}.webp".format(app_basename)
+     # check if the file exists
+    if db.file_exists(webp_path):
+        return send_file(webp_path, mimetype='image/webp')
+    else:
+        print("file no exist")
+        pass
 

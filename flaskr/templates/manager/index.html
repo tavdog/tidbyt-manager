@@ -27,6 +27,8 @@
     <h1>{{ app['iname'] }}</h1>&nbsp(installation id)
     <a class="action" href="{{ url_for('manager.updateapp', id=device['id'], iname=app['iname']) }}">Edit</a>
     <a class="action" href="{{ url_for('manager.configapp', id=device['id'], iname=app['iname']) }}">Configure</a>
+    <a class="action" onclick="return confirm('Delete App ?');" href="{{ url_for('manager.deleteapp', id=device['id'],iname=app['iname']) }}">Delete</a>
+
     </header>
     <p class="body">App: {{ app['name'] }}</p>
     <!-- <p class="body">Installation ID: {{ app['iname'] }}</p> -->
@@ -34,6 +36,7 @@
     {% if app['notes'] != '' %}
     <p class="body">Notes: {{ app['notes'] }}</p>
     {% endif %}
+    <img width=400 src="{{url_for('manager.appwebp', id=device['id'],iname=app['iname']) }}" alt="Preview" >
 </div>
 </li>
 {% if not loop.last %}

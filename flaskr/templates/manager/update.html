@@ -20,6 +20,6 @@ value="{{ request.form['api_key'] or device['api_key'] }}" required>
 </form>
 <hr>
 <form action="{{ url_for('manager.delete', id=device['id']) }}" method="post">
-<input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+<input class="danger" type="submit" value="Delete" onclick="return confirm('Delete device and ALL apps ?');">
 </form>
 {% endblock %}
