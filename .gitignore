@@ -1,3 +1,4 @@
+*.webp
 configs/*
 *.pyc
 venv/*
