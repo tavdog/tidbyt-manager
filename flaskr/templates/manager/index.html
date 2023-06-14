@@ -28,10 +28,9 @@
             <a class="action" href="{{ url_for('manager.updateapp', id=device['id'], iname=app['iname']) }}">Edit</a>
             <a class="action" href="{{ url_for('manager.configapp', id=device['id'], iname=app['iname']) }}">Configure</a>
             <a class="action" onclick="return confirm('Delete App ?');" href="{{ url_for('manager.deleteapp', id=device['id'],iname=app['iname']) }}">Delete</a>
-        
+            <h3>{% if app['enabled'] == "true" %}<enabled>( Enabled )</enabled>{% else %}<disabled>( Disabled ){% endif %}</disabled></h3>
             </header>
             <p class="body">App: {{ app['name'] }}</p>
-        <!-- <p class="body">Installation ID: {{ app['iname'] }}</p> -->
         <p class="body">Update Interval (secs): {{ app['uinterval'] }}</p>
         {% if app['notes'] != '' %}
         <p class="body">Notes: {{ app['notes'] }}</p>

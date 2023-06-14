@@ -185,6 +185,11 @@ def updateapp(id,iname):
         #iname = request.form['iname']
         uinterval = request.form['uinterval']
         notes = request.form['notes']
+        if "enabled" in request.form:
+            enabled = "true"
+        else:
+            enabled = "false"
+        print(request.form)
         error = None
         if not name or not iname:
             error = 'Name and installation_id is required.'
@@ -197,6 +202,7 @@ def updateapp(id,iname):
             app["name"] = name
             app["uinterval"] = uinterval
             app["notes"] = notes
+            app["enabled"] = enabled
             user = g.user
         
             user["devices"][id]["apps"][iname] = app

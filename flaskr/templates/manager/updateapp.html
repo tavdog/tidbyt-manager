@@ -9,7 +9,9 @@
 <input name="name" id="name" value="{{ request.form['name'] or app['name'] }}" required> 
 
 <label for="uinterval">Update Interval (sec)</label>
-<input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or app['uinterval'] }}" required> 
+<input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or app['uinterval'] }}" required>
+<label for="enabled">Enabled: </label>
+<input name="enabled" type="checkbox" {% if app['enabled'] == "true" %} checked {% endif %}></input> 
 <textarea name="notes" id="notes">{{ request.form['notes'] or app['notes'] }}</textarea>
 
 <input type="submit" value="Save">
