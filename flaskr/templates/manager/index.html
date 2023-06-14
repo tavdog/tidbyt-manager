@@ -19,26 +19,28 @@
 <p class="body">Notes: {{ device['notes'] }}</p>
 {% endif %}
 {% if 'apps' in device %}
-<ul>
-{% for app in device['apps'].values() %}
-<li>
-<div class="post">
-    <header>
-    <h1>{{ app['iname'] }}</h1>&nbsp(installation id)
-    <a class="action" href="{{ url_for('manager.updateapp', id=device['id'], iname=app['iname']) }}">Edit</a>
-    <a class="action" href="{{ url_for('manager.configapp', id=device['id'], iname=app['iname']) }}">Configure</a>
-    <a class="action" onclick="return confirm('Delete App ?');" href="{{ url_for('manager.deleteapp', id=device['id'],iname=app['iname']) }}">Delete</a>
+        {% for app in device['apps'].values() %}
+        <table width="100%"><tr width="100%"><td><ul>
+        <li>
+        <div class="post">
+            <header>
+            <h1>{{ app['iname'] }}</h1>&nbsp(installation id)
+            <a class="action" href="{{ url_for('manager.updateapp', id=device['id'], iname=app['iname']) }}">Edit</a>
+            <a class="action" href="{{ url_for('manager.configapp', id=device['id'], iname=app['iname']) }}">Configure</a>
+            <a class="action" onclick="return confirm('Delete App ?');" href="{{ url_for('manager.deleteapp', id=device['id'],iname=app['iname']) }}">Delete</a>
+        
+            </header>
+            <p class="body">App: {{ app['name'] }}</p>
+        <!-- <p class="body">Installation ID: {{ app['iname'] }}</p> -->
+        <p class="body">Update Interval (secs): {{ app['uinterval'] }}</p>
+        {% if app['notes'] != '' %}
+        <p class="body">Notes: {{ app['notes'] }}</p>
+        {% endif %}</td>
+        <td><img width=400 src="{{url_for('manager.appwebp', id=device['id'],iname=app['iname']) }}" alt="Preview" >
+        </div>
+        </li>
+    </td></tr></table>
 
-    </header>
-    <p class="body">App: {{ app['name'] }}</p>
-    <!-- <p class="body">Installation ID: {{ app['iname'] }}</p> -->
-    <p class="body">Update Interval (secs): {{ app['uinterval'] }}</p>
-    {% if app['notes'] != '' %}
-    <p class="body">Notes: {{ app['notes'] }}</p>
-    {% endif %}
-    <img width=400 src="{{url_for('manager.appwebp', id=device['id'],iname=app['iname']) }}" alt="Preview" >
-</div>
-</li>
 {% if not loop.last %}
 <hr>
 {% endif %}
