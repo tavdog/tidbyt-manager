@@ -1,1 +1,36 @@
-{"username": "tavis", "password": "jungle", "devices": {"12e8587a-ee1c-4243-aa38-999a46d2bbb6": {"id": "12e8587a-ee1c-4243-aa38-999a46d2bbb6", "name": "BeachByt", "api_id": "cumbly-joinbly-trump", "api_key": "lkjsdlkfjssldkjlksdjflksdjfkljsjfsjdflksdf", "notes": "", "apps": {"5943": {"iname": "5943", "name": "baby_age", "uinterval": "300 ", "notes": "", "enabled": "false"}}}}}
+{
+    "username": "tavis",
+    "password": "jungle",
+    "devices": {
+        "12e8587a-ee1c-4243-aa38-999a46d2bbb6": {
+            "id": "12e8587a-ee1c-4243-aa38-999a46d2bbb6",
+            "name": "BeachByt",
+            "api_id": "cumbly-joinbly-trump",
+            "api_key": "lkjsdlkfjssldkjlksdjflksdjfkljsjfsjdflksdf",
+            "notes": "",
+            "apps": {
+                "2007": {
+                    "iname": "2007",
+                    "name": "3cellularautomata",
+                    "uinterval": "300 ",
+                    "notes": "",
+                    "enabled": "true"
+                },
+                "2468": {
+                    "iname": "2468",
+                    "name": "noaa_buoy",
+                    "uinterval": "300 ",
+                    "notes": "",
+                    "enabled": "true"
+                },
+                "6658": {
+                    "iname": "6658",
+                    "name": "3cellularautomata",
+                    "uinterval": "300 ",
+                    "notes": "",
+                    "enabled": "true"
+                }
+            }
+        }
+    }
+}
