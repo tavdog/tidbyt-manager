@@ -124,7 +124,7 @@ def delete(id):
 @login_required
 def deleteapp(id,iname):
     # delete the config file
-    config_path = "configs/{}-{}.json".format(g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
+    config_path = "users/{}/configs/{}-{}.json".format(g.user['username'],g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
     if os.path.isfile(config_path):
         os.remove(config_path)
     # delete the webp file
@@ -144,6 +144,7 @@ def addapp(id):
         name = request.form['name']
         iname = db.sanitize(request.form['iname'])
         uinterval = request.form['uinterval']
+        display_time = request.form['display_time']
         notes = request.form['notes']
         error = None
         if iname == "":
@@ -162,7 +163,9 @@ def addapp(id):
             print("iname is :" + str(app["iname"]))
             app["name"] = name
             app["uinterval"] = uinterval
+            app["display_time"] = display_time
             app["notes"] = notes
+            app["enabled"] = "true"
             user = g.user
             if "apps" not in user["devices"][id]:
                 user["devices"][id]["apps"] = {}
@@ -219,8 +222,8 @@ def configapp(id,iname):
     app = g.user["devices"][id]['apps'][iname]
     app_basename = "{}-{}".format(app['name'],app["iname"])
     app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
-    config_path = "configs/{}.json".format(app_basename)
-    tmp_config_path = "configs/{}.tmp".format(app_basename)
+    config_path = "users/{}/configs/{}.json".format(g.user['username'],app_basename)
+    tmp_config_path = "users/{}/configs/{}.tmp".format(g.user['username'],app_basename)
     webp_path = "flaskr/webp/{}.webp".format(app_basename)
 
     # always kill pixlet procs first thing.
@@ -285,5 +288,5 @@ def appwebp(id,iname):
         return send_file(webp_path, mimetype='image/webp')
     else:
         print("file no exist")
-        pass
+        return None
 

@@ -1,8 +1,8 @@
 import os,json
-user_path = "users/{}.json"
+user_path = "users/{}/{}.json"
 def user_exists(username):
     try:
-        with open(user_path.format(username)) as file:
+        with open(user_path.format(username,username)) as file:
             # print("username: {} exists.".format(username))
             return True
     except:
@@ -16,11 +16,12 @@ def file_exists(file_path):
         return False
 
 def get_user(username):
-    print("username :{}".format(username))
+    # print("username :{}".format(username))
+    # print(user_path.format(username,username))
     try:
-        with open(user_path.format(username)) as file:
+        with open(user_path.format(username,username)) as file:
             user = json.load(file)
-            #print("return user")
+            print("return user")
             return user
     except():
         print("problem with get_user")
@@ -28,7 +29,7 @@ def get_user(username):
 
 def auth_user(username,password):
     try:
-        with open(user_path.format(username)) as file:
+        with open(user_path.format(username,username)) as file:
             user = json.load(file)
             print(user)
             if user.get("password") == password:
@@ -39,17 +40,25 @@ def auth_user(username,password):
     except:
         print("problem")
         return False
-    
+
 def save_user(user):
      if "username" in user:
         try:
-            with open(user_path.format(user["username"]),"w") as file:
+            with open(user_path.format(user["username"],user["username"]),"w") as file:
                 json.dump(user,file)
             return True      
         except:
             print("couldn't save {}".format(user))
             return False
-        
+def create_user_dir(user):
+    dir = sanitize(user)
+    # test for directory named dir and if not exist creat it
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+        return True
+    else:
+        return False
+
 def get_apps_list():
     
     # open json file and conver to dictionary

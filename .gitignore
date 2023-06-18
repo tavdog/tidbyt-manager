@@ -2,3 +2,5 @@
 configs/*
 *.pyc
 venv/*
+*.tmp
+*.json

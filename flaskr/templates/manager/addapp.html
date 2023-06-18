@@ -13,7 +13,8 @@
 <label for="iname">Installation Id (eg. clock1)</label>
 <input name="iname" id="iname" value="{{ request.form['iname']}}" placeholder="optional"> 
 <label for="uinterval">Update Interval (sec)</label>
-<input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 300}} " required> 
+<input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 300}} " required>
+<input name="display_time" id="display_time" value="{{ request.form['display_time'] or 10}} " required>
 <textarea name="notes" id="notes">{{ request.form['notes'] }}</textarea>
 <input type="submit" value="Save">
 </form>
