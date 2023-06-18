@@ -23,7 +23,7 @@ def register():
             user = dict()
             user["username"] = username
             user["password"] = password
-            db.create_user_dir(user)
+            db.create_user_dir(username)
             db.save_user(user)
             return redirect(url_for('auth.login'))
         flash(error)

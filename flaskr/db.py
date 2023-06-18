@@ -53,8 +53,10 @@ def save_user(user):
 def create_user_dir(user):
     dir = sanitize(user)
     # test for directory named dir and if not exist creat it
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+    user_dir = "users/{}".format(user)
+    if not os.path.exists(user_dir):
+        os.makedirs(user_dir)
+        os.makedirs(user_dir+"/configs")
         return True
     else:
         return False
