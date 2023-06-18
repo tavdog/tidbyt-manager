@@ -1,5 +1,9 @@
 # generate the apps.txt list. should have app name and app descrption pulled from the yaml
-import json
+import json,os
+
+# run a command to generate a txt file withh all the .star file in the tidbyt-apps directory
+os.system("ls tidbyt-apps/apps/* | grep star > tidbyt-apps/apps.txt")
+
 # pull in the apps.txt list
 apps_array = []
 with open("tidbyt-apps/apps.txt",'r') as f:
