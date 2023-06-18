@@ -1,6 +1,5 @@
 *.webp
 configs/*
 *.pyc
-venv/*
 *.tmp
 *.json
