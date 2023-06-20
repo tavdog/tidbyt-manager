@@ -125,8 +125,12 @@ def delete(id):
 def deleteapp(id,iname):
     # delete the config file
     config_path = "users/{}/configs/{}-{}.json".format(g.user['username'],g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
+    tmp_config_path = "users/{}/configs/{}-{}.tmp".format(g.user['username'],g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
     if os.path.isfile(config_path):
         os.remove(config_path)
+    if os.path.isfile(tmp_config_path):
+        os.remove(tmp_config_path)
+
     # delete the webp file
     webp_path = "flaskr/webp/{}-{}.webp".format(g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
     # if file exists remove it

@@ -2,7 +2,7 @@
 {% block header %}
 <h1>{% block title %}Add App{% endblock %}</h1>
 {% endblock %}
-{% block content %} <form method="post">
+{% block content %} <form method="post" id="main_form">
 <label for="name">App Name (eg. analogclock)</label>
 <select id=name name="name">
     {% for app in apps_list %}
@@ -16,6 +16,30 @@
 <input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 300}} " required>
 <input name="display_time" id="display_time" value="{{ request.form['display_time'] or 10}} " required>
 <textarea name="notes" id="notes">{{ request.form['notes'] }}</textarea>
-<input type="submit" value="Save">
+
 </form>
+<input type="submit" value="Save" class="w3-button w3-green" onclick="move()"></input>
+<div class="w3-light-grey">
+  <div id="myBar" class="w3-container w3-green" style="height:24px;width:1%;visibility: hidden"></div>
+</div>
+
+<script>
+function move() {
+  var elem = document.getElementById("myBar");
+  var myform = document.getElementById("main_form");
+  elem.style.visibility = "visible";
+  var width = 1;
+  var id = setInterval(frame, 20);
+  function frame() {
+    if (width >= 100) {
+      clearInterval(id);
+    } else {
+      width++;
+      elem.style.width = width + '%';
+    }
+  }
+  myform.submit();
+
+}
+</script>
 {% endblock %}
