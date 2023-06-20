@@ -29,9 +29,8 @@
         <li>
         <div class="post">
             <header>
-            <h1>{{ app['iname'] }}</h1>&nbsp(installation id)
-
-            <h3>{% if app['enabled'] == "true" %}<enabled>( Enabled )</enabled>{% else %}<disabled>( Disabled ){% endif %}</disabled></h3>
+            <h1>{{ app['iname'] }} &nbsp(installation id) </h1>
+            <h1>{% if app['enabled'] == "true" %}<enabled>&nbsp -- Enabled --</enabled>{% else %}<disabled>&nbsp -- Disabled --{% endif %}</disabled></h1>
             </header>
             <p class="body">App: {{ app['name'] }}</p>
         <p class="body">Update Interval (secs): {{ app['uinterval'] }}</p>
@@ -39,7 +38,7 @@
         {% if app['notes'] != '' %}
         <p class="body">Notes: {{ app['notes'] }}</p>
         {% endif %}</td>
-        <td><img width=400 src="{{url_for('manager.appwebp', id=device['id'],iname=app['iname']) }}" alt="Preview" >
+        <td><br><img class="w3-padding" width=400 src="{{url_for('manager.appwebp', id=device['id'],iname=app['iname']) }}" alt="Preview" >
         </div>
         </li>
     </td></tr><tr><td><a class="action w3-button w3-blue w3-round" href="{{ url_for('manager.updateapp', id=device['id'], iname=app['iname']) }}">Edit</a>
