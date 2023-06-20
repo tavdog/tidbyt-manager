@@ -23,7 +23,7 @@ def get_user(username):
             user = json.load(file)
             print("return user")
             return user
-    except():
+    except:
         print("problem with get_user")
         return False
 
