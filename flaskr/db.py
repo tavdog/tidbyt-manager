@@ -1,4 +1,5 @@
 import os,json
+from werkzeug.security import check_password_hash, generate_password_hash
 user_path = "users/{}/{}.json"
 def user_exists(username):
     try:
@@ -32,7 +33,7 @@ def auth_user(username,password):
         with open(user_path.format(username,username)) as file:
             user = json.load(file)
             print(user)
-            if user.get("password") == password:
+            if check_password_hash(user.get("password"), password):
                 return user
             else:
                 print("bad password")
