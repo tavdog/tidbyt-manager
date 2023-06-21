@@ -1,2 +1,2 @@
 #!/bin/sh
-gunicorn -b "0.0.0.0:8000" "tidby_manager:create_app()"
+python3 -m gunicorn -w 4 -b "0.0.0.0:8000" "tidbyt_manager:create_app()"

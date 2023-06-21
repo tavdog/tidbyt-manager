@@ -1,6 +1,7 @@
 FROM golang:latest
+#FROM pixletflask:latest
 
-###################################
+# ###################################
 # install pixlet
 ENV NODE_URL https://deb.nodesource.com/setup_16.x
 #ENV PIXLET_REPO https://github.com/tidbyt/pixlet.git
@@ -8,11 +9,10 @@ ENV PIXLET_REPO https://github.com/tavdog/pixlet
 ENV TDM_REPO https://github.com/tavdog/tidbyt-manager
 ENV TIDBYT_APPS_REPO https://github.com/tidbyt/community
 
-RUN apt update && apt upgrade && apt install cron libwebp-dev python3-venv python3-pip -y
+RUN apt update && apt upgrade -y && apt install cron libwebp-dev python3-pip python3-flask python3-gunicorn -y
 
 WORKDIR /tmp
 RUN curl -fsSL $NODE_URL | bash - && apt-get install -y nodejs npm && node -v
-
 WORKDIR /
 RUN git clone $PIXLET_REPO /pixlet
 WORKDIR /pixlet
@@ -22,19 +22,14 @@ RUN npm install && npm run build && make build
 # install tidbymanager app
 RUN git clone $TDM_REPO /app
 WORKDIR /app
-RUN rm -rf env
-
-###################################
-# install flask and gunicorn
-RUN pip3 install –r requirements.txt --no-cache-dir
 
 # install tidbyt apps
-RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
+#RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
+COPY tidbyt-apps /app/tidbyt-apps
 
 # populate the apps.json file
 RUN python3 ./gen_app_array.py
 # install the crontab directly 
 RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
 # start the app server
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "tidby_manager:create_app()"]
-#CMD ["/app/run"]
+CMD ["./run"]
