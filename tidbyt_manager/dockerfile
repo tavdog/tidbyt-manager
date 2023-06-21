@@ -26,7 +26,9 @@ RUN git clone TDM_REPO
 RUN git clone TIDBYT_APPS_REPO tidbyt-apps
 
 # populate the apps.json file
-RUN python3 gen_app_array.py
+RUN python3 gen_app_array.python3
+# install the crontab directly 
+RUN cat '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
 
 
 CMD ["bash"]

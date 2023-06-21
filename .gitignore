@@ -3,3 +3,4 @@ configs/*
 *.pyc
 *.tmp
 *.json
+*.log

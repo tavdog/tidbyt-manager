@@ -17,8 +17,8 @@ def process_app(app,device,user):
     app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
 
     now = int(time.time())
-    print("\tApp: %s - %s" % (app['iname'],app['name']))
-    print("\tLast run: %s" % app['last_run'])
+    print("\tApp: {} - {}".format(app['iname'],app['name']))
+    print("\tLast run: {}".format(app['last_run']))
     # check uinterval
     if now - app['last_run'] > int(app['uinterval']) or force:
         print("\tRun")
@@ -58,7 +58,7 @@ def main():
     force = False
     # check for correct number of arguments
     if len(sys.argv) < 2:
-        print("Usage: %s <username>".format(sys.argv[0]))
+        print("Usage: {} <username>".format(sys.argv[0]))
         sys.exit(1)
     if len(sys.argv) > 2:
         force = True
