@@ -11,24 +11,25 @@ ENV TIDBYT_APPS_REPO https://github.com/tidbyt/community
 RUN apt update && apt upgrade && apt install cron libwebp-dev python3-venv python3-pip -y
 
 WORKDIR /tmp
-RUN curl -fsSL $NODE_URL | bash - && apt-get install -y nodejs && node -v
+RUN curl -fsSL $NODE_URL | bash - && apt-get install -y nodejs npm && node -v
 
 WORKDIR /
-RUN git clone $PIXLET_REPO
+RUN git clone $PIXLET_REPO /pixlet
 WORKDIR /pixlet
 RUN npm install && npm run build && make build
 
 ###################################
 # install flask and tidbymanager app
-RUN mkdir /app
+RUN git clone $TDM_REPO /app
 WORKDIR /app
-RUN git clone TDM_REPO
-RUN git clone TIDBYT_APPS_REPO tidbyt-apps
+# install tidbyt apps
+RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
 
 # populate the apps.json file
-RUN python3 gen_app_array.python3
+RUN python3 ./gen_app_array.py
 # install the crontab directly 
-RUN cat '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
+RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
 
-
-CMD ["bash"]
+# start the app server
+CMD [". env/bin/activate", ";", "./run"]
+#CMD ["bash"]
