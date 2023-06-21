@@ -30,5 +30,5 @@ RUN python3 ./gen_app_array.py
 # install the crontab directly 
 RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
 # start the app server
-CMD [". env/bin/activate", ";", "gunicorn", "-b", "0.0.0.0:8000", "tidby_manager:create_app()"]
-
+#CMD [".", "env/bin/activate", ";", "gunicorn", "-b", "0.0.0.0:8000", "tidby_manager:create_app()"]
+CMD ["/app/run"]
