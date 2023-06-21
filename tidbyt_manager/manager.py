@@ -2,8 +2,8 @@ from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for, send_file
 )
 from werkzeug.exceptions import abort
-from flaskr.auth import login_required
-import flaskr.db as db
+from tidbyt_manager.auth import login_required
+import tidbyt_manager.db as db
 import uuid,os
 
 
@@ -138,7 +138,7 @@ def deleteapp(id,iname):
         os.system(command)
 
     # delete the webp file
-    webp_path = "flaskr/webp/{}-{}.webp".format(g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
+    webp_path = "tidbyt_manager/webp/{}-{}.webp".format(g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
     # if file exists remove it
     if os.path.isfile(webp_path):
         os.remove(webp_path)
@@ -235,7 +235,7 @@ def configapp(id,iname):
     app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
     config_path = "users/{}/configs/{}.json".format(g.user['username'],app_basename)
     tmp_config_path = "users/{}/configs/{}.tmp".format(g.user['username'],app_basename)
-    webp_path = "flaskr/webp/{}.webp".format(app_basename)
+    webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
 
     # always kill pixlet procs first thing.
     os.system("pkill -f pixlet") # kill any pixlet processes
@@ -293,7 +293,7 @@ def configapp(id,iname):
 def appwebp(id,iname):
     app = g.user["devices"][id]['apps'][iname]
     app_basename = "{}-{}".format(app['name'],app["iname"])
-    webp_path = "/app/flaskr/webp/{}.webp".format(app_basename)
+    webp_path = "/app/tidbyt_manager/webp/{}.webp".format(app_basename)
      # check if the file exists
     if db.file_exists(webp_path):
         return send_file(webp_path, mimetype='image/webp')
