@@ -1,3 +1,2 @@
 #!/bin/sh
-. env/bin/activate
 gunicorn -b "0.0.0.0:8000" "tidby_manager:create_app()"

@@ -19,9 +19,15 @@ WORKDIR /pixlet
 RUN npm install && npm run build && make build
 
 ###################################
-# install flask and tidbymanager app
+# install tidbymanager app
 RUN git clone $TDM_REPO /app
 WORKDIR /app
+RUN rm -rf env
+
+###################################
+# install flask and gunicorn
+RUN pip3 install –r requirements.txt --no-cache-dir
+
 # install tidbyt apps
 RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
 
@@ -30,5 +36,5 @@ RUN python3 ./gen_app_array.py
 # install the crontab directly 
 RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
 # start the app server
-#CMD [".", "env/bin/activate", ";", "gunicorn", "-b", "0.0.0.0:8000", "tidby_manager:create_app()"]
-CMD ["/app/run"]
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "tidby_manager:create_app()"]
+#CMD ["/app/run"]
