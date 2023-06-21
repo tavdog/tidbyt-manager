@@ -18,7 +18,7 @@
 </td></tr></table>
 </header>
 <p class="body">API ID: {{ device['api_id'] }}</p>
-<p class="body">API KEY: {{ device['api_key'] }}</p>
+<p class="body">API KEY: {{ device['api_key'][0:10] }} ... {{ device['api_key'][-10:-1] }}</p>
 {% if device['notes'] != '' %}
 <p class="body">Notes: {{ device['notes'] }}</p>
 {% endif %}

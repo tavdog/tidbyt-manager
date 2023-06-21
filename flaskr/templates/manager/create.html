@@ -7,9 +7,10 @@
 <input name="name" id="name" value="{{ request.form['name'] }}" required> 
 <label for="api_id">Device ID</label>
 <input name="api_id" id="api_id" value="{{ request.form['api_id'] }}" required> 
-<label for="api_key">Device API KEY</label>
-<input name="api_key" id="api_key" value="{{ request.form['api_key'] }}" required> 
-<textarea name="notes" id="notes">{{ request.form['notes'] }}</textarea>
+<label for="api_key">Device API KEY (leave blank when using mqtt)</label>
+<textarea name="api_key" id="api_key" rows="5"></textarea> 
+<label for="notes">Notes</label>
+<input name="notes" id="notes" value="{{ request.form['notes'] }}" >
 <input type="submit" value="Save">
 </form>
 {% endblock %}

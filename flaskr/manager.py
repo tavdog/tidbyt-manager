@@ -131,6 +131,12 @@ def deleteapp(id,iname):
     if os.path.isfile(tmp_config_path):
         os.remove(tmp_config_path)
 
+    # use pixlet to delete installation of app if api_key exists (tidbyt server operation)
+    if 'api_key' in g.user["devices"][id]:
+        command = "/pixlet/pixlet delete {} {} -t {}".format(g.user["devices"][id]['api_id'],iname,g.user["devices"][id]['api_key'])
+        print(command)
+        os.system(command)
+
     # delete the webp file
     webp_path = "flaskr/webp/{}-{}.webp".format(g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
     # if file exists remove it
@@ -170,6 +176,7 @@ def addapp(id):
             app["display_time"] = display_time
             app["notes"] = notes
             app["enabled"] = "true"
+            app["last_run"] = 0
             user = g.user
             if "apps" not in user["devices"][id]:
                 user["devices"][id]["apps"] = {}

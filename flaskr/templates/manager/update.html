@@ -12,10 +12,9 @@ value="{{ request.form['name'] or device['name'] }}" required>
 <input name="api_id" id="api_id"
 value="{{ request.form['api_id'] or device['api_id'] }}" required>
 <label for="api_key">API KEY</label>
-<input name="api_key" id="api_key"
-value="{{ request.form['api_key'] or device['api_key'] }}" required>
+<textarea name="api_key" id="api_key" rows="6">{{ request.form['api_key'] or device['api_key'] }}</textarea>
 <label for="body">Notes</label>
-<textarea name="notes" id="notes">{{ request.form['notes'] or device['notes'] }}</textarea>
+<input name="notes" id="notes" value="{{ request.form['notes'] or device['notes'] }}">
 <input type="submit" value="Save">
 </form>
 <hr>
