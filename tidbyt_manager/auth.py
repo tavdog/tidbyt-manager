@@ -8,6 +8,9 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
+    # # only allow admin to register new users
+    # if session['username'] != "admin":
+    #     return redirect(url_for('manager.index'))
     if request.method == 'POST':
         username = request.form['username']
         password = generate_password_hash(request.form['password'])

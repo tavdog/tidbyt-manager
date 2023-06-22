@@ -5,10 +5,11 @@
 <nav>
     <h1 class="w3-sans-serif">Tidbyt Manager</h1> <ul>
         {% if g.user %}
+            {% if g.user['username'] == 'admin' %}<li><a href="{{ url_for('auth.register') }}">Create User</a>{% endif %}
             <li><a href="{{ url_for('auth.edit') }}">{{ g.user['username'] }}</a>
             <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
         {% else %}
-            <li><a href="{{ url_for('auth.register') }}">Register</a> <li><a href="{{ url_for('auth.login') }}">Log In</a>
+            <li><a href="{{ url_for('auth.login') }}">Log In</a>
         {% endif %} </ul>
 </nav>
 <section class="content">

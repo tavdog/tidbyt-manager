@@ -8,41 +8,55 @@ import json
 import datetime
 import time
 
-
+DEBUG=True
 def process_app(app,device,user):
-    global force
+    global force,DEBUG
     app_basename = "{}-{}".format(app['name'],app["iname"])
     config_path = "users/{}/configs/{}.json".format(user['username'],app_basename)
     webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
     app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
 
     now = int(time.time())
-    print("\tApp: {} - {}".format(app['iname'],app['name']))
-    print("\tLast run: {}".format(app['last_run']))
+    print("\t\tApp: {} - {}".format(app['iname'],app['name']))
+    if 'last_render' not in app:
+        app['last_render'] = 0
+    print("\t\t\tlast render: {}".format(app['last_render']))
     # check uinterval
-    if now - app['last_run'] > int(app['uinterval']) or force:
-        print("\tRun")
+    if now - app['last_render'] > int(app['uinterval']) or force or DEBUG:
+        print("\t\t\tRun")
         # build the pixlet render command
         command = "/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path)
+        print(command)
         result = os.system(command)
         if result!= 0:
-            print("\tError running pixlet render")
+            print("\t\t\tError running pixlet render")
         else:
-            # push to pixlet with quiet option, maybe use a separate shell script for this i dont'
-            # ./pixlet push $(cat tidbyt_marc.id) solar_manager_ch.webp -t $(cat tidbyt_marc.key) -i solarautarky
-            command = "/pixlet/pixlet push {} {} -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
-            print(command)
-            result = os.system(command)
-            if result!= 0:
-               print("\tError pushing to device")
-        # update the config file with the new last run time
-            print("update last run")
-            app['last_run'] = int(time.time())
+            # update the config file with the new last render time
+            print("\t\t\tupdate last render")
+            app['last_render'] = int(time.time())
+            
+            if len(device['api_key']) > 1:
+                # push to pixlet with quiet option'
+                # ./pixlet push $(cat tidbyt_marc.id) solar_manager_ch.webp -t $(cat tidbyt_marc.key) -i solarautarky
+                command = "/pixlet/pixlet push {} {} -b -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
+                print(command)
+                result = os.system(command)
+                if result!= 0:
+                    print("\t\t\tError pushing to device")
+                else:
+                    # update the config file with the new last push time
+                    print("\t\t\tupdate last push")
+                    app['last_push'] = int(time.time())
+            else:
+                # api_key is short meaning we probably need to push via mqtt
+                print("\t\t\tnon api push not implemented yet")
+
+
     else:
-        print("\tNext update in {} seconds.".format(int(app['uinterval']) - (now - app['last_run'])))
+        print("\tNext update in {} seconds.".format(int(app['uinterval']) - (now - app['last_render'])))
 
 def process_device(device,user):
-    print("Device: %s" % device['name'])
+    print("\tDevice: %s" % device['name'])
     for app in device['apps'].values(): 
         process_app(app,device,user)
    
@@ -56,36 +70,46 @@ def main():
     now = time.time()
     global force
     force = False
+    user = None
     # check for correct number of arguments
     if len(sys.argv) < 2:
         print("Usage: {} <username>".format(sys.argv[0]))
-        sys.exit(1)
+    else:
+        user = sys.argv[1]
+
     if len(sys.argv) > 2:
         force = True
 
+    user_list = list()
     # open json config file is located in users/user/user.json
-    user = sys.argv[1]
-    config_file = os.path.join("users", user, "%s.json" % user)
-    if not os.path.exists(config_file):
-        print("No config")
-        sys.exit(1)
-    # decode json from the file load dict object from json file
-    with open(config_file, "r") as f:
-        try:
-            user = json.load(f)
-        except:
-            print("bad json")
-            sys.exit(1)
-    for device in user['devices'].values():
-        process_device(device,user)
+    if not user:
+        # get list of directories in user
+        for user in os.listdir("users"):
+            if os.path.isdir(os.path.join("users", user)):
+                user_list.append(user)
+    else:
+        user_list.append(user)
 
-    # if "last_run" in user:
-    #     print("Last run: %s" % user["last_run"])
-    # else:
-    #     print("No last run")
 
-    save_json(user,config_file)
-    
+    for user in user_list:    
+        print("User : {}".format(user))
+        config_file = os.path.join("users", user, "%s.json" % user)
+        if not os.path.exists(config_file):
+            print("No config")
+            next
+        # decode json from the file load dict object from json file
+        with open(config_file, "r") as f:
+            try:
+                user = json.load(f)
+            except:
+                print("bad json")
+                next
+        if 'devices' in user:
+            for device in user['devices'].values():
+                process_device(device,user)
+
+            save_json(user,config_file)
+        
 
 
 if __name__ == "__main__":

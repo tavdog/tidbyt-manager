@@ -171,7 +171,8 @@ def addapp(id):
             app["display_time"] = display_time
             app["notes"] = notes
             app["enabled"] = "true"
-            app["last_run"] = 0
+            app["last_render"] = 0
+            app["last_push"] = 0
             user = g.user
             if "apps" not in user["devices"][id]:
                 user["devices"][id]["apps"] = {}

@@ -22,7 +22,7 @@ def get_user(username):
     try:
         with open(user_path.format(username,username)) as file:
             user = json.load(file)
-            print("return user")
+#            print("return user")
             return user
     except:
         print("problem with get_user")
