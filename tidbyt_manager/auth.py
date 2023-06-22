@@ -48,6 +48,25 @@ def login():
     
     return render_template('auth/login.html')
 
+@bp.route('/edit', methods=('GET', 'POST'))
+def edit():
+    if request.method == 'POST':
+        username = session['username']
+        old_pass = request.form['old_password']
+        password = generate_password_hash(request.form['password'])
+        error = None
+        user = db.auth_user(username,old_pass)
+        if user is False:
+            error = 'Incorrect username/password.'
+        if error is None:
+            user['passowrd'] = password
+            db.save_user(user)
+            flash("Success")
+            return redirect(url_for('index'))
+        flash(error)
+    
+    return render_template('auth/edit.html')
+
 @bp.before_app_request
 def load_logged_in_user():
     username = session.get('username')
