@@ -21,6 +21,10 @@ def process_app(app,device,user):
     if 'last_render' not in app:
         app['last_render'] = 0
     print("\t\t\tlast render: {}".format(app['last_render']))
+    # check for enabled
+    if app['enabled'] != 'true':
+        print("\t\t\tApp not Enabled")
+        return
     # check uinterval
     if now - app['last_render'] > int(app['uinterval']) or force or DEBUG:
         print("\t\t\tRun")
