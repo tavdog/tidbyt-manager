@@ -8,7 +8,7 @@ import json
 import datetime
 import time
 
-DEBUG=True
+DEBUG=False
 def process_app(app,device,user):
     global force,DEBUG
     app_basename = "{}-{}".format(app['name'],app["iname"])

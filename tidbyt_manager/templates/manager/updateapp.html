@@ -8,7 +8,7 @@
 <label for="name">App Name (eg. analogclock)</label>
 <input name="name" id="name" value="{{ request.form['name'] or app['name'] }}" required> 
 
-<label for="uinterval">Update Interval (sec)</label>
+<label for="uinterval">Render Interval (sec)</label>
 <input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or app['uinterval'] }}" required>
 <input name="display_name" id="display_time" value="{{ request.form['display_time'] or 10}} ">
 <label for="enabled">Enabled: </label>
