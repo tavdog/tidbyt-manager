@@ -8,10 +8,7 @@
     {% for app in apps_list %}
       <option value="{{app['name'].replace('.star','')}}">{{app['name'].replace('.star','')}} - {{app['summary']}}</option>
     {% endfor %}
-  </select>
-<!-- <input name="name" id="name" value="{{ request.form['name'] }}" required>  -->
-<label for="iname">Installation Id (eg. clock1)</label>
-<input name="iname" id="iname" value="{{ request.form['iname']}}" placeholder="optional"> 
+  </select><br>
 <label for="uinterval">Render Interval (sec)</label>
 <input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 300}} " required>
 <input name="display_time" id="display_time" value="{{ request.form['display_time'] or 10}} " required>

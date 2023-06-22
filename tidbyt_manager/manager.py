@@ -147,15 +147,14 @@ def deleteapp(id,iname):
 def addapp(id):
     if request.method == 'POST':
         name = request.form['name']
-        iname = db.sanitize(request.form['iname'])
         uinterval = request.form['uinterval']
         display_time = request.form['display_time']
         notes = request.form['notes']
         error = None
-        if iname == "":
-            # generate an iname based on the appname
-            import random
-            iname = str(random.randint(1000,9999))
+        # generate an iname from 4 digits. will be used later as the port number on which to run pixlet serve
+        import random
+        iname = str(random.randint(1000,9999))
+
         if not name:
             error = 'App name required.'
         if db.file_exists("configs/{}-{}.json".format(name,iname)):
@@ -192,7 +191,6 @@ def addapp(id):
 def updateapp(id,iname):
     if request.method == 'POST':
         name = request.form['name']
-        #iname = request.form['iname']
         uinterval = request.form['uinterval']
         notes = request.form['notes']
         if "enabled" in request.form:
