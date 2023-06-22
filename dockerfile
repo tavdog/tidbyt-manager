@@ -24,8 +24,8 @@ RUN git clone $TDM_REPO /app
 WORKDIR /app
 
 # install tidbyt apps
-#RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
-COPY tidbyt-apps /app/tidbyt-apps
+RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
+#COPY tidbyt-apps /app/tidbyt-apps
 
 # populate the apps.json file
 RUN python3 ./gen_app_array.py
