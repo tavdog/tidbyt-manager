@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block header %}
+<h1>{% block title %}Edit Password{% endblock %}</h1>
+{% endblock %}
+{% block content %} <form method="post">
+<label for="old_password">Old Password</label>
+<input name="old_password" id="old_password" required>
+<label for="password">New Password</label>
+<input name="password" id="password" required>
+<input type="submit" value="Save" class="w3-button w3-green"></input>
+</form>
+{% endblock %}

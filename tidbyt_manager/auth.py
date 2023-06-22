@@ -48,6 +48,7 @@ def login():
     
     return render_template('auth/login.html')
 
+# edit user info, namely password
 @bp.route('/edit', methods=('GET', 'POST'))
 def edit():
     if request.method == 'POST':
@@ -57,9 +58,9 @@ def edit():
         error = None
         user = db.auth_user(username,old_pass)
         if user is False:
-            error = 'Incorrect username/password.'
+            error = 'Bad old password.'
         if error is None:
-            user['passowrd'] = password
+            user['password'] = password
             db.save_user(user)
             flash("Success")
             return redirect(url_for('index'))
