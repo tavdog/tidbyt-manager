@@ -1,6 +1,7 @@
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for, send_file
 )
+from tidbyt_manager import config
 from werkzeug.exceptions import abort
 from tidbyt_manager.auth import login_required
 import tidbyt_manager.db as db
@@ -34,12 +35,6 @@ def create():
         if error is not None:
             flash(error)
         else:
-#            db = get_db()
-            # db.execute(
-            #     'INSERT INTO device (name, api_id, api_key, notes, owner_id)'
-            #     ' VALUES (?, ?, ?, ?, ?)', (name, api_id, api_key, notes,  g.user['id'])
-            # )
-            # db.commit()
             device = dict()
             device["id"] = str(uuid.uuid4())
             print("id is :" + str(device["id"]))
@@ -238,7 +233,7 @@ def configapp(id,iname):
     webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
 
     # always kill pixlet procs first thing.
-    os.system("pkill -f pixlet") # kill any pixlet processes
+    os.system("pkill -f 5{}".format(app['iname'])) # kill pixlet process 
 
     if request.method == 'POST':
 
@@ -278,11 +273,11 @@ def configapp(id,iname):
     app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
     print(app_path)
     if db.file_exists(app_path):
-        subprocess.Popen(["/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port=8080'], shell=False)
+        subprocess.Popen(["/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port=5{}'.format(app['iname'])], shell=False)
 
         # give pixlet some time to start up 
         time.sleep(2)
-        return render_template('manager/configapp.html', app=app,url_params=url_params)
+        return render_template('manager/configapp.html', app=app, domain_host=config.domain_host, url_params=url_params)
 
     else:
         flash("App Not Found")
