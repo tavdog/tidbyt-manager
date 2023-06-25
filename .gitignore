@@ -4,3 +4,4 @@ configs/*
 *.tmp
 *.json
 *.log
+*config.py

@@ -61,8 +61,11 @@ def process_app(app,device,user):
 
 def process_device(device,user):
     print("\tDevice: %s" % device['name'])
-    for app in device['apps'].values(): 
-        process_app(app,device,user)
+    if 'apps' in device:
+        for app in device['apps'].values(): 
+            process_app(app,device,user)
+    else:
+        print("\t\tno apps here")
    
 def save_json(data, filename):
     with open(filename, "w") as f:
