@@ -34,6 +34,9 @@ with open("tidbyt-apps/apps.txt",'r') as f:
                  print("skipped " + app)
 print(apps_array)
 
+# delete the apps.txt file
+os.system("rm tidbyt-apps/apps.txt")
+
 # writeout apps_array as a json file
 with open("tidbyt-apps/apps.json",'w') as f:
     json.dump(apps_array,f)
