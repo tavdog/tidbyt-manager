@@ -57,7 +57,7 @@ def process_app(app,device,user):
 
 
     else:
-        print("\tNext update in {} seconds.".format(int(app['uinterval']) - (now - app['last_render'])))
+        print("\t\t\tNext update in {} seconds.".format(int(app['uinterval']) - (now - app['last_render'])))
 
 def process_device(device,user):
     print("\tDevice: %s" % device['name'])
