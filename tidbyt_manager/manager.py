@@ -52,31 +52,6 @@ def create():
             return redirect(url_for('manager.index'))
     return render_template('manager/create.html')
 
-# def get_post(id, check_author=True):
-#     post = get_db().execute(
-#         'SELECT p.id, title, body, created, owner_id, username'
-#         ' FROM post p JOIN user u ON p.owner_id = u.id'
-#         ' WHERE p.id = ?',(id,)).fetchone()
-
-#     if post is None:
-#         abort(404, "Post id {0} doesn't exist.".format(id))
-#     if check_author and post['owner_id'] != g.user['id']:
-#         abort(403)
-#     return post
-
-# def get_device(id, check_author=True):
-#     device = get_db().execute(
-#         'SELECT p.id, name, notes, api_id, api_key, created, owner_id, username'
-#         ' FROM device p JOIN user u ON p.owner_id = u.id'
-#         ' WHERE p.id = ?',
-#         (id,)
-#     ).fetchone()
-#     if device is None:
-#         abort(404, "Post id {0} doesn't exist.".format(id))
-#     if check_author and device['owner_id'] != g.user['id']:
-#         abort(403)
-#     return device
-
 @bp.route('/<string:id>/update', methods=('GET', 'POST'))
 @login_required
 def update(id):
@@ -151,9 +126,9 @@ def addapp(id):
         display_time = request.form['display_time']
         notes = request.form['notes']
         error = None
-        # generate an iname from 4 digits. will be used later as the port number on which to run pixlet serve
+        # generate an iname from 3 digits. will be used later as the port number on which to run pixlet serve
         import random
-        iname = str(random.randint(1000,9999))
+        iname = str(random.randint(100,999))
 
         if not name:
             error = 'App name required.'

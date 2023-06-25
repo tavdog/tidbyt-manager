@@ -34,7 +34,7 @@
             </header>
             <p class="body">App: {{ app['name'] }}</p>
         <p class="body">Render Interval (secs): {{ app['uinterval'] }}</p>
-        <p class="body">Display Time (secs): {{ app['display_time'] }}</p>
+        {% if device['api_key'] == "" %}<p class="body">Display Time (secs): {{ app['display_time'] }}</p>{% endif %}
         {% if app['notes'] != '' %}
         <p class="body">Notes: {{ app['notes'] }}</p>
         {% endif %}</td>
