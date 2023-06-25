@@ -14,7 +14,15 @@ with open("tidbyt-apps/apps.txt",'r') as f:
                 app_dict = dict()
                 app_dict['name'] = app
                 app = app.replace('.star','')
-                #app_path = "tidbyt-apps/apps/{}/{}.star".format(app.replace('_',''),app) 
+                app_path = "tidbyt-apps/apps/{}/{}.star".format(app.replace('_',''),app)
+
+                # skip any files that include secret.star module and 
+                with open(app_path,'r') as f:
+                    app_str = f.read()
+                    if "secret.star" in app_str:
+                        print("skipping {} (uses secret.star)".format(app))
+                        continue
+                
                 yaml_path = "tidbyt-apps/apps/{}/manifest.yaml".format(app.replace('_',''),app)
                 with open(yaml_path,'r') as f:
                     yaml_str = f.read()

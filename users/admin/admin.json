@@ -1,1 +1,23 @@
-{"username": "admin", "password": "pbkdf2:sha256:600000$d7kD89fO85OD5M17$5b36743caf7f1cefb40271b114a9747f9c148ce14306897713e04f492f80d973", "devices": {"92983e11-b0c1-4645-8606-70ae5a4c12a5": {"id": "92983e11-b0c1-4645-8606-70ae5a4c12a5", "name": "My Tidbyt", "api_id": "CHANGE-ME", "api_key": "asdfasdfasdfsd", "notes": "", "apps": {"444": {"iname": "444", "name": "analog_clock", "uinterval": "300 ", "display_time": "10 ", "notes": "", "enabled": "true", "last_render": 0, "last_push": 0}}}}}
+{
+    "username": "admin",
+    "password": "pbkdf2:sha256:600000$d7kD89fO85OD5M17$5b36743caf7f1cefb40271b114a9747f9c148ce14306897713e04f492f80d973",
+    "devices": {
+        "92983e11-b0c1-4645-8606-70ae5a4c12a5": {
+            "id": "92983e11-b0c1-4645-8606-70ae5a4c12a5",
+            "name": "Dabyt",
+            "api_id": "CHANGE-ME",
+            "api_key": "",
+            "notes": "",
+            "apps": {
+                "444": {
+                    "iname": "444",
+                    "name": "analog_clock",
+                    "uinterval": "300 ",
+                    "notes": "",
+                    "enabled": "false",
+                    "last_render": 0
+                }
+            }
+        }
+    }
+}

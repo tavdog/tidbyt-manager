@@ -77,7 +77,8 @@ def main():
     user = None
     # check for correct number of arguments
     if len(sys.argv) < 2:
-        print("Usage: {} <username>".format(sys.argv[0]))
+        print("no user specifiec, will process all users")
+
     else:
         user = sys.argv[1]
 
