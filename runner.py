@@ -43,7 +43,7 @@ def process_app(app,device,user):
                 # push to pixlet with quiet option'
                 # ./pixlet push $(cat tidbyt_marc.id) solar_manager_ch.webp -t $(cat tidbyt_marc.key) -i solarautarky
                 command = "/pixlet/pixlet push {} {} -b -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
-                print(command)
+                print("pushing {}".format(app['iname']))
                 result = os.system(command)
                 if result!= 0:
                     print("\t\t\tError pushing to device")
