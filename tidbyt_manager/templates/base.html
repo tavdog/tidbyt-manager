@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <nav>
-    <h1 class="w3-sans-serif">Tidbyt Manager</h1> <ul>
+    <h1 class="w3-sans-serif">Tidbyt Manager (Beta)</h1> <ul>
         {% if g.user %}
             <li><a href="{{ url_for('manager.index') }}">Home</a></li>
             {% if g.user['username'] == 'admin' %}<li><a href="{{ url_for('auth.register') }}">Create User</a>{% endif %}
