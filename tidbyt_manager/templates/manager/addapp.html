@@ -11,8 +11,9 @@
   </select><br>
 <label for="uinterval">Render Interval (minutes)</label>
 <input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 60}} " required>
-<!-- <label for="display_time">Display Time (sec) </label>
-<input name="display_time" id="display_time" value="{{ request.form['display_time'] or 10}} " required> -->
+<!-- <label for="display_time">Display Time (sec) </label> -->
+<input type="hidden name="display_time" id="display_time" value="{{ request.form['display_time'] or 10}} " required>
+<label for="notes">Notes</label>
 <textarea name="notes" id="notes">{{ request.form['notes'] }}</textarea>
 
 </form>
