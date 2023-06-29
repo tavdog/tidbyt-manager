@@ -212,7 +212,7 @@ def configapp(id,iname):
     tmp_config_path = "users/{}/configs/{}.tmp".format(g.user['username'],app_basename)
     webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
 
-    # always kill pixlet procs first thing.
+    # always kill the pixlet proc based on port number.
     os.system("pkill -f 5{}".format(app['iname'])) # kill pixlet process 
 
     if request.method == 'POST':
@@ -223,7 +223,7 @@ def configapp(id,iname):
             print("file exists")
             with open(tmp_config_path,'r') as c:
                 new_config = c.read()                
-            flash(new_config)
+            #flash(new_config)
             with open(config_path, 'w') as config_file:
                 config_file.write(new_config)
 
