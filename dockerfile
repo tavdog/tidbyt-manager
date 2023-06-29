@@ -1,10 +1,13 @@
 FROM golang:latest
 #FROM pixletflask:latest
 
+############
+#set the domain env here if you don't want to use localhost. required to get the pixlet serve iframe to work
+#ENV DOMAIN tdm.wildc.net
+
 # ###################################
 # install pixlet
 ENV NODE_URL https://deb.nodesource.com/setup_16.x
-#ENV PIXLET_REPO https://github.com/tidbyt/pixlet.git
 ENV PIXLET_REPO https://github.com/tavdog/pixlet
 ENV TDM_REPO https://github.com/tavdog/tidbyt-manager
 ENV TIDBYT_APPS_REPO https://github.com/tidbyt/community
