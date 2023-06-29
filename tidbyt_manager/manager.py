@@ -104,7 +104,7 @@ def deleteapp(id,iname):
     # use pixlet to delete installation of app if api_key exists (tidbyt server operation) and enabled flag is set to true
     if 'api_key' in g.user["devices"][id] and g.user["devices"][id]["apps"][iname]["enabled"] == "true":
         command = "/pixlet/pixlet delete {} {} -t {}".format(g.user["devices"][id]['api_id'],iname,g.user["devices"][id]['api_key'])
-        print(command)
+        print("Deleting installation id {}".format(iname))
         os.system(command)
 
     # delete the webp file
