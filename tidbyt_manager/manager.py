@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, url_for, send_file
+    Blueprint, flash, g, redirect, render_template, request, url_for, send_file, abort
 )
 from tidbyt_manager import config
 from werkzeug.exceptions import abort
@@ -279,5 +279,5 @@ def appwebp(id,iname):
         return send_file(webp_path, mimetype='image/webp')
     else:
         print("file no exist")
-        return None
+        abort(404)
 
