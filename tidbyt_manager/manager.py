@@ -286,16 +286,26 @@ def appwebp(id,iname):
 def set_repo():
     if request.method == 'POST':
         if 'app_repo_url' in request.form:
-             repo_url = request.form['app_repo_url']
-             print(repo_url)
-             if repo_url != "":
-                 # just get the last two words of the repo
-                 repo_url = repo_url.split("/")[-2:]
-                 repo_url = "/".join(repo_url)
-                 g.user['app_repo_url'] = repo_url
-                 db.save_user(g.user)
-                 flash("Repo Saved")
-                 return redirect(url_for('manager.index'))
+            repo_url = request.form['app_repo_url']
+            print(repo_url)
+            if repo_url != "":
+                # just get the last two words of the repo
+                repo_url = repo_url.split("/")[-2:]
+                repo_url = "/".join(repo_url)
+                g.user['app_repo_url'] = repo_url
+                db.save_user(g.user)
+                # pull the repo and save to local filesystem
+                result = os.system("git clone https://github.com/{} tidbyt_manager/custom-apps".format(repo_url))
+                if result == 0:
+                    flash("Repo Cloned")
+                else:
+                    result = os.system("git -C tidbyt_manager/custom-apps pull")
+                    if result == 0:
+                        flash("Repo Updated")
+                    else:
+                        flash("Error Saving Repo")
+
+                return redirect(url_for('manager.index'))
         flash("Error Saving Repo")
         return redirect(url_for('auth.edit'))
     abort(404)

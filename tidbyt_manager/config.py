@@ -7,4 +7,4 @@ if 'DOMAIN' in os.environ:
 else:
     #domain_host = "tdm.wildc.net"
     domain_host = "localhost"
-    print("Using domain config.py : {}".format(domain_host))
+    print("Using domain from config.py : {}".format(domain_host))
