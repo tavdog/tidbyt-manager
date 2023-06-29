@@ -243,7 +243,7 @@ def configapp(id,iname):
         if len(url_params) > 2:
             flash(url_params)
     # ./pixlet serve --saveconfig "noaa_buoy.config" --host 0.0.0.0 src/apps/noaa_buoy.star 
-    # execute the pixlet serve process and then redirect to it
+    # execute the pixlet serve process and show in it an iframe on the config page.
     app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
     print(app_path)
     if db.file_exists(app_path):
