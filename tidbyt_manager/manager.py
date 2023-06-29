@@ -281,3 +281,21 @@ def appwebp(id,iname):
         print("file no exist")
         abort(404)
 
+@bp.route('/set_repo', methods=('GET','POST'))
+@login_required
+def set_repo():
+    if request.method == 'POST':
+        if 'app_repo_url' in request.form:
+             repo_url = request.form['app_repo_url']
+             print(repo_url)
+             if repo_url != "":
+                 # just get the last two words of the repo
+                 repo_url = repo_url.split("/")[-2:]
+                 repo_url = "/".join(repo_url)
+                 g.user['app_repo_url'] = repo_url
+                 db.save_user(g.user)
+                 flash("Repo Saved")
+                 return redirect(url_for('manager.index'))
+        flash("Error Saving Repo")
+        return redirect(url_for('auth.edit'))
+    abort(404)

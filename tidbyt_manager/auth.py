@@ -69,7 +69,7 @@ def edit():
             return redirect(url_for('index'))
         flash(error)
     
-    return render_template('auth/edit.html')
+    return render_template('auth/edit.html', user=g.user)
 
 @bp.before_app_request
 def load_logged_in_user():

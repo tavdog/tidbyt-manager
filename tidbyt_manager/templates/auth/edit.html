@@ -1,8 +1,15 @@
 {% extends 'base.html' %}
 {% block header %}
-<h1>{% block title %}Edit Password{% endblock %}</h1>
+<h1>{% block title %}Edit Settings{% endblock %}</h1>
 {% endblock %}
-{% block content %} <form method="post">
+{% block content %} <form method="post" action="{{ url_for('manager.set_repo') }}" >
+<label for="app_repo_url">Custom App Repo URL (Github Only!)</label>
+<input name="app_repo_url" id="app_repo_url" required value="{{ user['app_repo_url'] }}">
+<input type="submit" value="Save" class="w3-button w3-green"></input>
+</form>
+
+<h1>Edit Password</h1>
+<form method="post">
 <label for="old_password">Old Password</label>
 <input name="old_password" id="old_password" required>
 <label for="password">New Password</label>
