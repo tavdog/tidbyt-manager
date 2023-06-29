@@ -234,6 +234,11 @@ def configapp(id,iname):
             print("rendering")
             result = os.system("/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path))
             print(result)
+            if g.user["devices"][id]['api_key'] != "":
+                device = g.user["devices"][id]
+                command = "/pixlet/pixlet push {} {} -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
+                print("pushing {}".format(app['iname']))
+                result = os.system(command)
             # give pixlet some time to
             return redirect(url_for('manager.index'))
         
