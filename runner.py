@@ -80,7 +80,7 @@ def main():
     user = None
     # check for correct number of arguments
     if len(sys.argv) < 2:
-        print("no user specifiec, will process all users")
+        print("Processing all users")
 
     else:
         user = sys.argv[1]
