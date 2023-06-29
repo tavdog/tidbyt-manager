@@ -26,7 +26,7 @@ def process_app(app,device,user):
         print("\t\t\tApp not Enabled")
         return
     # check uinterval
-    if now - app['last_render'] > int(app['uinterval']) or force or DEBUG:
+    if now - app['last_render'] > int(app['uinterval'])*60 or force or DEBUG:
         print("\t\t\tRun")
         # build the pixlet render command
         command = "/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path)
@@ -57,7 +57,7 @@ def process_app(app,device,user):
 
 
     else:
-        print("\t\t\tNext update in {} seconds.".format(int(app['uinterval']) - (now - app['last_render'])))
+        print("\t\t\tNext update in {} seconds.".format(int(app['uinterval'])*60 - (now - app['last_render'])))
 
 def process_device(device,user):
     print("\tDevice: %s" % device['name'])

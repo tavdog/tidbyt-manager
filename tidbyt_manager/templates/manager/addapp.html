@@ -9,8 +9,8 @@
       <option value="{{app['name'].replace('.star','')}}">{{app['name'].replace('.star','')}} - {{app['summary']}}</option>
     {% endfor %}
   </select><br>
-<label for="uinterval">Render Interval (sec)</label>
-<input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 300}} " required>
+<label for="uinterval">Render Interval (minutes)</label>
+<input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 60}} " required>
 <!-- <label for="display_time">Display Time (sec) </label>
 <input name="display_time" id="display_time" value="{{ request.form['display_time'] or 10}} " required> -->
 <textarea name="notes" id="notes">{{ request.form['notes'] }}</textarea>
