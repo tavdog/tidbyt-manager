@@ -5,3 +5,4 @@ configs/*
 *.json
 *.log
 *config.py
+tidbyt-apps
