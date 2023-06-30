@@ -4,5 +4,5 @@ configs/*
 *.tmp
 *.json
 *.log
-*config.py
+.env
 tidbyt-apps
