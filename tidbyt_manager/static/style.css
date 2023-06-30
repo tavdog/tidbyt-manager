@@ -19,3 +19,13 @@ nav ul li a, nav ul li span, header .action { display: block; padding: 0.5rem; }
 input[type=submit] { align-self: start; min-width: 10em; }
 enabled { color: #128e23}
 disabled { color: #8e1212}
+
+/* Enhance and Pixelate app image, overlay image with dot matrix */
+.app-img {
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  clip-path: url(#dots);
+  width: 230px !important;
+  height: 115px !important;
+  border-radius: 1rem;
+}
