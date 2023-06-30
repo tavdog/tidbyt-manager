@@ -3,6 +3,7 @@ from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
 import tidbyt_manager.db as db
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -12,7 +13,7 @@ def register():
     # if session['username'] != "admin":
     #     return redirect(url_for('manager.index'))
     if request.method == 'POST':
-        username = request.form['username']
+        username = secure_filename(request.form['username'])
         password = generate_password_hash(request.form['password'])
         #db = get_db()
         error = None
@@ -21,7 +22,7 @@ def register():
         elif not password:
             error = 'Password is required.'
         if error != None and db.get_user(username):
-            error = 'User {} is already registered.'.format(username)    
+            error = 'User is already registered.'   
         if error is None:
             user = dict()
             user["username"] = username

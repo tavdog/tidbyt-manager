@@ -288,24 +288,38 @@ def set_repo():
         if 'app_repo_url' in request.form:
             repo_url = request.form['app_repo_url']
             print(repo_url)
+            user_apps_path = "users/{}/apps".format(g.user['username'])
+            old_repo = ""
+            if 'app_repo_url' in g.user:
+                old_repo = g.user['app_repo_url']
+                
             if repo_url != "":
-                # just get the last two words of the repo
-                repo_url = repo_url.split("/")[-2:]
-                repo_url = "/".join(repo_url)
-                g.user['app_repo_url'] = repo_url
-                db.save_user(g.user)
-                # pull the repo and save to local filesystem
-                result = os.system("git clone https://github.com/{} tidbyt_manager/custom-apps".format(repo_url))
-                if result == 0:
+                if old_repo != repo_url:
+                    # just get the last two words of the repo
+                    repo_url = repo_url.split("/")[-2:]
+                    repo_url = "/".join(repo_url)
+                    g.user['app_repo_url'] = repo_url
+                    db.save_user(g.user)
+
+                    print(user_apps_path)
+                    if db.file_exists(user_apps_path):
+                        # delete the folder and re-clone.
+                        os.system("rm -rf {}".format(user_apps_path))                        
+                    # pull the repo and save to local filesystem.
+                    result = os.system("git clone https://github.com/{} {}".format(repo_url,user_apps_path))
                     flash("Repo Cloned")
                 else:
-                    result = os.system("git -C tidbyt_manager/custom-apps pull")
+                    # same as before so just issue a pull to update it.
+                    result = os.system("git -C {} pull".format(user_apps_path))
                     if result == 0:
                         flash("Repo Updated")
-                    else:
-                        flash("Error Saving Repo")
-
+                # run the generate app list for custom repo
+                db.generate_apps_list()
                 return redirect(url_for('manager.index'))
-        flash("Error Saving Repo")
+            
+            else:
+                flash("No Changes to Repo")
+ 
+            flash("Error Saving Repo")
         return redirect(url_for('auth.edit'))
     abort(404)

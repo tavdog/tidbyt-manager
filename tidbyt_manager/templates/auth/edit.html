@@ -3,7 +3,7 @@
 <h1>{% block title %}Edit Settings{% endblock %}</h1>
 {% endblock %}
 {% block content %} <form method="post" action="{{ url_for('manager.set_repo') }}" >
-<label for="app_repo_url">Custom App Repo URL (Github Only!)</label>
+<label for="app_repo_url">Custom App Repo URL (Public Github Only!)</label>
 <input name="app_repo_url" id="app_repo_url" required value="{{ user['app_repo_url'] }}">
 <input type="submit" value="Save" class="w3-button w3-green"></input>
 </form>

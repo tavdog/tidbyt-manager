@@ -1,5 +1,6 @@
 import os,json
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 user_path = "users/{}/{}.json"
 def user_exists(username):
     try:
@@ -53,6 +54,7 @@ def save_user(user):
             return False
 def create_user_dir(user):
     dir = sanitize(user)
+    dir = secure_filename(dir)
     # test for directory named dir and if not exist creat it
     user_dir = "users/{}".format(user)
     if not os.path.exists(user_dir):
@@ -75,3 +77,8 @@ def sanitize(str):
     str = str.replace("/","")
     str = str.replace("\\","")
     return str
+
+# basically just call gen_apps_array.py script
+def generate_apps_list():
+    os.system("python3 gen_app_array.py")
+    print("generated apps list")
