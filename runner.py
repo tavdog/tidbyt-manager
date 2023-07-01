@@ -14,8 +14,11 @@ def process_app(app,device,user):
     app_basename = "{}-{}".format(app['name'],app["iname"])
     config_path = "users/{}/configs/{}.json".format(user['username'],app_basename)
     webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
-    app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
-
+    if 'path' in app:
+        app_path = app['path']
+    else:
+        app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
+        
     now = int(time.time())
     print("\t\tApp: {} - {}".format(app['iname'],app['name']))
     if 'last_render' not in app:

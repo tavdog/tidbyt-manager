@@ -325,7 +325,6 @@ def set_repo():
                     if result == 0:
                         flash("Repo Updated")
                 # run the generate app list for custom repo
-                db.generate_apps_list()
                 return redirect(url_for('manager.index'))
             
             else:
