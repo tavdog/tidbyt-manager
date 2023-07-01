@@ -10,7 +10,7 @@ else:
 
 # check for existence of apps_path dir
 if not os.path.exists(apps_path):
-    print("apps_path directory not found")
+    print("{} directory not found".format(apps_path))
     exit()
 
 # run a command to generate a txt file withh all the .star file in the apps_path directory

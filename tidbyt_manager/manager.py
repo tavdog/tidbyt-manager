@@ -120,8 +120,15 @@ def deleteapp(id,iname):
 @bp.route('/<string:id>/addapp', methods=('GET','POST'))
 @login_required
 def addapp(id):
-    if request.method == 'POST':
+    if request.method == 'GET':
+        # build the list of apps.
+        custom_apps_list = db.get_custom_apps_list(g.user['username'])
+        custom_apps_list += db.get_apps_list()
+        return render_template('manager/addapp.html', apps_list=custom_apps_list)
+
+    elif request.method == 'POST':
         name = request.form['name']
+        app_details = db.get_app_details(g.user['username'],name)
         uinterval = request.form['uinterval']
         display_time = request.form['display_time']
         notes = request.form['notes']
@@ -147,6 +154,9 @@ def addapp(id):
             app["enabled"] = "true"
             app["last_render"] = 0
             app["last_push"] = 0
+            if "path" in app_details:
+                app['path'] = app_details['path'] # this indicates a custom app
+
             user = g.user
             if "apps" not in user["devices"][id]:
                 user["devices"][id]["apps"] = {}
@@ -155,11 +165,9 @@ def addapp(id):
             db.save_user(user)
 
             return redirect(url_for('manager.configapp', id=id,iname=iname))
-        
     else:
-        # build the list of apps. 
-        apps_list = db.get_apps_list()
-        return render_template('manager/addapp.html', apps_list=apps_list)    
+        abort(404)
+            
 
 @bp.route('/<string:id>/<string:iname>/updateapp', methods=('GET','POST'))
 @login_required
@@ -207,7 +215,11 @@ def configapp(id,iname):
     import subprocess, time
     app = g.user["devices"][id]['apps'][iname]
     app_basename = "{}-{}".format(app['name'],app["iname"])
-    app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
+    app_details = db.get_app_details(g.user['username'],app['name'])
+    if 'path' in app_details:
+        app_path = app_details['path']
+    else:
+        app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
     config_path = "users/{}/configs/{}.json".format(g.user['username'],app_basename)
     tmp_config_path = "users/{}/configs/{}.tmp".format(g.user['username'],app_basename)
     webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
@@ -255,7 +267,6 @@ def configapp(id,iname):
             flash(url_params)
     # ./pixlet serve --saveconfig "noaa_buoy.config" --host 0.0.0.0 src/apps/noaa_buoy.star 
     # execute the pixlet serve process and show in it an iframe on the config page.
-    app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
     print(app_path)
     if db.file_exists(app_path):
         subprocess.Popen(["/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port=5{}'.format(app['iname'])], shell=False)

@@ -66,10 +66,48 @@ def create_user_dir(user):
 
 def get_apps_list():
     
-    # open json file and conver to dictionary
+    # open json file and convert to dictionary
     with open("tidbyt-apps/apps.json",'r') as f:
         return json.load(f)
-        
+
+def get_custom_apps_list(user):
+    app_list = list()
+    # test for directory named dir and if not exist creat it
+    dir = "users/{}/apps".format(user)
+    if os.path.exists(dir):
+        os.system("find {} -name *.star > {}/apps.txt".format(dir,dir))
+        with open(dir+"/apps.txt",'r') as f:
+            apps_paths = f.read().splitlines()
+            for app in apps_paths:
+                app_dict = dict()
+                app_dict['path'] = app
+                app = app.replace(dir+"/","")
+                app = app.replace("\n","")
+                app = app.replace('.star','')
+                app_dict['name'] = app.split('/')[-1]
+                app_dict['summary'] = "Custom App"
+                app_list.append(app_dict)
+            return app_list
+    else:
+        return []
+    
+def get_app_details(user,name):
+    # first look for the app name in the custom apps
+    custom_apps = get_custom_apps_list(user)
+    print(user,name)
+    for app in custom_apps:
+        print(app)
+        if app['name'] == name:
+            # we found it
+            return app
+    # if we get here then the app is not in custom apps
+    # so we need to look in the tidbyt-apps directory
+    apps = get_apps_list()
+    for app in apps:
+        if app['name'] == name:
+            return app
+    return {}
+
 def sanitize(str):
     str = str.replace(" ","")
     str = str.replace("-","")
