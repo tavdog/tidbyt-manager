@@ -14,6 +14,7 @@ def process_app(app,device,user):
     app_basename = "{}-{}".format(app['name'],app["iname"])
     config_path = "users/{}/configs/{}.json".format(user['username'],app_basename)
     webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
+    print("\t\tApp: {} - {}".format(app['iname'],app['name']))
     if 'path' in app:
         app_path = app['path']
     else:
@@ -21,11 +22,11 @@ def process_app(app,device,user):
     # ensure app exists at app_path
     if not os.path.exists(app_path):
         # this should not happen but it probably will
-        print("App path {} does not exist".format(app_path))
+        print("\t\t\tApp path {} does not exist".format(app_path))
         return
         
     now = int(time.time())
-    print("\t\tApp: {} - {}".format(app['iname'],app['name']))
+    
     if 'last_render' not in app:
         app['last_render'] = 0
     print("\t\t\tlast render: {}".format(app['last_render']))
@@ -46,14 +47,24 @@ def process_app(app,device,user):
             # update the config file with the new last render time
             print("\t\t\tupdate last render")
             app['last_render'] = int(time.time())
-            
+            result = 0
             if len(device['api_key']) > 1:
-                # push to pixlet with quiet option'
-                # ./pixlet push $(cat tidbyt_marc.id) solar_manager_ch.webp -t $(cat tidbyt_marc.key) -i solarautarky
-                command = "/pixlet/pixlet push {} {} -b -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
-                print("pushing {}".format(app['iname']))
-                result = os.system(command)
-                if result!= 0:
+                # if webp filesize is zero then issue delete command instead of push
+                if os.path.getsize(webp_path) == 0:
+                    print("app.get results in : "+ str(app.get('deleted')))
+                    if not app.get('deleted'):
+                        command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
+                        print("\t\t\t\tWebp filesize is zero. Deleting installation id {}".format(app['iname']))
+                        result = os.system(command)
+                        app['deleted'] = True
+                    else:
+                        print("\t\t\t\tPreviously deleted, doing nothing")
+                else:
+                    command = "/pixlet/pixlet push {} {} -b -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
+                    print("pushing {}".format(app['iname']))
+                    result = os.system(command)
+                    app['deleted'] = False
+                if result != 0:
                     print("\t\t\tError pushing to device")
                 else:
                     # update the config file with the new last push time
@@ -76,6 +87,7 @@ def process_device(device,user):
         print("\t\tno apps here")
    
 def save_json(data, filename):
+    print("saving {}".format(json.dumps(data)))
     with open(filename, "w") as f:
         json.dump(data, f, indent=4)
 
