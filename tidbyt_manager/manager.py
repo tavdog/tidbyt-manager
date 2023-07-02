@@ -122,8 +122,8 @@ def deleteapp(id,iname):
 def addapp(id):
     if request.method == 'GET':
         # build the list of apps.
-        custom_apps_list = db.get_custom_apps_list(g.user['username'])
-        apps_list = db.get_apps_list()
+        custom_apps_list = db.get_apps_list(g.user['username'])
+        apps_list = db.get_apps_list("system")
         return render_template('manager/addapp.html', apps_list=apps_list, custom_apps_list=custom_apps_list)
 
     elif request.method == 'POST':
