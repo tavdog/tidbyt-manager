@@ -3,20 +3,24 @@
 <h1>{% block title %}Add App{% endblock %}</h1>
 {% endblock %}
 {% block content %} <form method="post" id="main_form">
-<label for="name">App Selection (System Repo)</label>
-<select id=name name="name">
+  <label for="name">App Selection (Custom Repo)</label>
+  <br>
+  <select id=name name="name">
+  {% if custom_apps_list %}
+    <optgroup label="Custom Apps"></optgroup>
+    {% for app in custom_apps_list %}
+    <option value="{{app['name'].replace('.star','')}}">{{app['name'].replace('.star','')}} - {{app['summary']}}</option>
+    {% endfor %}
+    </optgroup>
+    <hr>
+  {% endif %}
+  <optgroup label="System Apps"></optgroup>
     {% for app in apps_list %}
       <option value="{{app['name'].replace('.star','')}}">{{app['name'].replace('.star','')}} - {{app['summary']}}</option>
     {% endfor %}
+  </optgroup>
   </select>
-  {% if custom_apps_list %}
-  <label for="name">App Selection (Custom Repo)</label>
-<select id=name name="name">
-    {% for app in custom_apps_list %}
-      <option value="{{app['name'].replace('.star','')}}">{{app['name'].replace('.star','')}} - {{app['summary']}}</option>
-    {% endfor %}
-  </select>
-  {% endif %}<br>
+
 <label for="uinterval">Render Interval (minutes)</label>
 <input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 60}} " required>
 <!-- <label for="display_time">Display Time (sec) </label> -->
