@@ -11,12 +11,13 @@ if not os.path.exists(apps_path):
 
 # run a command to generate a txt file withh all the .star file in the apps_path directory
 command = [ "find", apps_path, "-name", "*.star" ]
-output = subprocess.check_output(command).decode("utf-8")
+output = subprocess.check_output(command, text=True)
 print("got find output of {}".format(output))
 
 # pull in the apps.txt list
 apps_array = []
 apps = output.split('\n')
+apps.sort()
 for app in apps:
     print(app)
     try:
