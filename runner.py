@@ -18,6 +18,11 @@ def process_app(app,device,user):
         app_path = app['path']
     else:
         app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
+    # ensure app exists at app_path
+    if not os.path.exists(app_path):
+        # this should not happen but it probably will
+        print("App path {} does not exist".format(app_path))
+        return
         
     now = int(time.time())
     print("\t\tApp: {} - {}".format(app['iname'],app['name']))

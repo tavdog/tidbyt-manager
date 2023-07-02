@@ -5,6 +5,8 @@
 {% block content %} <form method="post" action="{{ url_for('manager.set_repo') }}" >
 <label for="app_repo_url">Custom App Repo URL (Public Github Only!)</label>
 <input name="app_repo_url" id="app_repo_url" required value="{{ user['app_repo_url'] }}">
+Replacing an existing custom repo will delete the previous repo and break any apps using that repo.
+
 <input type="submit" value="Save" class="w3-button w3-green"></input>
 </form>
 
