@@ -18,7 +18,8 @@ def process_app(app,device,user):
     if 'path' in app:
         app_path = app['path']
     else:
-        app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
+        print("\t\t\tNo path for {}".format(app['name']))
+        return
     # ensure app exists at app_path
     if not os.path.exists(app_path):
         # this should not happen but it probably will
