@@ -33,6 +33,13 @@ for app in apps:
             if "secret.star" in app_str:
                 print("skipping {} (uses secret.star)".format(app))
                 continue
+            if "summary:" in app_str:
+                # loop though lines and pick out the summary line
+                for line in app_str.split('\n'):
+                        if "summary:" in line:
+                            app_dict['summary'] = line.split(': ')[1]
+
+
         
         app_base_path = ("/").join(app_path.split('/')[0:-1])
         yaml_path = "{}/manifest.yaml".format(app_base_path)
