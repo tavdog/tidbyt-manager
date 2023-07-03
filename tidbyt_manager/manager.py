@@ -292,9 +292,9 @@ def appwebp(id,iname):
         print("file no exist")
         abort(404)
 
-@bp.route('/set_repo', methods=('GET','POST'))
+@bp.route('/set_user_repo', methods=('GET','POST'))
 @login_required
-def set_repo():
+def set_user_repo():
     if request.method == 'POST':
         if 'app_repo_url' in request.form:
             repo_url = request.form['app_repo_url']
@@ -316,8 +316,8 @@ def set_repo():
                     if db.file_exists(user_apps_path):
                         # delete the folder and re-clone.
                         os.system("rm -rf {}".format(user_apps_path))                        
-                    # pull the repo and save to local filesystem.
-                    result = os.system("git clone https://github.com/{} {}".format(repo_url,user_apps_path))
+                    # pull the repo and save to local filesystem. use blah:blah as username password so requests for unknown or private repos fail imeediately
+                    result = os.system("git clone https://blah:blah@github.com/{} {}".format(repo_url,user_apps_path))
                     flash("Repo Cloned")
                 else:
                     # same as before so just issue a pull to update it.
@@ -325,6 +325,55 @@ def set_repo():
                     if result == 0:
                         flash("Repo Updated")
                 # run the generate app list for custom repo
+                return redirect(url_for('manager.index'))
+            
+            else:
+                flash("No Changes to Repo")
+ 
+            flash("Error Saving Repo")
+        return redirect(url_for('auth.edit'))
+    abort(404)
+
+@bp.route('/set_system_repo', methods=('GET','POST'))
+@login_required
+def set_system_repo():
+    if request.method == 'POST':
+        if g.user['username'] != "admin":
+            abort(404)
+        if 'app_repo_url' in request.form:
+            repo_url = request.form['app_repo_url']
+            print(repo_url)
+            system_apps_path = "tidbyt-apps"
+            old_repo = ""
+            if 'system_repo_url' in g.user:
+                old_repo = g.user['system_repo_url']
+                
+            if repo_url != "":
+                if old_repo != repo_url:
+                    # just get the last two words of the repo
+                    repo_url = repo_url.split("/")[-2:]
+                    repo_url = "/".join(repo_url)
+                    g.user['system_repo_url'] = repo_url
+                    db.save_user(g.user)
+
+                    print(system_apps_path)
+                    if db.file_exists(system_apps_path):
+                        # delete the folder and re-clone.
+                        print("deleting tidbyt-apps")
+                        os.system("rm -rf {}".format(system_apps_path))                        
+                    # pull the repo and save to local filesystem.
+                    result = os.system("git clone https://blah:blah@github.com/{} {}".format(repo_url,system_apps_path))
+                    if result != 0:
+                        flash("Error Cloning Repo")
+                    else:
+                        flash("Repo Cloned")
+                else:
+                    # same as before so just issue a pull to update it.
+                    result = os.system("git -C {} pull".format(system_apps_path))
+                    if result == 0:
+                        flash("Repo Updated")
+                # run the generate app list for custom repo
+                os.system("python3 gen_app_array.py")
                 return redirect(url_for('manager.index'))
             
             else:

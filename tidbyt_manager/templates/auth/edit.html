@@ -2,7 +2,16 @@
 {% block header %}
 <h1>{% block title %}Edit Settings{% endblock %}</h1>
 {% endblock %}
-{% block content %} <form method="post" action="{{ url_for('manager.set_repo') }}" >
+{% block content %} 
+{% if g.user['username'] == "admin" %}
+<form method="post" action="{{ url_for('manager.set_system_repo') }}">
+    <label for="app_repo_url">System App Repo URL (Public Github Only!)</label>
+    <input name="app_repo_url" id="app_repo_url" required value="{{ user['system_repo_url'] }}">
+    Replacing the existing system repo will delete the previous repo and break any apps using that repo.
+    <input type="submit" value="Save" class="w3-button w3-green"></input>
+</form>
+{% endif %}
+<form method="post" action="{{ url_for('manager.set_user_repo') }}" >
 <label for="app_repo_url">Custom App Repo URL (Public Github Only!)</label>
 <input name="app_repo_url" id="app_repo_url" required value="{{ user['app_repo_url'] }}">
 Replacing an existing custom repo will delete the previous repo and break any apps using that repo.

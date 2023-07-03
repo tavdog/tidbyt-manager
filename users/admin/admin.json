@@ -19,5 +19,7 @@
                 }
             }
         }
-    }
+    },
+    "system_repo_url": "tavdog/tidbyt-apps",
+    "app_repo_url": "tavdog/windytronstarlark"
 }
