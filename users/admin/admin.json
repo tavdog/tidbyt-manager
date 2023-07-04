@@ -5,7 +5,7 @@
         "92983e11-b0c1-4645-8606-70ae5a4c12a5": {
             "id": "92983e11-b0c1-4645-8606-70ae5a4c12a5",
             "name": "Dabyt",
-            "api_id": "CHANGE-ME",
+            "api_id": "mqtt://gt.wildc.net:1884/maui/wind",
             "api_key": "",
             "notes": "",
             "apps": {

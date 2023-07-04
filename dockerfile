@@ -13,7 +13,7 @@ ENV TDM_REPO https://github.com/tavdog/tidbyt-manager
 ENV TIDBYT_APPS_REPO https://github.com/tidbyt/community
 
 RUN apt update && apt upgrade -y && apt install cron libwebp-dev python3-pip python3-flask python3-gunicorn -y
-RUN pip3 install python-dotenv
+RUN pip3 install python-dotenv paho-mqtt
 
 WORKDIR /tmp
 RUN curl -fsSL $NODE_URL | bash - && apt-get install -y nodejs npm && node -v
