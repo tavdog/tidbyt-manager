@@ -225,7 +225,7 @@ def configapp(id,iname):
     webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
 
     # always kill the pixlet proc based on port number.
-    os.system("pkill -f 5{}".format(app['iname'])) # kill pixlet process 
+    os.system("pkill -f 5{}".format(app['iname'])) # kill pixlet process
 
     if request.method == 'POST':
 
@@ -248,11 +248,17 @@ def configapp(id,iname):
             print(result)
             if g.user["devices"][id]['api_key'] != "":
                 device = g.user["devices"][id]
-                command = "/pixlet/pixlet push {} {} -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
-                print("pushing {}".format(app['iname']))
-                result = os.system(command)
-            # give pixlet some time to
-            return redirect(url_for('manager.index'))
+                # check for zero filesize
+                if os.path.getsize(webp_path) > 0:
+                    command = "/pixlet/pixlet push {} {} -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
+                    print("pushing {}".format(app['iname']))
+                    result = os.system(command)
+                else:
+                    # delete installation may error if the instlalation doesn't exist but that's ok.
+                    command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
+                    print("blank output, deleting {}".format(app['iname']))
+                    result = os.system(command)
+        return redirect(url_for('manager.index'))
         
 
     url_params = ""
