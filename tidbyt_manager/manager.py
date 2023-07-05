@@ -124,7 +124,7 @@ def addapp(id):
         # build the list of apps.
         custom_apps_list = db.get_apps_list(g.user['username'])
         apps_list = db.get_apps_list("system")
-        return render_template('manager/addapp.html', apps_list=apps_list, custom_apps_list=custom_apps_list)
+        return render_template('manager/addapp.html', device=g.user["devices"][id], apps_list=apps_list, custom_apps_list=custom_apps_list)
 
     elif request.method == 'POST':
         name = request.form['name']
