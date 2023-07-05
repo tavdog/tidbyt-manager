@@ -14,7 +14,8 @@
                     "name": "analog_clock",
                     "uinterval": "300 ",
                     "notes": "",
-                    "enabled": "true"
+                    "enabled": "true",
+                    "last_render": 1688598001
                 }
             }
         }

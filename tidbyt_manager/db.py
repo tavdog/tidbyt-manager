@@ -112,6 +112,7 @@ def get_apps_list(user):
             app_list.append(app_dict)
         return app_list
     else:
+        print("no apps list found for {}".format(user))
         return []
     
 def get_app_details(user,name):
