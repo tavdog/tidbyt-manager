@@ -98,7 +98,7 @@ while True:
     if app.get('enabled') == "true":
         dprint("pushing {}".format(app_basename))
         if mqtt_send(mqtt_client,topic,webp_path):
-            time.sleep(delay)
+            time.sleep(int(delay))
         else:
             print("Mqtt Error. Ensure you have publish permissions")
             time.sleep(10) # so we don't spam the mqtt server on errors
