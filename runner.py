@@ -52,8 +52,7 @@ def process_app(app,device,user):
             if len(device['api_key']) > 1:
                 # if webp filesize is zero then issue delete command instead of push
                 if os.path.getsize(webp_path) == 0:
-                    print("app.get results in : "+ str(app.get('deleted')))
-                    if not app.get('deleted'):
+                    if not app.get('deleted'): # if we haven't already deleted this app installation delete it
                         command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
                         print("\t\t\t\tWebp filesize is zero. Deleting installation id {}".format(app['iname']))
                         result = os.system(command)
@@ -73,8 +72,7 @@ def process_app(app,device,user):
                     app['last_push'] = int(time.time())
             else:
                 # api_key is short meaning we probably need to push via mqtt
-                print("\t\t\tnon api push not implemented yet")
-
+                print("\t\t\tmqtt push is handled by device_runner.py")
 
     else:
         print("\t\t\tNext update in {} seconds.".format(int(app['uinterval'])*60 - (now - app['last_render'])))
