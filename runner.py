@@ -94,7 +94,7 @@ def save_json(data, filename):
         json.dump(data, f, indent=4)
 
 def main():
-
+    print("_______________________________________________________________________________")
     # set the current time variable
     now = time.time()
     global force
