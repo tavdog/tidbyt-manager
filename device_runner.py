@@ -49,8 +49,12 @@ def mqtt_send(client,topic,webp_path):
         info.wait_for_publish()
         if info.is_published():
             print("Published webp to topic: " + topic )
+            return True
+        else:
+            return False
     else:
         print("file {} does not exist".format(f))
+        return False
 
 if len(sys.argv) < 3:
     print("Usage: python3 %s <user> <device_id>" % sys.argv[0])
