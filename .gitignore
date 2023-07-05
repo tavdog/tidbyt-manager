@@ -1,8 +1,8 @@
-*.webp
-configs/*
+**/*.webp
+configs/**
 *.pyc
 *.tmp
-*.json
-*.log
+**/*.json
+**/*.log
 .env
-tidbyt-apps
+tidbyt-apps/**

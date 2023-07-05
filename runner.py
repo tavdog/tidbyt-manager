@@ -9,6 +9,9 @@ import datetime
 import time
 
 DEBUG=False
+def dprint(*args, **kwargs):
+    if DEBUG: print(*args, **kwargs)
+
 def process_app(app,device,user):
     global force,DEBUG
     app_basename = "{}-{}".format(app['name'],app["iname"])
@@ -86,7 +89,7 @@ def process_device(device,user):
         print("\t\tno apps here")
    
 def save_json(data, filename):
-    print("saving {}".format(json.dumps(data)))
+    dprint("saving {}".format(json.dumps(data)))
     with open(filename, "w") as f:
         json.dump(data, f, indent=4)
 
