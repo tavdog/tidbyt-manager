@@ -6,3 +6,4 @@ configs/**
 **/*.log
 .env
 tidbyt-apps/**
+users/admin/admin.json

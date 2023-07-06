@@ -14,8 +14,32 @@ bp = Blueprint('manager', __name__)
 @login_required
 def index():
 
-    os.system("pkill -f pixlet") # kill any pixlet processes
+    os.system("pkill -f serve") # kill any pixlet serve processes
 
+    devices = dict()
+    if "devices" in g.user:
+        devices = g.user["devices"].values()
+    return render_template('manager/index.html', devices=devices)
+
+
+@bp.route('/adminindex')
+@login_required
+def adminindex():
+    if g.user['username'] != 'admin': abort(404)
+    userlist = list()
+    # go through the users folder and build a list of all users
+    users = os.listdir("users")
+    # read in the user.config file
+    for username in users:
+        user = db.get_user(username)
+        if user: userlist.append(user)
+
+    return render_template('manager/adminindex.html', users = userlist)
+
+@bp.route('/admin/<string:username>/delete', methods=('POST','GET'))
+@login_required
+def deleteuser(username):
+    
     devices = dict()
     if "devices" in g.user:
         devices = g.user["devices"].values()
