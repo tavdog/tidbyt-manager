@@ -124,16 +124,17 @@ def main():
     for user in user_list:    
         print("User : {}".format(user))
         config_file = os.path.join("users", user, "%s.json" % user)
+        print(config_file)
         if not os.path.exists(config_file):
             print("No config")
-            next
+            continue
         # decode json from the file load dict object from json file
         with open(config_file, "r") as f:
             try:
                 user = json.load(f)
             except:
                 print("bad json")
-                next
+                continue
         if 'devices' in user:
             for device in user['devices'].values():
                 process_device(device,user)
