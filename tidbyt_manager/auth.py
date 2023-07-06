@@ -4,18 +4,19 @@ from flask import (
 )
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
+import time
 import tidbyt_manager.db as db
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
+    time.sleep(2)
     # # only allow admin to register new users
     # if session['username'] != "admin":
     #     return redirect(url_for('manager.index'))
     if request.method == 'POST':
         username = secure_filename(request.form['username'])
         password = generate_password_hash(request.form['password'])
-        #db = get_db()
         error = None
         if not username:
             error = 'Username is required.'
@@ -36,6 +37,7 @@ def register():
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
     if request.method == 'POST':
+        time.sleep(2) # slow down brute force attacks
         username = request.form['username']
         password = request.form['password']
         #db = get_db()
