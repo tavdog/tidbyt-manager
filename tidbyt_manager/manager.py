@@ -47,8 +47,20 @@ def uploadapp():
                 flash("Save Failed")
                 return redirect(url_for('manager.uploadapp'))
     
-    return render_template('manager/uploadapp.html')
+    # get the list of star file in the user_apps_path
+    star_files = list()
+    for file in os.listdir(user_apps_path):
+        if file.endswith(".star"):
+            star_files.append(file)
+   
+    return render_template('manager/uploadapp.html', files=star_files)
 
+# function to delete an uploaded star file
+@bp.route('/deleteupload/<string:filename>', methods=('POST','GET'))
+@login_required
+def deleteupload(filename):
+    db.delete_user_upload(g.user,filename)
+    return redirect(url_for('manager.uploadapp'))
 
 @bp.route('/adminindex')
 @login_required
@@ -327,7 +339,7 @@ def configapp(id,iname):
     # execute the pixlet serve process and show in it an iframe on the config page.
     print(app_path)
     if db.file_exists(app_path):
-        subprocess.Popen(["/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port=5{}'.format(app['iname'])], shell=False)
+        subprocess.Popen(["timeout", "-k", "300", "300", "/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port=5{}'.format(app['iname'])], shell=False)
 
         # give pixlet some time to start up 
         time.sleep(2)

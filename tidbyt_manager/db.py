@@ -159,3 +159,13 @@ def save_user_app(file,path):
         return True
     else:
         return False
+    
+def delete_user_upload(user,filename):
+    path = "users/{}/apps/".format(user['username'])
+    try:
+        filename = secure_filename(filename)
+        os.remove(os.path.join(path,filename))
+        return True      
+    except:
+        print("couldn't delete file")
+        return False
