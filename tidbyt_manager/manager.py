@@ -47,6 +47,10 @@ def uploadapp():
                 flash("Save Failed")
                 return redirect(url_for('manager.uploadapp'))
     
+    # check for existance of apps path
+    if not os.path.isdir(user_apps_path):
+        os.mkdir(user_apps_path)
+
     # get the list of star file in the user_apps_path
     star_files = list()
     for file in os.listdir(user_apps_path):

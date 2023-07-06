@@ -60,6 +60,8 @@ def create_user_dir(user):
     if not os.path.exists(user_dir):
         os.makedirs(user_dir)
         os.makedirs(user_dir+"/configs")
+        os.makedirs(user_dir+"/apps")
+
         return True
     else:
         return False
