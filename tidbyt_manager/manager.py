@@ -21,6 +21,34 @@ def index():
         devices = g.user["devices"].values()
     return render_template('manager/index.html', devices=devices)
 
+# new function to handle uploading a an app
+@bp.route('/uploadapp', methods=('GET', 'POST'))
+@login_required
+def uploadapp():
+    user_apps_path = "users/{}/apps".format(g.user['username'])
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect('manager.uploadapp')
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file:
+            if file.filename == '':
+                flash('No file')
+                return redirect('manager.uploadapp')
+
+            # save the file to the user's
+            if db.save_user_app(file,user_apps_path):
+                flash("Upload Successful")
+                return redirect(url_for('manager.index'))
+            else:
+                flash("Save Failed")
+                return redirect(url_for('manager.uploadapp'))
+    
+    return render_template('manager/uploadapp.html')
+
 
 @bp.route('/adminindex')
 @login_required

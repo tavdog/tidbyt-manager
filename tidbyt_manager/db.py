@@ -144,3 +144,18 @@ def sanitize(str):
 def generate_apps_list():
     os.system("python3 gen_app_array.py")
     print("generated apps list")
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ['star']
+
+def save_user_app(file,path):
+    filename = sanitize(file.filename)
+    filename = secure_filename(filename)
+    
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(path, filename))
+        return True
+    else:
+        return False

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block header %}
+<h1>{% block title %}Upload App (.star files only){% endblock %}</h1>
+{% endblock %}
+{% block content %} 
+{% if g.user['username'] == "admin" %}
+{% endif %}
+<form method=post enctype=multipart/form-data>
+    <input type=file name=file>
+    <input type=submit value=Upload>
+</form>
+
+{% endblock %}
