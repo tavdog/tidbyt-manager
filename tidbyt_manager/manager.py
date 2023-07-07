@@ -219,7 +219,7 @@ def addapp(id):
             app["uinterval"] = uinterval
             app["display_time"] = display_time
             app["notes"] = notes
-            app["enabled"] = "true"
+            app["enabled"] = "false" # start out false, only set to true after configure is finshed
             app["last_render"] = 0
             app["last_push"] = 0
             if "path" in app_details:
@@ -312,46 +312,62 @@ def configapp(id,iname):
 
             # run pixlet render with the new config file
             print("rendering")
-            result = os.system("/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path))
-            print(result)
-            if g.user["devices"][id]['api_key'] != "":
-                device = g.user["devices"][id]
-                # check for zero filesize
-                if os.path.getsize(webp_path) > 0:
-                    command = "/pixlet/pixlet push {} {} -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
-                    print("pushing {}".format(app['iname']))
-                    result = os.system(command)
-                else:
-                    # delete installation may error if the instlalation doesn't exist but that's ok.
-                    command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
-                    print("blank output, deleting {}".format(app['iname']))
-                    result = os.system(command)
+            render_result = os.system("/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path))
+            if render_result == 0: # success
+                # set the enabled key in app to true now that it has been configured.
+                g.user["devices"][id]["apps"][iname]['enabled'] = "true"
+                # set last_rendered to seconds
+                g.user["devices"][id]["apps"][iname]['last_rendered'] = int(time.time())
+           
+                if g.user["devices"][id]['api_key'] != "":
+                    device = g.user["devices"][id]
+                    # check for zero filesize
+                    if os.path.getsize(webp_path) > 0:
+                        command = "/pixlet/pixlet push {} {} -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
+                        print("pushing {}".format(app['iname']))
+                        result = os.system(command)
+                    else:
+                        # delete installation may error if the instlalation doesn't exist but that's ok.
+                        command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
+                        print("blank output, deleting {}".format(app['iname']))
+                        result = os.system(command)
+                    if result == 0:
+                        # set last_pushed to seconds
+                        g.user["devices"][id]["apps"][iname]['last_pushed'] = int(time.time())
+                    else:
+                        flash("Error Pushing App")
+
+                # if we get here we have made changes to the user dict, let's save        
+                db.save_user(g.user)
+            else:
+                flash("Error Rendering App")
+            
         return redirect(url_for('manager.index'))
         
+    elif request.method == 'GET':
+        url_params = ""
+        if db.file_exists(config_path):
+            import urllib.parse,json
+            with open(config_path,'r') as c:
+                config_dict = json.load(c)
+            
+            url_params = urllib.parse.urlencode(config_dict)
+            print(url_params)
+            if len(url_params) > 2:
+                flash(url_params)
+        # ./pixlet serve --saveconfig "noaa_buoy.config" --host 0.0.0.0 src/apps/noaa_buoy.star 
+        # execute the pixlet serve process and show in it an iframe on the config page.
+        print(app_path)
+        if db.file_exists(app_path):
+            subprocess.Popen(["timeout", "-k", "300", "300", "/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port=5{}'.format(app['iname'])], shell=False)
 
-    url_params = ""
-    if db.file_exists(config_path):
-        import urllib.parse,json
-        with open(config_path,'r') as c:
-            config_dict = json.load(c)
-        
-        url_params = urllib.parse.urlencode(config_dict)
-        print(url_params)
-        if len(url_params) > 2:
-            flash(url_params)
-    # ./pixlet serve --saveconfig "noaa_buoy.config" --host 0.0.0.0 src/apps/noaa_buoy.star 
-    # execute the pixlet serve process and show in it an iframe on the config page.
-    print(app_path)
-    if db.file_exists(app_path):
-        subprocess.Popen(["timeout", "-k", "300", "300", "/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port=5{}'.format(app['iname'])], shell=False)
+            # give pixlet some time to start up 
+            time.sleep(2)
+            return render_template('manager/configapp.html', app=app, domain_host=config.domain_host, url_params=url_params, device_id=id)
 
-        # give pixlet some time to start up 
-        time.sleep(2)
-        return render_template('manager/configapp.html', app=app, domain_host=config.domain_host, url_params=url_params)
-
-    else:
-        flash("App Not Found")
-        return redirect(url_for('manager.index'))
+        else:
+            flash("App Not Found")
+            return redirect(url_for('manager.index'))
 
 @bp.route('/<string:id>/<string:iname>/appwebp')
 @login_required

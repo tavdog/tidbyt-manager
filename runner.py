@@ -29,7 +29,7 @@ def process_app(app,device,user):
         print("\t\t\tApp path {} does not exist".format(app_path))
         return
     if not os.path.exists(config_path):
-        print("\t\t\tConfig file {} does not exist yet. App is probably still getting configured".format(app_path))
+        print("\t\t\tConfig file {} does not exist yet. App is probably still getting configured".format(config_path))
         return
         
     now = int(time.time())
