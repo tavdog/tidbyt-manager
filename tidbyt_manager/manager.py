@@ -232,7 +232,7 @@ def addapp(id):
             user["devices"][id]["apps"][iname] = app
             db.save_user(user)
 
-            return redirect(url_for('manager.configapp', id=id,iname=iname))
+            return redirect(url_for('manager.configapp', id=id,iname=iname,delete_on_cancel=1))
     else:
         abort(404)
             
@@ -277,9 +277,9 @@ def updateapp(id,iname):
     app = g.user["devices"][id]['apps'][iname]
     return render_template('manager/updateapp.html', app=app,device_id=id)    
 
-@bp.route('/<string:id>/<string:iname>/configapp', methods=('GET','POST'))
+@bp.route('/<string:id>/<string:iname>/<int:delete_on_cancel>/configapp', methods=('GET','POST'))
 @login_required
-def configapp(id,iname):
+def configapp(id,iname,delete_on_cancel):
     import subprocess, time
     app = g.user["devices"][id]['apps'][iname]
     app_basename = "{}-{}".format(app['name'],app["iname"])
@@ -363,7 +363,7 @@ def configapp(id,iname):
 
             # give pixlet some time to start up 
             time.sleep(2)
-            return render_template('manager/configapp.html', app=app, domain_host=config.domain_host, url_params=url_params, device_id=id)
+            return render_template('manager/configapp.html', app=app, domain_host=config.domain_host, url_params=url_params, device_id=id,delete_on_cancel=delete_on_cancel)
 
         else:
             flash("App Not Found")

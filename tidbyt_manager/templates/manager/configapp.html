@@ -6,6 +6,11 @@
 <!-- <label for="iname">Configuring {{app["iname"]}}</label>
 <input name="iname" id="iname" value="{{ request.form['iname'] or app['iname'] }}" readonly>  -->
 <input type="submit" value="Save"></form>
-<form action="{{ url_for('manager.deleteapp', id=device_id, iname=app['iname'])}}" method="get" ><input type="submit" value="Cancel"></form>
-<iframe src="http://{{domain_host}}:5{{app['iname']}}/?{{url_params}}" width=100% height=2000 title="Pixlet Serve"></iframe>
+{% if delete_on_cancel == 1 %}
+    <form action="{{ url_for('manager.deleteapp', id=device_id, iname=app['iname'])}}" method="get" ><input type="submit" value="Cancel"></form>
+{% else %}
+    <form action="{{ url_for('manager.index') }}" method="get"><input type="submit"
+            value="Cancel"></form>
+{% endif %}
+    <iframe src="http://{{domain_host}}:5{{app['iname']}}/?{{url_params}}" width=100% height=2000 title="Pixlet Serve"></iframe>
 {% endblock %}
