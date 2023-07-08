@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 from flask import current_app
 
 def get_users_dir():
-    print(f"users dir : {current_app.config['USERS_DIR']}")
+    #print(f"users dir : {current_app.config['USERS_DIR']}")
     return current_app.config['USERS_DIR']
 
 def get_user_config_path(user):
