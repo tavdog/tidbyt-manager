@@ -1,7 +1,7 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, url_for, send_file, abort
+    Blueprint, flash, g, redirect, render_template, request, url_for, send_file, abort, current_app
 )
-from tidbyt_manager import config
+
 from werkzeug.exceptions import abort
 from tidbyt_manager.auth import login_required
 import tidbyt_manager.db as db
@@ -9,6 +9,7 @@ import uuid,os
 
 
 bp = Blueprint('manager', __name__)
+
 
 @bp.route('/')
 @login_required
@@ -25,7 +26,7 @@ def index():
 @bp.route('/uploadapp', methods=('GET', 'POST'))
 @login_required
 def uploadapp():
-    user_apps_path = "users/{}/apps".format(g.user['username'])
+    user_apps_path = f"{db.get_users_dir()}/{g.user['username']}/apps"
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -162,8 +163,9 @@ def delete(id):
 @login_required
 def deleteapp(id,iname):
     # delete the config file
-    config_path = "users/{}/configs/{}-{}.json".format(g.user['username'],g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
-    tmp_config_path = "users/{}/configs/{}-{}.tmp".format(g.user['username'],g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
+    users_dir = db.get_users_dir()
+    config_path = "{}/{}/configs/{}-{}.json".format(users_dir,g.user['username'],g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
+    tmp_config_path = "{}/{}/configs/{}-{}.tmp".format(users_dir,g.user['username'],g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
     if os.path.isfile(config_path):
         os.remove(config_path)
     if os.path.isfile(tmp_config_path):
@@ -280,6 +282,8 @@ def updateapp(id,iname):
 @bp.route('/<string:id>/<string:iname>/<int:delete_on_cancel>/configapp', methods=('GET','POST'))
 @login_required
 def configapp(id,iname,delete_on_cancel):
+    users_dir = db.get_users_dir()
+    domain_host = current_app.config['DOMAIN'] # used when rendering configapp
     import subprocess, time
     app = g.user["devices"][id]['apps'][iname]
     app_basename = "{}-{}".format(app['name'],app["iname"])
@@ -288,8 +292,8 @@ def configapp(id,iname,delete_on_cancel):
         app_path = app_details['path']
     else:
         app_path = "tidbyt-apps/apps/{}/{}.star".format(app['name'].replace('_',''),app['name'])
-    config_path = "users/{}/configs/{}.json".format(g.user['username'],app_basename)
-    tmp_config_path = "users/{}/configs/{}.tmp".format(g.user['username'],app_basename)
+    config_path = "{}/{}/configs/{}.json".format(users_dir, g.user['username'],app_basename)
+    tmp_config_path = "{}/{}/configs/{}.tmp".format(users_dir, g.user['username'],app_basename)
     webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
 
     # always kill the pixlet proc based on port number.
@@ -363,7 +367,7 @@ def configapp(id,iname,delete_on_cancel):
 
             # give pixlet some time to start up 
             time.sleep(2)
-            return render_template('manager/configapp.html', app=app, domain_host=config.domain_host, url_params=url_params, device_id=id,delete_on_cancel=delete_on_cancel)
+            return render_template('manager/configapp.html', app=app, domain_host=domain_host, url_params=url_params, device_id=id,delete_on_cancel=delete_on_cancel)
 
         else:
             flash("App Not Found")
@@ -389,7 +393,7 @@ def set_user_repo():
         if 'app_repo_url' in request.form:
             repo_url = request.form['app_repo_url']
             print(repo_url)
-            user_apps_path = "users/{}/apps".format(g.user['username'])
+            user_apps_path = "{}/{}/apps".format(db.get_users_dir(), g.user['username'])
             old_repo = ""
             if 'app_repo_url' in g.user:
                 old_repo = g.user['app_repo_url']

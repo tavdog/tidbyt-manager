@@ -1,10 +1,18 @@
 import os,json,subprocess
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
-user_path = "users/{}/{}.json"
+from flask import current_app
+
+def get_users_dir():
+    print(f"users dir : {current_app.config['USERS_DIR']}")
+    return current_app.config['USERS_DIR']
+
+def get_user_config_path(user):
+    return f"{get_users_dir()}/{user}/{user}.json"
+
 def user_exists(username):
     try:
-        with open(user_path.format(username,username)) as file:
+        with open(f"{get_users_dir()}/{username}/{username}.json") as file:
             # print("username: {} exists.".format(username))
             return True
     except:
@@ -18,10 +26,8 @@ def file_exists(file_path):
         return False
 
 def get_user(username):
-    # print("username :{}".format(username))
-    # print(user_path.format(username,username))
     try:
-        with open(user_path.format(username,username)) as file:
+        with open(f"{get_users_dir()}/{username}/{username}.json") as file:
             user = json.load(file)
 #            print("return user")
             return user
@@ -31,7 +37,7 @@ def get_user(username):
 
 def auth_user(username,password):
     try:
-        with open(user_path.format(username,username)) as file:
+        with open(f"{get_users_dir()}/{username}/{username}.json") as file:
             user = json.load(file)
             print(user)
             if check_password_hash(user.get("password"), password):
@@ -45,8 +51,9 @@ def auth_user(username,password):
 
 def save_user(user):
      if "username" in user:
+        username = user['username']
         try:
-            with open(user_path.format(user["username"],user["username"]),"w") as file:
+            with open(f"{get_users_dir()}/{username}/{username}.json","w") as file:
                 json.dump(user,file)
             return True      
         except:
@@ -56,7 +63,7 @@ def create_user_dir(user):
     dir = sanitize(user)
     dir = secure_filename(dir)
     # test for directory named dir and if not exist creat it
-    user_dir = "users/{}".format(user)
+    user_dir = f"{get_users_dir()}/{user}"
     if not os.path.exists(user_dir):
         os.makedirs(user_dir)
         os.makedirs(user_dir+"/configs")
@@ -81,7 +88,7 @@ def get_apps_list(user):
         with open("tidbyt-apps/apps.json",'r') as f:
             return json.load(f)
     else:
-        dir = "users/{}/apps".format(user)
+        dir = "{}/{}/apps".format(get_users_dir(), user)
     if os.path.exists(dir):
         command = [ "find", dir, "-name", "*.star" ]
         output = subprocess.check_output(command, text=True)
@@ -163,7 +170,7 @@ def save_user_app(file,path):
         return False
     
 def delete_user_upload(user,filename):
-    path = "users/{}/apps/".format(user['username'])
+    path = "{}/{}/apps/".format(get_users_dir(), user['username'])
     try:
         filename = secure_filename(filename)
         os.remove(os.path.join(path,filename))

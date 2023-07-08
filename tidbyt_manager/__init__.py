@@ -1,12 +1,31 @@
 import os
+from dotenv import load_dotenv
+
 from flask import Flask
 def create_app(test_config=None):
+    load_dotenv()
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(
+    if test_config is None:
+        app.config.from_mapping(
         SECRET_KEY='lksdj;as987q3908475ukjhfgklauy983475iuhdfkjghairutyh',
-        MAX_CONTENT_LENGTH = 1000 * 1000 # 1mbyte upload size limit
+        MAX_CONTENT_LENGTH = 1000 * 1000, # 1mbyte upload size limit
+        DOMAIN = os.environ['DOMAIN'] or 'localhost',
+        USERS_DIR = 'users',
     )
+        
+    else:
+        app.config.from_mapping(
+        SECRET_KEY='lksdj;as987q3908475ukjhfgklauy983475iuhdfkjghairutyh',
+        MAX_CONTENT_LENGTH = 1000 * 1000, # 1mbyte upload size limit
+        DOMAIN = 'localhost',
+        USERS_DIR = 'tests/users',
+    )
+
+    try:
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
     
     from . import auth
     app.register_blueprint(auth.bp)
