@@ -55,6 +55,7 @@ def mqtt_send(client,topic,webp_path):
 
 
 def main(user,device):
+    start_time = time.time()
     config_path = "users/{}/{}.json".format(user, user)
 
     if not os.path.exists(config_path):
@@ -89,12 +90,12 @@ def main(user,device):
         exit(1) # sleep and wait until config file is modified before trying again maybe ?
 
     # now we have an array of apps to cycle through
-    # cycle through the array and push the webp to mqtt
+    # cycle through the array and push the webp via mqtt
 
-    app_cycler = cycle(app_array)
-    while True:
+    #app_cycler = cycle(app_array)
+    for i in cycle(range(len(app_array))):
         # infinitiely loop through the array
-        app = next(app_cycler)
+        app = app_array[i]
         dprint("apps is {}".format(json.dumps(app)))
         app_basename = "{}-{}".format(app['name'],app["iname"])
         webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
@@ -107,6 +108,13 @@ def main(user,device):
         else:
             print("Mqtt Error. Ensure you have publish permissions")
             time.sleep(10) # so we don't spam the mqtt server on errors
+
+        # check for the last item and check for modified config file if so, restart the loop
+        if i == len(app_array) - 1:
+            print("checking for config file changes")
+            if os.path.getmtime(config_path) > start_time:
+                print("config file changed, restarting")
+                exit(0)
         
 
 
