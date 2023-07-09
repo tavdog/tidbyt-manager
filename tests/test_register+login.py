@@ -4,21 +4,22 @@ import os
 def test_register_and_login(client):
     response = client.get("/auth/register")
     assert response.status_code == 200
-    response = client.post("/auth/register", data={"username": "testuser", "password": "password"})
+    client.post("/auth/register", data={"username": "testuser", "password": "password"})
     # assert user.config file exists
     assert os.path.exists(os.path.join("tests", "users", "testuser", "testuser.json"))
 
-    response = client.post("/auth/login",    data={"username": "testuser", "password": "password"})
+    client.post("/auth/login",    data={"username": "testuser", "password": "password"})
     response = client.get("/")
     assert response.status_code == 200
 
 def test_login_with_wrong_password(client):
-    response = client
+    response = client.post("/auth/login",    data={"username": "testuser", "password": "BADDPASSWORD"})
+    assert "Incorrect username/password." in response.text 
 
 def test_unauth_index(client):
     response = client.get("/")
-    assert response.status_code != 200
-
+    assert response.status_code == 302 # should redirect to login
+    assert "auth/login" in response.text
 # def test_login(client):
 
 

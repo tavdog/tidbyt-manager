@@ -1,6 +1,6 @@
 import functools
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app
 )
 from werkzeug.security import generate_password_hash
 from werkzeug.utils import secure_filename
@@ -10,7 +10,7 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
-    time.sleep(2)
+    if not current_app.config['TESTING']: time.sleep(2)
     # # only allow admin to register new users
     # if session['username'] != "admin":
     #     return redirect(url_for('manager.index'))
@@ -37,7 +37,7 @@ def register():
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
     if request.method == 'POST':
-        time.sleep(2) # slow down brute force attacks
+        if not current_app.config['TESTING']: time.sleep(2) # slow down brute force attacks
         username = request.form['username']
         password = request.form['password']
         #db = get_db()
