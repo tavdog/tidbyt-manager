@@ -1,4 +1,3 @@
-#from tidbyt_manager import db
 import os
 
 def test_register_login_logout(client):

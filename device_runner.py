@@ -1,10 +1,7 @@
 # handles non-tidbyt api devices.  pushes web directly via mqtt based on timing values set in user config file
 
-import sys
-import os
-import json
-import datetime
-import time
+import sys, os, json
+import datetime, time, pidfile
 from itertools import cycle
 import paho.mqtt.client as mqtt
 from urllib.parse import urlparse
@@ -56,6 +53,54 @@ def mqtt_send(client,topic,webp_path):
         print("file {} does not exist".format(f))
         return False
 
+
+def main(user,device):
+    config_path = "users/{}/{}.json".format(user, user)
+
+    if not os.path.exists(config_path):
+        print("Config file ({}) does not exist".format(config_path))
+        exit(1)
+
+
+    config = load_config(config_path)
+    dprint(json.dumps(config, indent=4))
+
+    # now get device and setup mqtt client
+    device = config['devices'][device]
+    dprint("processing {}".format(device))
+    mqtt_client,topic = mqtt_setup(device['api_id']) # api_id is an mqtt url string with username and password
+    if mqtt_client == None:
+        print("Can't connect, quitting")
+        exit(1)
+
+    app_array = device['apps'].values()
+
+    app_cycler = cycle(app_array)
+    while True:
+        # infinitiely loop through the array
+        app = next(app_cycler)
+        dprint("apps is {}".format(json.dumps(app)))
+        app_basename = "{}-{}".format(app['name'],app["iname"])
+        webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
+        
+        delay = app.get('display_time',5)
+        
+        if app.get('enabled') == "true":
+            dprint("pushing {}".format(app_basename))
+            if mqtt_send(mqtt_client,topic,webp_path):
+                time.sleep(int(delay))
+            else:
+                print("Mqtt Error. Ensure you have publish permissions")
+                time.sleep(10) # so we don't spam the mqtt server on errors
+        else:
+            dprint("skipping {}".format(app_basename))
+        
+
+
+#################################################
+# Start of main
+#################################################
+
 if len(sys.argv) < 3:
     print("Usage: python3 %s <user> <device_id>" % sys.argv[0])
     exit(1)
@@ -65,44 +110,10 @@ device = sys.argv[2]
 
 dprint("doing {} - {} ".format(user,device))
 
-config_path = "users/{}/{}.json".format(user, user)
-
-if not os.path.exists(config_path):
-    print("Config file ({}) does not exist".format(config_path))
+try:
+    with pidfile.PIDFile(f"/var/run/{user}-{device}.pid"):
+        main(user,device)
+except pidfile.AlreadyRunningError:
+    print('Already running.')
     exit(1)
-
-
-config = load_config(config_path)
-dprint(json.dumps(config, indent=4))
-
-# now get device and setup mqtt client
-device = config['devices'][device]
-dprint("processing {}".format(device))
-mqtt_client,topic = mqtt_setup(device['api_id']) # api_id is an mqtt url string with username and password
-if mqtt_client == None:
-    print("Can't connect, quitting")
-    exit(1)
-
-app_array = device['apps'].values()
-
-app_cycler = cycle(app_array)
-while True:
-    # infinitiely loop through the array
-    app = next(app_cycler)
-    dprint("apps is {}".format(json.dumps(app)))
-    app_basename = "{}-{}".format(app['name'],app["iname"])
-    webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
-    
-    delay = app.get('display_time',5)
-    
-    if app.get('enabled') == "true":
-        dprint("pushing {}".format(app_basename))
-        if mqtt_send(mqtt_client,topic,webp_path):
-            time.sleep(int(delay))
-        else:
-            print("Mqtt Error. Ensure you have publish permissions")
-            time.sleep(10) # so we don't spam the mqtt server on errors
-    else:
-        dprint("skipping {}".format(app_basename))
-    
 

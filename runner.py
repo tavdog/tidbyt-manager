@@ -85,7 +85,16 @@ def process_app(app,device,user):
 
 def process_device(device,user):
     print("\tDevice: %s" % device['name'])
+    if device.get('apps') and len(device['apps']):
+        # start the mqtt runner if api_id has mqtt in there
+        # should we check for the pid here or try to start the script and let the script do that ?
+        if "mqtt://" in device['api_id']:
+            import subprocess
+            print("\t\tStarting mqtt_runner.py")
+            subprocess.Popen(["python", "device_runner.py", user, device])
+
     if 'apps' in device:
+        # process each app
         for app in device['apps'].values(): 
             process_app(app,device,user)
     else:
