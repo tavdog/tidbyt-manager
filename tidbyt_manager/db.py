@@ -46,7 +46,6 @@ def auth_user(username,password):
                 print("bad password")
                 return False
     except:
-        print("problem")
         return False
 
 def save_user(user):

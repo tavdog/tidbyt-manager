@@ -47,7 +47,7 @@ def login():
             error = 'Incorrect username/password.'
         if error is None:
             session.clear()
-            print("username" + username)
+            print("username " + username)
             session['username'] = username
             return redirect(url_for('index'))
         flash(error)
