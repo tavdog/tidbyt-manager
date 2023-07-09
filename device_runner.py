@@ -73,7 +73,23 @@ def main(user,device):
         print("Can't connect, quitting")
         exit(1)
 
-    app_array = device['apps'].values()
+    all_apps_array = list(device['apps'].values())
+    app_array = list()
+    # loop through app_array and delete any with disabled flag
+    for app in all_apps_array:
+        print(f"checking {app['name']}")
+        if app.get('enabled',"false") == "true":
+            app_array.append(app)
+        else:
+            print(f"skipping {app['name']}")
+            
+
+    if len(app_array) == 0:
+        print("No apps enabled for this device")
+        exit(1) # sleep and wait until config file is modified before trying again maybe ?
+
+    # now we have an array of apps to cycle through
+    # cycle through the array and push the webp to mqtt
 
     app_cycler = cycle(app_array)
     while True:
@@ -85,15 +101,12 @@ def main(user,device):
         
         delay = app.get('display_time',5)
         
-        if app.get('enabled') == "true":
-            dprint("pushing {}".format(app_basename))
-            if mqtt_send(mqtt_client,topic,webp_path):
-                time.sleep(int(delay))
-            else:
-                print("Mqtt Error. Ensure you have publish permissions")
-                time.sleep(10) # so we don't spam the mqtt server on errors
+        dprint("pushing {}".format(app_basename))
+        if mqtt_send(mqtt_client,topic,webp_path):
+            time.sleep(int(delay))
         else:
-            dprint("skipping {}".format(app_basename))
+            print("Mqtt Error. Ensure you have publish permissions")
+            time.sleep(10) # so we don't spam the mqtt server on errors
         
 
 
