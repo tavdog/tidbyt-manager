@@ -54,26 +54,31 @@ def mqtt_send(client,topic,webp_path):
         return False
 
 
-def main(user,device):
+def main_loop(user,device_id):
+    while(True):
+        print("Pulling config")
+        config_path = "users/{}/{}.json".format(user, user)
+
+        if not os.path.exists(config_path):
+            print("Config file ({}) does not exist".format(config_path))
+            exit(1)
+
+
+        config = load_config(config_path)
+        dprint(json.dumps(config, indent=4))
+
+        # now get device and setup mqtt client
+        device = config['devices'][device_id]
+        dprint("processing {}".format(device_id))
+        mqtt_client,topic = mqtt_setup(device['api_id']) # api_id is an mqtt url string with username and password
+        if mqtt_client == None:
+            print("Can't connect, quitting")
+            exit(1)
+
+        push_loop(device,mqtt_client,topic,config_path)
+
+def push_loop(device,mqtt_client,topic,config_path):
     start_time = time.time()
-    config_path = "users/{}/{}.json".format(user, user)
-
-    if not os.path.exists(config_path):
-        print("Config file ({}) does not exist".format(config_path))
-        exit(1)
-
-
-    config = load_config(config_path)
-    dprint(json.dumps(config, indent=4))
-
-    # now get device and setup mqtt client
-    device = config['devices'][device]
-    dprint("processing {}".format(device))
-    mqtt_client,topic = mqtt_setup(device['api_id']) # api_id is an mqtt url string with username and password
-    if mqtt_client == None:
-        print("Can't connect, quitting")
-        exit(1)
-
     all_apps_array = list(device['apps'].values())
     app_array = list()
     # loop through app_array and delete any with disabled flag
@@ -113,8 +118,8 @@ def main(user,device):
         if i == len(app_array) - 1:
             print("checking for config file changes")
             if os.path.getmtime(config_path) > start_time:
-                print("config file changed, restarting")
-                exit(0)
+                print("config file changed, reloading")
+                return
         
 
 
@@ -133,7 +138,7 @@ dprint("doing {} - {} ".format(user,device))
 
 try:
     with pidfile.PIDFile(f"/var/run/{user}-{device}.pid"):
-        main(user,device)
+        main_loop(user,device)
 except pidfile.AlreadyRunningError:
     print('Already running.')
     exit(1)
