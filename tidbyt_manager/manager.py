@@ -257,14 +257,15 @@ def updateapp(id,iname):
         if error is not None:
             flash(error)
         else:
-            app = dict()
+            user = g.user
+            app = user["devices"][id]["apps"][iname]
             app["iname"] = iname
             print("iname is :" + str(app["iname"]))
             app["name"] = name
             app["uinterval"] = uinterval
             app["notes"] = notes
             app["enabled"] = enabled
-            user = g.user
+            
             if user["devices"][id]["apps"][iname]['enabled'] == "true" and enabled == "false":
                 # set fresh_disable so we can delete from tidbyt once and only once
                 # use pixlet to delete installation of app if api_key exists (tidbyt server operation) and enabled flag is set to true

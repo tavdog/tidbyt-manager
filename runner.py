@@ -91,12 +91,14 @@ def process_device(device,user):
     if 'apps' in device:
 
         # do we have at least 1 app ?
-        if len(device['apps']):
+        if len(device['apps']) and "true" in [v['enabled'] for (k,v) in device['apps'].items()]:
             # start the mqtt runner if api_id has mqtt in there and no pid file
             if "mqtt://" in device['api_id'] and not os.path.exists(f"/var/run/{username}-{device_id}.pid"):
                 import subprocess
                 print(f"\t\tStarting mqtt_runner.py for {username} - {device_id}")
                 subprocess.Popen(["python3", "device_runner.py", username, device_id])
+            else:
+                print("skipping device runner")
         # process each app
         for app in device['apps'].values(): 
             process_app(app,device,user)
