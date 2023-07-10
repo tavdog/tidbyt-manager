@@ -6,7 +6,7 @@ from itertools import cycle
 import paho.mqtt.client as mqtt
 from urllib.parse import urlparse
 
-DEBUG=True
+DEBUG=False
 
 def dprint(*args, **kwargs):
     if DEBUG:

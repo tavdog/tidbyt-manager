@@ -84,16 +84,19 @@ def process_app(app,device,user):
         print("\t\t\tNext update in {} seconds.".format(int(app['uinterval'])*60 - (now - app['last_render'])))
 
 def process_device(device,user):
+    username = user['username']
+    device_id = device['id']
     print("\tDevice: %s" % device['name'])
-    if device.get('apps') and len(device['apps']):
-        # start the mqtt runner if api_id has mqtt in there
-        # should we check for the pid here or try to start the script and let the script do that ?
-        if "mqtt://" in device['api_id']:
-            import subprocess
-            print("\t\tStarting mqtt_runner.py")
-            subprocess.Popen(["python", "device_runner.py", user, device])
 
     if 'apps' in device:
+
+        # do we have at least 1 app ?
+        if len(device['apps']):
+            # start the mqtt runner if api_id has mqtt in there and no pid file
+            if "mqtt://" in device['api_id'] and not os.path.exists(f"/var/run/{username}-{device_id}.pid"):
+                import subprocess
+                print(f"\t\tStarting mqtt_runner.py for {username} - {device_id}")
+                subprocess.Popen(["python3", "device_runner.py", username, device_id])
         # process each app
         for app in device['apps'].values(): 
             process_app(app,device,user)
