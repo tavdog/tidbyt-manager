@@ -6,11 +6,15 @@ from itertools import cycle
 import paho.mqtt.client as mqtt
 from urllib.parse import urlparse
 
+import logging
+
 DEBUG=False
 
 def dprint(*args, **kwargs):
     if DEBUG:
         print(*args, **kwargs)
+    else:
+        logging.info(*args, **kwargs)
 
 def load_config(config_path):
     with open(config_path) as f:
@@ -30,7 +34,7 @@ def mqtt_setup(connect_string):
         client.loop_start()
         return client,topic
     except:
-        print("Error parsing mqtt url or connecting {}".format(connect_string))
+        dprint("Error parsing mqtt url or connecting {}".format(connect_string))
         return None,None
 
 def mqtt_send(client,topic,webp_path):
@@ -45,34 +49,34 @@ def mqtt_send(client,topic,webp_path):
         )
         info.wait_for_publish()
         if info.is_published():
-            print("Published webp to topic: " + topic )
+            dprint("Published webp to topic: " + topic )
             return True
         else:
             return False
     else:
-        print("file {} does not exist".format(f))
+        dprint("file {} does not exist".format(f))
         return False
 
 
 def main_loop(user,device_id):
     while(True):
-        print("Pulling config")
+        dprint("Pulling config")
         config_path = "users/{}/{}.json".format(user, user)
 
         if not os.path.exists(config_path):
-            print("Config file ({}) does not exist".format(config_path))
+            dprint("Config file ({}) does not exist".format(config_path))
             exit(1)
 
 
         config = load_config(config_path)
-        dprint(json.dumps(config, indent=4))
+        #dprint(json.dumps(config, indent=4))
 
         # now get device and setup mqtt client
         device = config['devices'][device_id]
         dprint("processing {}".format(device_id))
         mqtt_client,topic = mqtt_setup(device['api_id']) # api_id is an mqtt url string with username and password
         if mqtt_client == None:
-            print("Can't connect, quitting")
+            dprint("Can't connect, quitting")
             exit(1)
 
         push_loop(device,mqtt_client,topic,config_path)
@@ -83,15 +87,14 @@ def push_loop(device,mqtt_client,topic,config_path):
     app_array = list()
     # loop through app_array and delete any with disabled flag
     for app in all_apps_array:
-        print(f"checking {app['name']}")
         if app.get('enabled',"false") == "true":
             app_array.append(app)
         else:
-            print(f"skipping {app['name']}")
+            dprint(f"skipping {app['name']}")
             
 
     if len(app_array) == 0:
-        print("No apps enabled for this device")
+        dprint("No apps enabled for this device")
         exit(1) # sleep and wait until config file is modified before trying again maybe ?
 
     # now we have an array of apps to cycle through
@@ -111,14 +114,14 @@ def push_loop(device,mqtt_client,topic,config_path):
         if mqtt_send(mqtt_client,topic,webp_path):
             time.sleep(int(delay))
         else:
-            print("Mqtt Error. Ensure you have publish permissions")
+            dprint("Mqtt Error. Ensure you have publish permissions")
             time.sleep(10) # so we don't spam the mqtt server on errors
 
         # check for the last item and check for modified config file if so, restart the loop
         if i == len(app_array) - 1:
-            print("checking for config file changes")
+            dprint("checking for config file changes")
             if os.path.getmtime(config_path) > start_time:
-                print("config file changed, reloading")
+                dprint("config file changed, reloading")
                 return
         
 
@@ -128,18 +131,18 @@ def push_loop(device,mqtt_client,topic,config_path):
 #################################################
 
 if len(sys.argv) < 3:
-    print("Usage: python3 %s <user> <device_id>" % sys.argv[0])
+    dprint("Usage: python3 %s <user> <device_id>" % sys.argv[0])
     exit(1)
 
 user = sys.argv[1]
 device = sys.argv[2]
-
+logging.basicConfig(filename=f"/var/log/{user}-{device}.log", encoding='utf-8', level=logging.INFO)
 dprint("doing {} - {} ".format(user,device))
 
 try:
     with pidfile.PIDFile(f"/var/run/{user}-{device}.pid"):
         main_loop(user,device)
 except pidfile.AlreadyRunningError:
-    print('Already running.')
+    dprint('Already running.')
     exit(1)
 
