@@ -8,10 +8,10 @@
 <label for="name">Name</label>
 <input name="name" id="name"
 value="{{ request.form['name'] or device['name'] }}" required>
-<label for="api_id">API ID</label>
+<span><label for="api_id">API ID</label> (ID from Tidbyt app or mqtt url eg. mqtt://user:pass@hostname:1883/topic )</span>
 <input name="api_id" id="api_id"
 value="{{ request.form['api_id'] or device['api_id'] }}" required>
-<label for="api_key">API KEY</label>
+<label for="api_key">API KEY </label>
 <textarea name="api_key" id="api_key" rows="6">{{ request.form['api_key'] or device['api_key'] }}</textarea>
 <label for="body">Notes</label>
 <input name="notes" id="notes" value="{{ request.form['notes'] or device['notes'] }}">
