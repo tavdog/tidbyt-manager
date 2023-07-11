@@ -263,6 +263,7 @@ def updateapp(id,iname):
             print("iname is :" + str(app["iname"]))
             app["name"] = name
             app["uinterval"] = uinterval
+            app["display_time"] = request.form['display_time']
             app["notes"] = notes
             app["enabled"] = enabled
             

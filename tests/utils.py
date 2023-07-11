@@ -15,6 +15,15 @@ def get_test_device_id():
 def get_user_uploads_list():
     return os.listdir(uploads_path)
 
+def get_test_app_id():
+    config = json.loads(get_testuser_config_string())
+    device_id = get_test_device_id()
+    return list(config['devices'][device_id]['apps'].keys())[0]
+
+def get_test_app_dict():
+    config = json.loads(get_testuser_config_string())
+    device_id = get_test_device_id()
+    return list(config['devices'][device_id]['apps'].values())[0]
 
      
 
