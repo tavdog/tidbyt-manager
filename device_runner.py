@@ -28,33 +28,73 @@ def mqtt_setup(connect_string):
         host = url.hostname
         port = url.port
         topic = url.path
+        topic = topic[1:]
         client = mqtt.Client()
-        client.username_pw_set(user,passw)
+        if user and passw : client.username_pw_set(user,passw)
         client.connect(host,port)
         client.loop_start()
         return client,topic
-    except:
+    except Exception as e:
         dprint("Error parsing mqtt url or connecting {}".format(connect_string))
+        dprint(repr(e))
         return None,None
 
 def mqtt_send(client,topic,webp_path):
+    dprint(f"in mqtt send with topic {topic}")
     if os.path.isfile(webp_path) and os.path.getsize(webp_path) > 0:
+        file_size = os.stat(webp_path)
+        dprint(f"Size of file : {file_size.st_size} bytes")
         in_file = open(webp_path, "rb")
-        webp = in_file.read()
+
         info = client.publish(
             topic=topic,
-            payload=webp,
+            payload="START",
             qos=0,
             retain=False,
         )
         info.wait_for_publish()
         if info.is_published():
-            dprint("Published webp to topic: " + topic )
+            dprint("Published START")
+
+        time.sleep(1)
+        info = client.publish(
+            topic=topic,
+            payload=file_size.st_size,
+            qos=0,
+            retain=False,
+        )
+        info.wait_for_publish()
+        if info.is_published():
+            dprint("Published " + str(file_size.st_size))
+
+        time.sleep(1)
+        info = client.publish(
+            topic=topic,
+            payload=in_file.read(),
+            qos=0,
+            retain=False,
+        )
+        info.wait_for_publish()
+        if info.is_published():
+            dprint("Published binary file")
+
+        time.sleep(1)
+        info = client.publish(
+            topic=topic,
+            payload="FINISH",
+            qos=0,
+            retain=False,
+        )
+        info.wait_for_publish()
+        if info.is_published():
+            dprint("Published topic: END")
             return True
+
         else:
+            dprint("Topic {topic} not published")
             return False
     else:
-        dprint("file {} does not exist".format(f))
+        dprint("file {} does not exist".format(webp_path))
         return False
 
 
@@ -94,7 +134,7 @@ def push_loop(device,mqtt_client,topic,config_path):
             
 
     if len(app_array) == 0:
-        dprint("No apps enabled for this device")
+        dprint("No apps enabled for this device, quitting")
         exit(1) # sleep and wait until config file is modified before trying again maybe ?
 
     # now we have an array of apps to cycle through
