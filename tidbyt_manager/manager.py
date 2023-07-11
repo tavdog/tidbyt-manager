@@ -349,6 +349,7 @@ def configapp(id,iname,delete_on_cancel):
             
         return redirect(url_for('manager.index'))
         
+    #################### run the in browser configure interface via pixlet serve
     elif request.method == 'GET':
         url_params = ""
         if db.file_exists(config_path):
