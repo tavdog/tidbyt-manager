@@ -5,7 +5,7 @@ from flask import (
 from werkzeug.exceptions import abort
 from tidbyt_manager.auth import login_required
 import tidbyt_manager.db as db
-import uuid,os
+import uuid,os,subprocess
 
 
 bp = Blueprint('manager', __name__)
@@ -15,7 +15,7 @@ bp = Blueprint('manager', __name__)
 @login_required
 def index():
 
-    os.system("pkill -f serve") # kill any pixlet serve processes
+    #os.system("pkill -f serve") # kill any pixlet serve processes
 
     devices = dict()
     if "devices" in g.user:
@@ -176,9 +176,10 @@ def deleteapp(id,iname):
 
     # use pixlet to delete installation of app if api_key exists (tidbyt server operation) and enabled flag is set to true
     if 'api_key' in g.user["devices"][id] and g.user["devices"][id]["apps"][iname]["enabled"] == "true":
-        command = "/pixlet/pixlet delete {} {} -t {}".format(g.user["devices"][id]['api_id'],iname,g.user["devices"][id]['api_key'])
+        # command = "/pixlet/pixlet delete {} {} -t {}".format(,iname,
+        command = ["/pixlet/pixlet", "delete", g.user["devices"][id]['api_id'], iname, "-t",  g.user["devices"][id]['api_key']]
         print("Deleting installation id {}".format(iname))
-        os.system(command)
+        subprocess.run(command)
 
     # delete the webp file
     webp_path = "tidbyt_manager/webp/{}-{}.webp".format(g.user["devices"][id]["apps"][iname]["name"],g.user["devices"][id]["apps"][iname]["iname"])
@@ -274,9 +275,10 @@ def updateapp(id,iname):
                 # set fresh_disable so we can delete from tidbyt once and only once
                 # use pixlet to delete installation of app if api_key exists (tidbyt server operation) and enabled flag is set to true
                 if 'api_key' in g.user["devices"][id]:
-                    command = "/pixlet/pixlet delete {} {} -t {}".format(g.user["devices"][id]['api_id'],iname,g.user["devices"][id]['api_key'])
+                    #command = "/pixlet/pixlet delete {} {} -t {}".format(g.user["devices"][id]['api_id'],iname,g.user["devices"][id]['api_key'])
+                    command = ["/pixlet/pixlet", "delete", g.user["devices"][id]['api_id'], iname, "-t",  g.user["devices"][id]['api_key']]
                     print(command)
-                    os.system(command)
+                    subprocess.run(command)
             user["devices"][id]["apps"][iname] = app
             db.save_user(user)
 
@@ -303,7 +305,7 @@ def configapp(id,iname,delete_on_cancel):
 
     user_render_port = str(db.get_user_render_port(g.user['username']))
     # always kill the pixlet proc based on port number.
-    os.system("pkill -f {}".format(user_render_port)) # kill pixlet process
+    os.system("pkill -f {}".format(user_render_port)) # kill pixlet process based on port
 
     if request.method == 'POST':
 
@@ -322,8 +324,9 @@ def configapp(id,iname,delete_on_cancel):
 
             # run pixlet render with the new config file
             print("rendering")
-            render_result = os.system("/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path))
-            if render_result == 0: # success
+            # render_result = os.system("/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path))
+            render_result = subprocess.run(["/pixlet/pixlet", "render", "-c", config_path, app_path, "-o",webp_path])
+            if render_result.returncode == 0: # success
                 # set the enabled key in app to true now that it has been configured.
                 g.user["devices"][id]["apps"][iname]['enabled'] = "true"
                 # set last_rendered to seconds
@@ -333,14 +336,16 @@ def configapp(id,iname,delete_on_cancel):
                     device = g.user["devices"][id]
                     # check for zero filesize
                     if os.path.getsize(webp_path) > 0:
-                        command = "/pixlet/pixlet push {} {} -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
+                        #command = "/pixlet/pixlet push {} {} -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
+                        command = ["/pixlet/pixlet", "push", device['api_id'], webp_path, "-b", "-t", device['api_key'], "-i", app['iname']]
                         print("pushing {}".format(app['iname']))
-                        result = os.system(command)
+                        result = subprocess.run(command)
                     else:
                         # delete installation may error if the instlalation doesn't exist but that's ok.
-                        command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
+                        #command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
+                        command = ["/pixlet/pixlet", "delete", g.user["devices"]['api_id'], app['iname'], "-t",  g.user["devices"]['api_key']]
                         print("blank output, deleting {}".format(app['iname']))
-                        result = os.system(command)
+                        subprocess.run(command)
                     if result == 0:
                         # set last_pushed to seconds
                         g.user["devices"][id]["apps"][iname]['last_pushed'] = int(time.time())
@@ -416,14 +421,15 @@ def set_user_repo():
                     print(user_apps_path)
                     if db.file_exists(user_apps_path):
                         # delete the folder and re-clone.
-                        os.system("rm -rf {}".format(user_apps_path))                        
+                        subprocess.run(["rm", "-rf", user_apps_path])                        
                     # pull the repo and save to local filesystem. use blah:blah as username password so requests for unknown or private repos fail imeediately
-                    result = os.system("git clone https://blah:blah@github.com/{} {}".format(repo_url,user_apps_path))
-                    flash("Repo Cloned")
+                    result = subprocess.run(["git", "clone", f"https://blah:blah@github.com/{repo_url}", user_apps_path])
+                    if result.returncode == 0:
+                        flash("Repo Cloned")
                 else:
                     # same as before so just issue a pull to update it.
-                    result = os.system("git -C {} pull".format(user_apps_path))
-                    if result == 0:
+                    result = subprocess.run(["git", "-C", "pull", user_apps_path])
+                    if result.returncode == 0:
                         flash("Repo Updated")
                 # run the generate app list for custom repo
                 return redirect(url_for('manager.index'))
@@ -463,18 +469,19 @@ def set_system_repo():
                         print("deleting tidbyt-apps")
                         os.system("rm -rf {}".format(system_apps_path))                        
                     # pull the repo and save to local filesystem.
-                    result = os.system("git clone https://blah:blah@github.com/{} {}".format(repo_url,system_apps_path))
-                    if result != 0:
+                    #result = os.system("git clone https://blah:blah@github.com/{} {}".format(repo_url,system_apps_path))
+                    result = subprocess.run(["git", "clone", f"https://blah:blah@github.com/{repo_url}", system_apps_path])
+                    if result.returncode != 0:
                         flash("Error Cloning Repo")
                     else:
                         flash("Repo Cloned")
                 else:
                     # same as before so just issue a pull to update it.
-                    result = os.system("git -C {} pull".format(system_apps_path))
-                    if result == 0:
+                    result = subprocess.run(["git", "-C", "pull", system_apps_path])
+                    if result.returncode == 0:
                         flash("Repo Updated")
                 # run the generate app list for custom repo
-                os.system("python3 gen_app_array.py")
+                os.system("python3 gen_app_array.py") # safe
                 return redirect(url_for('manager.index'))
             
             else:
