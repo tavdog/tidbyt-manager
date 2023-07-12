@@ -124,6 +124,9 @@ def create():
 @bp.route('/<string:id>/update', methods=('GET', 'POST'))
 @login_required
 def update(id):
+    # first ensure this app id exists in the current users config
+    if id not in g.user["devices"]:
+        abort(404)
     if request.method == 'POST':
         name = request.form['name']
         notes = request.form['notes']
