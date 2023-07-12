@@ -146,6 +146,8 @@ def sanitize(str):
     str = str.replace(".","")
     str = str.replace("/","")
     str = str.replace("\\","")
+    str = str.replace("%","")
+    str = str.replace("'","")
     return str
 
 # basically just call gen_apps_array.py script
