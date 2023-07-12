@@ -67,6 +67,7 @@ def process_app(app,device,user):
                         print("\t\t\t\tPreviously deleted, doing nothing")
                 else:
                     command = "/pixlet/pixlet push {} {} -b -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
+                    print(command)
                     print("pushing {}".format(app['iname']))
                     result = os.system(command)
                     app['deleted'] = False
