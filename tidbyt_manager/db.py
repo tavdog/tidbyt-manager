@@ -146,7 +146,7 @@ def sanitize(str):
 
 # basically just call gen_apps_array.py script
 def generate_apps_list():
-    os.system("python3 gen_app_array.py")
+    os.system("python3 gen_app_array.py") # safe
     print("generated apps list")
 
 def allowed_file(filename):

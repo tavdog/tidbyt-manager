@@ -467,7 +467,7 @@ def set_system_repo():
                     if db.file_exists(system_apps_path):
                         # delete the folder and re-clone.
                         print("deleting tidbyt-apps")
-                        os.system("rm -rf {}".format(system_apps_path))                        
+                        subprocess.run(["rm", "-rf", system_apps_path])                        
                     # pull the repo and save to local filesystem.
                     #result = os.system("git clone https://blah:blah@github.com/{} {}".format(repo_url,system_apps_path))
                     result = subprocess.run(["git", "clone", f"https://blah:blah@github.com/{repo_url}", system_apps_path])
