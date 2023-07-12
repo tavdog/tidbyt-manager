@@ -72,12 +72,6 @@ def create_user_dir(user):
     else:
         return False
 
-# def get_apps_list():
-    
-#     # open json file and convert to dictionary
-#     with open("tidbyt-apps/apps.json",'r') as f:
-#         return json.load(f)
-
 def get_apps_list(user):
     app_list = list()
     # test for directory named dir and if not exist creat it
@@ -179,3 +173,18 @@ def delete_user_upload(user,filename):
     except:
         print("couldn't delete file")
         return False
+
+def get_all_users():
+    users = list()
+    for user in os.listdir(get_users_dir()):
+        users.append(get_user(user))
+        
+    return users
+        
+def get_user_render_port(username):
+    users = get_all_users()
+    for i in range(len(users)):
+         if users[i]['username'] == username:
+            print(f"got port {i} for {username}")
+            return 5100+i
+

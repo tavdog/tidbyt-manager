@@ -301,8 +301,9 @@ def configapp(id,iname,delete_on_cancel):
     tmp_config_path = "{}/{}/configs/{}.tmp".format(users_dir, g.user['username'],app_basename)
     webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
 
+    user_render_port = str(db.get_user_render_port(g.user['username']))
     # always kill the pixlet proc based on port number.
-    os.system("pkill -f 5{}".format(app['iname'])) # kill pixlet process
+    os.system("pkill -f {}".format(user_render_port)) # kill pixlet process
 
     if request.method == 'POST':
 
@@ -369,11 +370,11 @@ def configapp(id,iname,delete_on_cancel):
         # execute the pixlet serve process and show in it an iframe on the config page.
         print(app_path)
         if db.file_exists(app_path):
-            subprocess.Popen(["timeout", "-k", "300", "300", "/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port=5{}'.format(app['iname'])], shell=False)
+            subprocess.Popen(["timeout", "-k", "300", "300", "/pixlet/pixlet", "--saveconfig", tmp_config_path, "serve", app_path , '--host=0.0.0.0', '--port={}'.format(user_render_port)], shell=False)
 
             # give pixlet some time to start up 
             time.sleep(2)
-            return render_template('manager/configapp.html', app=app, domain_host=domain_host, url_params=url_params, device_id=id,delete_on_cancel=delete_on_cancel)
+            return render_template('manager/configapp.html', app=app, domain_host=domain_host, url_params=url_params, device_id=id,delete_on_cancel=delete_on_cancel,user_render_port=user_render_port)
 
         else:
             flash("App Not Found")
