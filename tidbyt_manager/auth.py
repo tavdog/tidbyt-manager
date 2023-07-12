@@ -8,6 +8,14 @@ import time
 import tidbyt_manager.db as db
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+DEBUG=True
+
+def dprint(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs)
+    # else:
+    #     logging.info(*args, **kwargs)
+
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
     if not current_app.config['TESTING']: time.sleep(2)
@@ -38,9 +46,9 @@ def register():
 def login():
     if request.method == 'POST':
         if not current_app.config['TESTING']: time.sleep(2) # slow down brute force attacks
-        username = request.form['username']
-        password = request.form['password']
-        #db = get_db()
+        username = db.sanitize(request.form['username'])
+        password = db.sanitize(request.form['password'])
+        dprint(f"safeusername:{username} and hp : {password}")
         error = None
         user = db.auth_user(username,password)
         if user is False:
