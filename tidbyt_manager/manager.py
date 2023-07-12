@@ -269,7 +269,6 @@ def updateapp(id,iname):
             app["uinterval"] = uinterval
             app["display_time"] = request.form['display_time']
             app["notes"] = notes
-            app["enabled"] = enabled
             
             if user["devices"][id]["apps"][iname]['enabled'] == "true" and enabled == "false":
                 # set fresh_disable so we can delete from tidbyt once and only once
@@ -279,6 +278,7 @@ def updateapp(id,iname):
                     command = ["/pixlet/pixlet", "delete", g.user["devices"][id]['api_id'], iname, "-t",  g.user["devices"][id]['api_key']]
                     print(command)
                     subprocess.run(command)
+            app["enabled"] = enabled
             user["devices"][id]["apps"][iname] = app
             db.save_user(user)
 
