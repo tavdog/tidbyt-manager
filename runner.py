@@ -76,7 +76,7 @@ def process_app(app,device,user):
                     print("pushing {}".format(app['iname']))
                     result = subprocess.run(command)
                     app['deleted'] = False
-                if result != 0:
+                if result.returncode != 0:
                     print("\t\t\tError pushing to device")
                 else:
                     # update the config file with the new last push time
