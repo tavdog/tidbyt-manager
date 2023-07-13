@@ -59,7 +59,10 @@
                         <p class="body">Notes: {{ app['notes'] }}</p>
                         {% endif %}
                 </td>
-                <!-- <td><br><img class="w3-padding app-img" width=400 src="{{url_for('manager.appwebp', id=device['id'],iname=app['iname']) }}" alt="Preview" > -->
+                <td><br><img class="w3-padding app-img" width=400 src="{{url_for('manager.appwebp', id=device['id'],iname=app['iname']) }}" alt="Preview" >
+                  <br>
+                  Last Rendered: {{ app['last_render']|timeago }}<br>
+                  Last Pushed: {{ app['last_push']|timeago }}
           </div>
           </li>
           </td>
