@@ -33,5 +33,18 @@ def create_app(test_config=None):
     from . import manager
     app.register_blueprint(manager.bp)
     app.add_url_rule('/', endpoint='index')
+
+    import time
+    @app.template_filter('timeago')
+    def timeago(seconds):
+        if seconds == 0: return "Never"
+        # caclulate the minutes between now and the seconds passed in
+        secondsago = (time.time() - seconds)
+        if secondsago < 60:
+            return f"{secondsago} seconds ago"
+        elif secondsago < 3600:
+            return f"{int(secondsago // 60)} minutes ago"
+        elif secondsago >= 3600:
+            return f"{int(secondsago // 3600)} hours ago"
     
     return app

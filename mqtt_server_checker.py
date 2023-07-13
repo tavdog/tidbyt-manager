@@ -1,6 +1,9 @@
 import paho.mqtt.client as mqtt
 import sys
 # set server and port to the first two arguments
+if len(sys.argv) < 3:
+    print("Usage: python3 mqtt_connect.py <server> <port>")
+    sys.exit(1)
 server = sys.argv[1]
 port = int(sys.argv[2])
 
