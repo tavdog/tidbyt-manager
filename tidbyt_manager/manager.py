@@ -330,7 +330,7 @@ def configapp(id,iname,delete_on_cancel):
                 # set the enabled key in app to true now that it has been configured.
                 g.user["devices"][id]["apps"][iname]['enabled'] = "true"
                 # set last_rendered to seconds
-                g.user["devices"][id]["apps"][iname]['last_rendered'] = int(time.time())
+                g.user["devices"][id]["apps"][iname]['last_render'] = int(time.time())
            
                 if g.user["devices"][id]['api_key'] != "":
                     device = g.user["devices"][id]

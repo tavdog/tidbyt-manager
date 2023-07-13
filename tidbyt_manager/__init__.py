@@ -40,8 +40,10 @@ def create_app(test_config=None):
         if seconds == 0: return "Never"
         # caclulate the minutes between now and the seconds passed in
         secondsago = (time.time() - seconds)
-        if secondsago < 60:
-            return f"{secondsago} seconds ago"
+        if seconds < 2:
+            return " just now"
+        elif secondsago < 60:
+            return f"{int(secondsago)} seconds ago"
         elif secondsago < 3600:
             return f"{int(secondsago // 60)} minutes ago"
         elif secondsago >= 3600:
