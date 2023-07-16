@@ -98,7 +98,8 @@ def process_device(device,user):
                 print(f"\t\tStarting mqtt_runner.py for {username} - {device_id}")
                 subprocess.Popen(["python3", "device_runner.py", username, device_id])
             else:
-                print("skipping device runner")
+                pass
+                #print("skipping device runner")
         # process each app
         for app in device['apps'].values(): 
             process_app(app,device,user)
