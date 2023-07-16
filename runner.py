@@ -50,14 +50,13 @@ def process_app(app,device,user):
         command = ["/pixlet/pixlet", "render", "-c", config_path, app_path, "-o",webp_path]
         print(command)
         result = subprocess.run(command)
-        print(result)
         if result.returncode != 0:
             print("\t\t\tError running pixlet render")
         else:
             # update the config file with the new last render time
             print("\t\t\tupdate last render")
             app['last_render'] = int(time.time())
-            result = 0
+            result = None
             if len(device['api_key']) > 1:
                 # if webp filesize is zero then issue delete command instead of push
                 if os.path.getsize(webp_path) == 0:
@@ -65,7 +64,7 @@ def process_app(app,device,user):
                         #command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
                         command = ["/pixlet/pixlet", "delete", device['api_id'], app['iname'], "-t",  device['api_key']]
                         print("\t\t\t\tWebp filesize is zero. Deleting installation id {}".format(app['iname']))
-                        subprocess.run(command)
+                        result = subprocess.run(command)
                         app['deleted'] = True
                     else:
                         print("\t\t\t\tPreviously deleted, doing nothing")
@@ -76,11 +75,6 @@ def process_app(app,device,user):
                     print("pushing {}".format(app['iname']))
                     result = subprocess.run(command)
                     app['deleted'] = False
-                if result.returncode != 0:
-                    print("\t\t\tError pushing to device")
-                else:
-                    # update the config file with the new last push time
-                    print("\t\t\tupdate last push")
                     app['last_push'] = int(time.time())
             else:
                 # api_key is short meaning we probably need to push via mqtt
