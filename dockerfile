@@ -2,7 +2,7 @@ FROM golang:latest
 #FROM pixletflask:latest
 
 ############
-#set the domain env here if you don't want to use localhost. required to get the pixlet serve iframe to work
+#set the domain env here if you don't want to use localhost. required to get the pixlet serve in iframe to work
 #ENV DOMAIN tdm.wildc.net
 
 # ###################################
@@ -28,11 +28,14 @@ WORKDIR /app
 
 # install tidbyt apps
 RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
-#COPY tidbyt-apps /app/tidbyt-apps
+# or copy  your own list over
+#COPY tidbyt-apps /app/tidbyt-apps 
 
 # populate the apps.json file
 RUN python3 ./gen_app_array.py
 # install the crontab directly 
 RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
-# start the app server
+# start cron daemon
+RUN /etc/init.d/cron start
+# start the app
 CMD ["./run"]
