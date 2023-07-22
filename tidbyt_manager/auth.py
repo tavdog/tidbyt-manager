@@ -23,9 +23,13 @@ def register():
     # if session['username'] != "admin":
     #     return redirect(url_for('manager.index'))
     if request.method == 'POST':
-        username = secure_filename(request.form['username'])
-        password = generate_password_hash(request.form['password'])
         error = None
+        
+        username = db.sanitize(secure_filename(request.form['username']))
+        if username != request.form['username']:
+            error = "Invalid Username"
+        password = generate_password_hash(request.form['password'])
+        
         if not username:
             error = 'Username is required.'
         elif not password:
@@ -36,8 +40,16 @@ def register():
             user = dict()
             user["username"] = username
             user["password"] = password
+            email = "none"
+            if 'email' in request.form:
+                if '@' in request.form['email']:
+                    email = request.form['email']
+            user['email'] = email
+
             db.create_user_dir(username)
             db.save_user(user)
+            
+            flash(f"Registered as {username}.")
             return redirect(url_for('auth.login'))
         flash(error)
     return render_template('auth/register.html')
