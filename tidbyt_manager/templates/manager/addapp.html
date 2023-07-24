@@ -3,8 +3,7 @@
 <h1>{% block title %}Add App{% endblock %}</h1>
 {% endblock %}
 {% block content %} <form method="post" id="main_form">
-  <label for="name">App Selection (Custom Repo)</label>
-  <br>
+  <label for="name">App Selection</label>
   <select id=name name="name">
   {% if custom_apps_list %}
     <optgroup label="Custom Apps"></optgroup>
@@ -20,7 +19,7 @@
     {% endfor %}
   </optgroup>
   </select>
-
+<br>
 <label for="uinterval">Render Interval (minutes)</label>
 <input name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or 60}} " required>
 {% if device['api_key'] == "" %}
