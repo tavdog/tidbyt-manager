@@ -345,7 +345,7 @@ def configapp(id,iname,delete_on_cancel):
                         #command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
                         command = ["/pixlet/pixlet", "delete", device['api_id'], app['iname'], "-t",  device['api_key']]
                         print("blank output, deleting {}".format(app['iname']))
-                        subprocess.run(command)
+                        result = subprocess.run(command)
                     if result == 0:
                         # set last_pushed to seconds
                         g.user["devices"][id]["apps"][iname]['last_pushed'] = int(time.time())
