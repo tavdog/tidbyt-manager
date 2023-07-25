@@ -343,7 +343,7 @@ def configapp(id,iname,delete_on_cancel):
                     else:
                         # delete installation may error if the instlalation doesn't exist but that's ok.
                         #command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
-                        command = ["/pixlet/pixlet", "delete", g.user["devices"]['api_id'], app['iname'], "-t",  g.user["devices"]['api_key']]
+                        command = ["/pixlet/pixlet", "delete", device['api_id'], app['iname'], "-t",  g.user["devices"]['api_key']]
                         print("blank output, deleting {}".format(app['iname']))
                         subprocess.run(command)
                     if result == 0:
