@@ -5,6 +5,6 @@ configs/**
 **/*.json
 **/*.log
 .env
-tidbyt-apps/**
-users/**
+**/tidbyt-apps/**
+**/users/**
 .DS_Store
