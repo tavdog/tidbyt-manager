@@ -56,13 +56,13 @@ def process_app(app,device,user):
         # build the pixlet render command
         #command = "/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path)
         command = ["/pixlet/pixlet", "render", "-c", config_path, app_path, "-o",webp_path]
-        print(command)
+        #print(command)
         result = subprocess.run(command)
         if result.returncode != 0:
             print("\t\t\tError running pixlet render")
         else:
             # update the config file with the new last render time
-            print("\t\t\tupdate last render")
+            print("\t\t\tupdating last render")
             app['last_render'] = int(time.time())
             result = None
             if len(device['api_key']) > 1:
@@ -78,8 +78,8 @@ def process_app(app,device,user):
                 else:
                     #command = "/pixlet/pixlet push {} {} -b -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
                     command = ["/pixlet/pixlet", "push", device['api_id'], webp_path, "-b", "-t", device['api_key'], "-i", app['iname']]
-                    print(command)
-                    print("pushing {}".format(app['iname']))
+                    #print(command)
+                    print("\t\t\t\tpushing {}".format(app['iname']))
                     result = subprocess.run(command)
                     app['deleted'] = 'false'
                     app['last_push'] = int(time.time())
