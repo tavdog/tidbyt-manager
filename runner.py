@@ -13,6 +13,13 @@ DEBUG=False
 def dprint(*args, **kwargs):
     if DEBUG: print(*args, **kwargs)
 
+def print_error(result):
+    print("result.returncode: {}".format(result.returncode))
+    print("result.stderr: {}".format(result.stderr))
+    print("result.stdout: {}".format(result.stdout))
+    print("result.args: {}".format(result.args))
+
+
 def process_app(app,device,user):
     global force,DEBUG
     app_basename = "{}-{}".format(app['name'],app["iname"])
@@ -52,7 +59,7 @@ def process_app(app,device,user):
             
     # check uinterval
     if now - app['last_render'] > int(app['uinterval'])*60 or force or DEBUG:
-        print("\t\t\tRun")
+        print("\t\t\tRendering")
         # build the pixlet render command
         #command = "/pixlet/pixlet render -c {} {} -o {}".format(config_path, app_path, webp_path)
         command = ["/pixlet/pixlet", "render", "-c", config_path, app_path, "-o",webp_path]
@@ -60,6 +67,7 @@ def process_app(app,device,user):
         result = subprocess.run(command)
         if result.returncode != 0:
             print("\t\t\tError running pixlet render")
+            print_error(result)
         else:
             # update the config file with the new last render time
             print("\t\t\tupdating last render")

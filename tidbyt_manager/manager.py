@@ -338,7 +338,7 @@ def configapp(id,iname,delete_on_cancel):
                         command = ["/pixlet/pixlet", "push", device['api_id'], webp_path, "-b", "-t", device['api_key'], "-i", app['iname']]
                         print("pushing {}".format(app['iname']))
                         result = subprocess.run(command)
-                        del app['deleted']
+                        if 'deleted' in app: del app['deleted']
                     else:
                         # delete installation may error if the instlalation doesn't exist but that's ok.
                         command = ["/pixlet/pixlet", "delete", device['api_id'], app['iname'], "-t",  device['api_key']]
