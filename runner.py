@@ -2,8 +2,7 @@
 # accept a username as argument then open up that config file for that user
 # and print out the contents of that file
 
-import sys
-import os
+import sys,os,pidfile
 import json
 import datetime
 import time
@@ -129,6 +128,7 @@ def save_json(data, filename):
 def main():
     print("____________________________________-------------------------___________________________________________")
     print(f"____________________________________{datetime.datetime.now()}___________________________________________")
+    
     # set the current time variable
     now = time.time()
     global force
@@ -178,4 +178,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        with pidfile.PIDFile(f"/var/run/runner.pid"):
+            main()
+    except pidfile.AlreadyRunningError:
+        print('Already running.')
+        exit(1)
+
+    
