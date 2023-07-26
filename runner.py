@@ -41,7 +41,7 @@ def process_app(app,device,user):
     # check for enabled
     if app['enabled'] != 'true':
         print("\t\t\tApp not Enabled")
-        if app.get('deleted') == 'true': # if already deleted return
+        if app.get('deleted') == 'true' or len(device['api_key']) < 1: # if already deleted return or not tidbyt device
             return
         else:
             print("\t\t\tRecently disabled, deleting installation id {}".format(app['iname']))
