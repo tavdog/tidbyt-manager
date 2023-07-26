@@ -41,7 +41,14 @@ def process_app(app,device,user):
     # check for enabled
     if app['enabled'] != 'true':
         print("\t\t\tApp not Enabled")
-        return
+        if app.get('deleted') == 'true': # if already deleted return
+            return
+        else:
+            print("\t\t\tRecently disabled, deleting installation id {}".format(app['iname']))
+            command = ["/pixlet/pixlet", "delete", device['api_id'], app['iname'], "-t",  device['api_key']]
+            result = subprocess.run(command)
+            app['deleted'] = 'true'
+            
     # check uinterval
     if now - app['last_render'] > int(app['uinterval'])*60 or force or DEBUG:
         print("\t\t\tRun")
@@ -142,7 +149,7 @@ def main():
     for user in user_list:    
         print("User : {}".format(user))
         config_file = os.path.join("users", user, "%s.json" % user)
-        print(config_file)
+        #print(config_file)
         if not os.path.exists(config_file):
             print("No config")
             continue
