@@ -387,15 +387,18 @@ def configapp(id,iname,delete_on_cancel):
 @bp.route('/<string:id>/<string:iname>/appwebp')
 @login_required
 def appwebp(id,iname):
-    app = g.user["devices"][id]['apps'][iname]
-    app_basename = "{}-{}".format(app['name'],app["iname"])
-    webp_path = "/app/tidbyt_manager/webp/{}.webp".format(app_basename)
-     # check if the file exists
-    if db.file_exists(webp_path) and os.path.getsize(webp_path) > 0:
-        # if filesize is greater than zero
-        return send_file(webp_path, mimetype='image/webp')
-    else:
-        print("file no exist or 0 size")
+    try:
+        app = g.user["devices"][id]['apps'][iname]
+        app_basename = "{}-{}".format(app['name'],app["iname"])
+        webp_path = "/app/tidbyt_manager/webp/{}.webp".format(app_basename)
+        # check if the file exists
+        if db.file_exists(webp_path) and os.path.getsize(webp_path) > 0:
+            # if filesize is greater than zero
+            return send_file(webp_path, mimetype='image/webp')
+        else:
+            print("file no exist or 0 size")
+            abort(404)
+    except:
         abort(404)
 
 @bp.route('/set_user_repo', methods=('GET','POST'))
