@@ -8,3 +8,4 @@ configs/**
 **/tidbyt-apps/**
 **/users/**
 .DS_Store
+tidbyt-apps/
