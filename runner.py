@@ -48,6 +48,7 @@ def process_app(app,device,user):
             command = ["/pixlet/pixlet", "delete", device['api_id'], app['iname'], "-t",  device['api_key']]
             result = subprocess.run(command)
             app['deleted'] = 'true'
+            return
             
     # check uinterval
     if now - app['last_render'] > int(app['uinterval'])*60 or force or DEBUG:
@@ -67,12 +68,11 @@ def process_app(app,device,user):
             if len(device['api_key']) > 1:
                 # if webp filesize is zero then issue delete command instead of push
                 if os.path.getsize(webp_path) == 0:
-                    if not app.get('deleted'): # if we haven't already deleted this app installation delete it
-                        #command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
+                    if app.get('deleted') != 'true': # if we haven't already deleted this app installation delete it
                         command = ["/pixlet/pixlet", "delete", device['api_id'], app['iname'], "-t",  device['api_key']]
                         print("\t\t\t\tWebp filesize is zero. Deleting installation id {}".format(app['iname']))
                         result = subprocess.run(command)
-                        app['deleted'] = True
+                        app['deleted'] = 'true'
                     else:
                         print("\t\t\t\tPreviously deleted, doing nothing")
                 else:
@@ -81,7 +81,7 @@ def process_app(app,device,user):
                     print(command)
                     print("pushing {}".format(app['iname']))
                     result = subprocess.run(command)
-                    app['deleted'] = False
+                    app['deleted'] = 'false'
                     app['last_push'] = int(time.time())
             else:
                 # api_key is short meaning we probably need to push via mqtt

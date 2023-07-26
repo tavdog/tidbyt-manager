@@ -176,7 +176,6 @@ def deleteapp(id,iname):
 
     # use pixlet to delete installation of app if api_key exists (tidbyt server operation) and enabled flag is set to true
     if 'api_key' in g.user["devices"][id] and g.user["devices"][id]["apps"][iname]["enabled"] == "true":
-        # command = "/pixlet/pixlet delete {} {} -t {}".format(,iname,
         command = ["/pixlet/pixlet", "delete", g.user["devices"][id]['api_id'], iname, "-t",  g.user["devices"][id]['api_key']]
         print("Deleting installation id {}".format(iname))
         subprocess.run(command)
@@ -274,13 +273,13 @@ def updateapp(id,iname):
                 # set fresh_disable so we can delete from tidbyt once and only once
                 # use pixlet to delete installation of app if api_key exists (tidbyt server operation) and enabled flag is set to true
                 if 'api_key' in g.user["devices"][id]:
-                    #command = "/pixlet/pixlet delete {} {} -t {}".format(g.user["devices"][id]['api_id'],iname,g.user["devices"][id]['api_key'])
                     command = ["/pixlet/pixlet", "delete", g.user["devices"][id]['api_id'], iname, "-t",  g.user["devices"][id]['api_key']]
                     print(command)
                     subprocess.run(command)
+                    app['deleted'] = "true"
             app["enabled"] = enabled
             user["devices"][id]["apps"][iname] = app
-            db.save_user(user)
+            db.save_user(user) # this saves all changes
 
             return redirect(url_for('manager.index'))
     app = g.user["devices"][id]['apps'][iname]
@@ -336,16 +335,16 @@ def configapp(id,iname,delete_on_cancel):
                     device = g.user["devices"][id]
                     # check for zero filesize
                     if os.path.getsize(webp_path) > 0:
-                        #command = "/pixlet/pixlet push {} {} -t {} -i {}".format(device['api_id'], webp_path, device['api_key'], app['iname'])
                         command = ["/pixlet/pixlet", "push", device['api_id'], webp_path, "-b", "-t", device['api_key'], "-i", app['iname']]
                         print("pushing {}".format(app['iname']))
                         result = subprocess.run(command)
+                        del app['deleted']
                     else:
                         # delete installation may error if the instlalation doesn't exist but that's ok.
-                        #command = "/pixlet/pixlet delete {} {} -t {}".format(device['api_id'],app['iname'],device['api_key'])
                         command = ["/pixlet/pixlet", "delete", device['api_id'], app['iname'], "-t",  device['api_key']]
                         print("blank output, deleting {}".format(app['iname']))
                         result = subprocess.run(command)
+                        app['deleted'] = 'true'
                     if result == 0:
                         # set last_pushed to seconds
                         g.user["devices"][id]["apps"][iname]['last_pushed'] = int(time.time())
@@ -392,10 +391,11 @@ def appwebp(id,iname):
     app_basename = "{}-{}".format(app['name'],app["iname"])
     webp_path = "/app/tidbyt_manager/webp/{}.webp".format(app_basename)
      # check if the file exists
-    if db.file_exists(webp_path):
+    if db.file_exists(webp_path) and os.path.getsize(webp_path) > 0:
+        # if filesize is greater than zero
         return send_file(webp_path, mimetype='image/webp')
     else:
-        print("file no exist")
+        print("file no exist or 0 size")
         abort(404)
 
 @bp.route('/set_user_repo', methods=('GET','POST'))
