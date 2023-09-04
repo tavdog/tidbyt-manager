@@ -241,6 +241,30 @@ def addapp(id):
     else:
         abort(404)
             
+@bp.route('/<string:id>/<string:iname>/toggle_enabled', methods=(['GET']))
+@login_required
+def toggle_enabled(id,iname):
+    user = g.user
+    app = user["devices"][id]["apps"][iname]
+
+    if user["devices"][id]["apps"][iname]['enabled'] == "true":
+        app['enabled'] = "false"
+        # set fresh_disable so we can delete from tidbyt once and only once
+        # use pixlet to delete installation of app if api_key exists (tidbyt server operation) and enabled flag is set to true
+        if 'api_key' in g.user["devices"][id]:
+            command = ["/pixlet/pixlet", "delete", g.user["devices"][id]['api_id'], iname, "-t",  g.user["devices"][id]['api_key']]
+            print(command)
+            subprocess.run(command)
+            app['deleted'] = "true"
+    else:
+        # we should probably re-render and push but that'a  a pain so not doing it right now.
+        app['enabled'] = "true"
+
+    user["devices"][id]["apps"][iname] = app
+    db.save_user(user) # this saves all changes
+    flash("Change will go into effect next render cycle. For immediate change edit or re-configure the app.")
+    return redirect(url_for('manager.index'))
+
 
 @bp.route('/<string:id>/<string:iname>/updateapp', methods=('GET','POST'))
 @login_required
@@ -351,7 +375,7 @@ def configapp(id,iname,delete_on_cancel):
                     else:
                         flash("Error Pushing App")
 
-                # if we get here we have made changes to the user dict, let's save        
+                # always save       
                 db.save_user(g.user)
             else:
                 flash("Error Rendering App")

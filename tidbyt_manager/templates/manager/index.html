@@ -30,7 +30,7 @@
         <div class="post">
             <header>
             <h1>{{ app['iname'] }} &nbsp(installation id) </h1>
-            <h1>{% if app['enabled'] == "true" %}<enabled>&nbsp -- Enabled --</enabled>{% else %}<disabled>&nbsp -- Disabled --{% endif %}</disabled></h1>
+            <h1>{% if app['enabled'] == "true" %}<enabled>&nbsp -- Enabled --</enabled><a href="{{ url_for('manager.toggle_enabled', id=device['id'],iname=app['iname']) }}">Disable</a> {% else %}<disabled>&nbsp -- Disabled -- </disabled><a href="{{ url_for('manager.toggle_enabled', id=device['id'],iname=app['iname']) }}">Enable</a {% endif %}</h1>
             </header>
             <p class="body">App: {{ app['name'] }}</p>
         <p class="body">Render Interval (minutes): {{ app['uinterval'] }}</p>
