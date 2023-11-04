@@ -373,6 +373,7 @@ def configapp(id,iname,delete_on_cancel):
                         # set last_pushed to seconds
                         g.user["devices"][id]["apps"][iname]['last_pushed'] = int(time.time())
                     else:
+                        print("error pushing App: " + str(result))
                         flash("Error Pushing App")
 
                 # always save       
