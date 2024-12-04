@@ -40,6 +40,6 @@ RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
 RUN python3 ./gen_app_array.py
 # install the crontab directly 
 RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
-
+EXPOSE 8000
 # start the app
 CMD ["./run"]
