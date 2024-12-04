@@ -3,7 +3,8 @@ FROM golang:latest
 
 ############
 #set the domain env here if you don't want to use localhost. required to get the pixlet serve in iframe to work
-#ENV DOMAIN tdm.wildc.net
+# ENV DOMAIN=tdm.wildc.net
+ENV DOMAIN=localhost
 
 # ###################################
 # install pixlet
