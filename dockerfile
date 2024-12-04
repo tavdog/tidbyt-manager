@@ -7,17 +7,22 @@ FROM golang:latest
 
 # ###################################
 # install pixlet
-ENV NODE_URL https://deb.nodesource.com/setup_16.x
-ENV PIXLET_REPO https://github.com/tavdog/pixlet
-ENV TDM_REPO https://github.com/tavdog/tidbyt-manager
-ENV TIDBYT_APPS_REPO https://github.com/tidbyt/community
+ENV NODE_URL=https://deb.nodesource.com/setup_21.x
+ENV PIXLET_REPO=https://github.com/tavdog/pixlet
+#ENV PIXLET_REPO_ZIP=https://github.com/tavdog/pixlet/archive/refs/heads/config_merge.zip
+
+ENV TDM_REPO=https://github.com/tavdog/tidbyt-manager
+ENV TIDBYT_APPS_REPO=https://github.com/tidbyt/community
 
 RUN apt update && apt upgrade -y && apt install cron libwebp-dev python3-pip python3-flask python3-gunicorn -y
 RUN pip3 install --break-system-packages python-dotenv paho-mqtt python-pidfile
 WORKDIR /tmp
-RUN curl -fsSL $NODE_URL | bash - && apt-get install -y nodejs npm && node -v
+RUN curl -fsSL $NODE_URL | bash - && apt-get install -y nodejs && node -v
 WORKDIR /
-RUN git clone $PIXLET_REPO /pixlet
+RUN git clone --depth 1 -b config_merge $PIXLET_REPO /pixlet
+# RUN apt install unzip
+# RUN wget $PIXLET_REPO_ZIP && unzip main.zip
+# RUN mv pixlet-main pixlet
 WORKDIR /pixlet
 RUN npm install && npm run build && make build
 
@@ -35,7 +40,6 @@ RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
 RUN python3 ./gen_app_array.py
 # install the crontab directly 
 RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
-# start cron daemon
-RUN /etc/init.d/cron start
+
 # start the app
 CMD ["./run"]
