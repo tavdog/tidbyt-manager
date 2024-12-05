@@ -1,3 +1,5 @@
 .venv
 .vscode
 .git
+.pytest_cache
+.trunk
