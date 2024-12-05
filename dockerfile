@@ -19,6 +19,7 @@ RUN apt update && apt upgrade -y && apt install cron libwebp-dev python3-pip pyt
 RUN pip3 install --break-system-packages python-dotenv paho-mqtt python-pidfile
 WORKDIR /tmp
 RUN curl -fsSL $NODE_URL | bash - && apt-get install -y nodejs && node -v
+
 WORKDIR /
 # RUN git clone --depth 1 -b config_merge $PIXLET_REPO /pixlet
 RUN apt install unzip
@@ -27,19 +28,23 @@ RUN mv pixlet-config_merge pixlet
 WORKDIR /pixlet
 RUN npm install && npm run build && make build
 
-###################################
-# install tidbymanager app
-COPY . /app
-#RUN git clone $TDM_REPO /app
 WORKDIR /app
+####################################### uncomment all below for final deployment
+### during docker development using a mount to the app dir
+# ###################################
+# # install tidbymanager app
+# COPY . /app
+# #RUN git clone $TDM_REPO /app
+# WORKDIR /app
 
-# install tidbyt apps
-RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
-# or copy  your own list over
-#COPY tidbyt-apps /app/tidbyt-apps 
+# # install tidbyt apps
+# RUN git clone $TIDBYT_APPS_REPO tidbyt-apps
+# # or copy  your own list over
+# #COPY tidbyt-apps /app/tidbyt-apps 
 
-# populate the apps.json file
-RUN python3 ./gen_app_array.py
+# # populate the apps.json file
+# RUN python3 ./gen_app_array.py
+
 # install the crontab directly 
 RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
 EXPOSE 8000 5100

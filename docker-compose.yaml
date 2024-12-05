@@ -8,6 +8,9 @@ services:
     ports:
       - "8000:8000" # Map port 8000 on the host to port 8000 in the container
       - "5100:5100" # 5100 is used for pixlet serve interface during app configuration
+    # remove the volume when ready for production deployment
+      volumes:
+      - .:/app
     environment:
       - MQTT_BROKER_HOST=mqtt # Name of the MQTT service (hostname inside the Docker network)
       - MQTT_BROKER_PORT=1883
