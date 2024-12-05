@@ -25,12 +25,13 @@ def mqtt_setup(connect_string):
         url = urlparse(connect_string)
         user =  url.username
         passw = url.password
-        host = url.hostname
+        host = url.hostname or 'mqtt'
         port = url.port
         topic = url.path
         topic = topic[1:]
         client = mqtt.Client()
         if user and passw : client.username_pw_set(user,passw)
+        dprint(f"Connecting to {host}:{port}")
         client.connect(host,port)
         client.loop_start()
         return client,topic

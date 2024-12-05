@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000" # Map port 8000 on the host to port 8000 in the container
+      - "5100:5100" # 5100 is used for pixlet serve interface during app configuration
+    environment:
+      - MQTT_BROKER_HOST=mqtt # Name of the MQTT service (hostname inside the Docker network)
+      - MQTT_BROKER_PORT=1883
+    depends_on:
+      - mqtt
+
+  mqtt:
+    image: eclipse-mosquitto:latest
+    ports:
+      - "1883:1883" # MQTT broker port
+      - "9001:9001" # (optional) WebSocket support
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf

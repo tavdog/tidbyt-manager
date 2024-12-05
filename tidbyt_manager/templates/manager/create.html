@@ -5,7 +5,7 @@
 {% block content %} <form method="post">
 <span><label for="name">Name</label> (Descriptive name for this Tidbyt device)</span>
 <input name="name" id="name" value="{{ request.form['name'] }}" required>
-<span><label for="api_id">Device ID</label> (ID from Tidbyt app or mqtt url eg. mqtt://user:pass@hostname:1883/topic )</span>
+<span><label for="api_id">Device ID</label> (Leave Blank is using docker-compose.) -- ID from Tidbyt app or mqtt url eg. mqtt://user:pass@hostname:1883/topic </span>
 <input name="api_id" id="api_id" value="{{ request.form['api_id'] }}" required> 
 <span><label for="api_key">Device API KEY</label> (leave blank when using mqtt)</span>
 <textarea name="api_key" id="api_key" rows="5"></textarea> 

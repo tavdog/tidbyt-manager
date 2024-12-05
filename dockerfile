@@ -9,8 +9,8 @@ ENV DOMAIN=localhost
 # ###################################
 # install pixlet
 ENV NODE_URL=https://deb.nodesource.com/setup_21.x
-ENV PIXLET_REPO=https://github.com/tavdog/pixlet
-#ENV PIXLET_REPO_ZIP=https://github.com/tavdog/pixlet/archive/refs/heads/config_merge.zip
+#ENV PIXLET_REPO=https://github.com/tavdog/pixlet
+ENV PIXLET_REPO_ZIP=https://github.com/tavdog/pixlet/archive/refs/heads/config_merge.zip
 
 ENV TDM_REPO=https://github.com/tavdog/tidbyt-manager
 ENV TIDBYT_APPS_REPO=https://github.com/tidbyt/community
@@ -20,10 +20,10 @@ RUN pip3 install --break-system-packages python-dotenv paho-mqtt python-pidfile
 WORKDIR /tmp
 RUN curl -fsSL $NODE_URL | bash - && apt-get install -y nodejs && node -v
 WORKDIR /
-RUN git clone --depth 1 -b config_merge $PIXLET_REPO /pixlet
-# RUN apt install unzip
-# RUN wget $PIXLET_REPO_ZIP && unzip main.zip
-# RUN mv pixlet-main pixlet
+# RUN git clone --depth 1 -b config_merge $PIXLET_REPO /pixlet
+RUN apt install unzip
+RUN wget $PIXLET_REPO_ZIP -O pixlet-main.zip && unzip pixlet-main.zip
+RUN mv pixlet-config_merge pixlet
 WORKDIR /pixlet
 RUN npm install && npm run build && make build
 
