@@ -29,7 +29,8 @@ RUN npm install && npm run build && make build
 
 ###################################
 # install tidbymanager app
-RUN git clone $TDM_REPO /app
+COPY . /app
+#RUN git clone $TDM_REPO /app
 WORKDIR /app
 
 # install tidbyt apps
