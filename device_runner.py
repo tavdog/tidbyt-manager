@@ -26,7 +26,7 @@ def mqtt_setup(connect_string):
         user =  url.username
         passw = url.password
         host = url.hostname or 'mqtt'
-        port = url.port
+        port = url.port or 1883
         topic = url.path
         topic = topic[1:]
         client = mqtt.Client()

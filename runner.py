@@ -109,7 +109,8 @@ def process_device(device,user):
             # start the mqtt runner if api_id has mqtt in there and no pid file
             if "mqtt://" in device['api_id'] and not os.path.exists(f"/var/run/{username}-{device_id}.pid"):
                 import subprocess
-                print(f"\t\tStarting mqtt_runner.py for {username} - {device_id}")
+                print(f"\t\tStarting mqtt_runner.py for {username}-{device_id}")
+                print(f"python3 device_runner.py {username} {device_id}")
                 subprocess.Popen(["python3", "device_runner.py", username, device_id])
             else:
                 pass

@@ -135,7 +135,7 @@ def get_app_details(user,name):
     return {}
 
 def sanitize(str):
-    str = str.replace(" ","")
+    str = str.replace(" ","_")
     str = str.replace("-","")
     str = str.replace(".","")
     str = str.replace("/","")
@@ -182,7 +182,6 @@ def get_all_users():
     return users
         
 def get_user_render_port(username):
-    #return 5100
     users = get_all_users()
     for i in range(len(users)):
          if users[i]['username'] == username:

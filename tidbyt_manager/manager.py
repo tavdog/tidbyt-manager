@@ -124,7 +124,7 @@ def create():
 @bp.route('/<string:id>/update', methods=('GET', 'POST'))
 @login_required
 def update(id):
-    # first ensure this app id exists in the current users config
+    # first ensure this device id exists in the current users config
     if id not in g.user["devices"]:
         abort(404)
     if request.method == 'POST':
@@ -141,7 +141,12 @@ def update(id):
             device = dict()
             device["id"] = id
             device["name"] = name
-            device["api_id"] = api_id
+            if "api_id" not in device:
+                topic = db.sanitize(name)
+                device["api_id"] = f"mqtt://mqtt/{topic}"
+            else :
+                device["api_id"] = api_id
+
             device["api_key"] = api_key
             device["notes"] = notes
             

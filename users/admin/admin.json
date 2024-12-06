@@ -4,8 +4,8 @@
     "devices": {
         "9abe2858-554a-4913-92ce-c4c27dd16c53": {
             "id": "9abe2858-554a-4913-92ce-c4c27dd16c53",
-            "name": "Testies",
-            "api_id": "",
+            "name": "Tavis' Device",
+            "api_id": "mqtt://mqtt/Tavis_Device",
             "api_key": "",
             "notes": "",
             "apps": {
@@ -16,7 +16,7 @@
                     "display_time": "10 ",
                     "notes": "",
                     "enabled": "true",
-                    "last_render": 1733462821,
+                    "last_render": 1733475661,
                     "last_push": 0,
                     "path": "tidbyt-apps/apps/3cellularautomata/3cellularautomata.star"
                 }
