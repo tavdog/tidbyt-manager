@@ -1,10 +1,10 @@
 # tidbyt-manager
-This is a very basic flask app for managing externally run applets for your tidbyt.
-The docker-compose file will build and create the web app container itself and an mqtt/mosquitto container
+This is a very basic flask app for managing externally run applets for your tidbyt.  This project can be used to run your tidbyt completely locally without using the
+backend servers of tidbyt.
+The docker-compose file will build and create the web app container and an mqtt/mosquitto container
 ```docker-compose up``` should do everything.
 
 default login in admin / password
-
 
 docker needs port 8000 and 5100-5120 port range opened up (use --network=host to make it easy ((doesn't work on mac docker though))
 
