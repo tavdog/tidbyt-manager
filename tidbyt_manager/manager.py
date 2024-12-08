@@ -15,6 +15,8 @@ from werkzeug.exceptions import abort
 from tidbyt_manager.auth import login_required
 import tidbyt_manager.db as db
 import uuid, os, subprocess, sys
+from datetime import datetime
+import time
 
 
 bp = Blueprint("manager", __name__)
@@ -564,7 +566,6 @@ def next_app(username,device_name):
     user = db.get_user(username)
     device = list(user["devices"].values())[0]
 
-    print("got last app index of : " + str(device['last_app_index']))
     # treat em like an array
     apps_list = list(device["apps"].values())
     if "last_app_index" not in device:
@@ -578,13 +579,11 @@ def next_app(username,device_name):
             next_app_dict = apps_list[0]  # go to the beginning
             device["last_app_index"] = 0
 
-    # print(str(user))
-    
     db.save_user(user)
     print("got next_app_dict: "+ str(next_app_dict))
     app = next_app_dict
 
-    if app['enabled'] == False:
+    if app['enabled'] == 'false':
         # recurse until we find one that's enabled
         print("disabled app")
         return next_app(username,device_name)
@@ -595,15 +594,14 @@ def next_app(username,device_name):
         print(webp_path)
         # check if the file exists
         if db.file_exists(webp_path) and os.path.getsize(webp_path) > 0:
+            # set last_pushed value
+            app["last_push"] = int(time.time())
+            db.save_user(user)
             # if filesize is greater than zero
-            return send_file(webp_path, mimetype="image/webp")
-        
+            return send_file(webp_path, mimetype="image/webp")        
         else:
             print("file not found")
             return next_app(username,device_name) # run it recursively until we get a file.
-        
-        
-
 
 
 @bp.route("/<string:id>/<string:iname>/appwebp")

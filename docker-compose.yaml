@@ -15,6 +15,7 @@ services:
     environment:
       - MQTT_BROKER_HOST=mqtt # Name of the MQTT service (hostname inside the Docker network)
       - MQTT_BROKER_PORT=1883
+      - PYTHONUNBUFFERED=1
       
 
     depends_on:

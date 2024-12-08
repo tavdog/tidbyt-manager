@@ -31,8 +31,8 @@ def get_user(username):
             user = json.load(file)
 #            print("return user")
             return user
-    except:
-        print("problem with get_user")
+    except Exception as e:
+        print("problem with get_user" + str(e))
         return False
 
 def auth_user(username,password):
