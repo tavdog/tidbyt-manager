@@ -1,6 +1,6 @@
 # handles non-tidbyt api devices.  pushes web directly via mqtt based on timing values set in user config file
 
-import sys, os, json
+import sys, os, json, shutil
 import datetime, time, pidfile
 from itertools import cycle
 import paho.mqtt.client as mqtt
@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 import logging
 
-DEBUG=False
+DEBUG=True
 
 def dprint(*args, **kwargs):
     if DEBUG:
@@ -40,7 +40,8 @@ def mqtt_setup(connect_string):
         dprint(repr(e))
         return None,None
 
-def mqtt_send(client,topic,webp_path):
+def mqtt_send_img(client,topic,webp_path):
+    topic = topic + "/img"
     dprint(f"in mqtt send with topic {topic}")
     if os.path.isfile(webp_path) and os.path.getsize(webp_path) > 0:
         file_size = os.stat(webp_path)
@@ -148,15 +149,25 @@ def push_loop(device,mqtt_client,topic,config_path):
         dprint("apps is {}".format(json.dumps(app)))
         app_basename = "{}-{}".format(app['name'],app["iname"])
         webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
-        
+        webp_curr_path = "tidbyt_manager/webp/{}.webp".format(device['name'])
+        # copy webp_path file to current/device_name.webp
+        dprint("copying webp to current")
+        # current_directory = os.getcwd()  # Get the current working directory
+        destination_path = "tidbyt_manager/webp/skidbyt_1.webp"  # Create the destination path
+
+        # Copy the file
+        shutil.copy(webp_path, destination_path)
         delay = app.get('display_time',5)
         
-        dprint("pushing {}".format(app_basename))
-        if mqtt_send(mqtt_client,topic,webp_path):
-            time.sleep(int(delay))
+        if "mqtt" in device['api_id']:
+            dprint("publishing {}".format(app_basename))
+            if mqtt_send_img(mqtt_client,topic,webp_path):
+                time.sleep(int(delay))
+            else:
+                dprint("Mqtt Error. Ensure you have publish permissions")
+                time.sleep(10) # so we don't spam the mqtt server on errors
         else:
-            dprint("Mqtt Error. Ensure you have publish permissions")
-            time.sleep(10) # so we don't spam the mqtt server on errors
+            time.sleep(int(delay))
 
         # check for the last item and check for modified config file if so, restart the loop
         if i == len(app_array) - 1:

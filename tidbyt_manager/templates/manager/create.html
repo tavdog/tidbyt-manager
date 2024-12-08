@@ -7,6 +7,12 @@
 <input name="name" id="name" value="{{ request.form['name'] }}" required>
 <span><label for="api_id">Device ID</label> (Leave Blank if using docker-compose.) -- ID from Tidbyt app or mqtt url eg. mqtt://user:pass@hostname:1883/topic </span>
 <input name="api_id" id="api_id" value="{{ request.form['api_id'] }}" > 
+<span><label for="brightness">Brightness</label></span>
+<select name="brightness" id="brightness">
+    <option value="low">Low</option>
+    <option value="medium">Med (Medium)</option> <!-- corrected option value -->
+    <option value="high">High</option>
+</select>
 <span><label for="api_key">Device API KEY</label> (leave blank when using mqtt)</span>
 <textarea name="api_key" id="api_key" rows="5"></textarea> 
 <label for="notes">Notes</label>
