@@ -8,3 +8,4 @@ configs/**
 **/tidbyt-apps/**
 .DS_Store
 tidbyt-apps/
+users/admin/admin.json
