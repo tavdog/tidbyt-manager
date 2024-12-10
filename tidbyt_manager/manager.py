@@ -395,10 +395,50 @@ def updateapp(id, iname):
     return render_template("manager/updateapp.html", app=app, device_id=id)
 
 
-@bp.route(
-    "/<string:id>/<string:iname>/<int:delete_on_cancel>/configapp",
-    methods=("GET", "POST"),
-)
+def possibly_render(user,app):
+    result = False
+    if not app.get("enabled",True):
+        print("App Disabled")
+        return result
+    now = int(time.time())
+    app_basename = "{}-{}".format(app["name"], app["iname"])
+    config_path = "users/{}/configs/{}.json".format(user["username"], app_basename)
+    webp_path = "tidbyt_manager/webp/{}.webp".format(app_basename)
+    if "path" in app:
+        app_path = app["path"]
+    else:
+        print("\t\t\tNo path for {}, trying default location".format(app["name"]))
+        app_path = "tidbyt-apps/apps/{}/{}.star".format(
+            app["name"].replace("_", ""), app["name"]
+        )
+    if "last_render" not in app or now - app["last_render"] > int(app["uinterval"]) * 60:
+        print("\t\t\tRendering")
+        # build the pixlet render command
+        command = [
+            "/pixlet/pixlet",
+            "render",
+            "-c",
+            config_path,
+            app_path,
+            "-o",
+            webp_path,
+        ]
+        # print(command)
+        result = subprocess.run(command)
+        if result.returncode != 0:
+            print("\t\t\tError running pixlet render")
+            print(result)
+        else:
+            # update the config file with the new last render time
+            print("\t\t\tupdating last render")
+            app["last_render"] = int(time.time())
+            result = True
+    else:
+        print("NO RENDER")
+    return result
+
+
+@bp.route("/<string:id>/<string:iname>/<int:delete_on_cancel>/configapp",methods=("GET", "POST"))
 @login_required
 def configapp(id, iname, delete_on_cancel):
     users_dir = db.get_users_dir()
@@ -587,9 +627,11 @@ def next_app(username,device_name):
             next_app_dict = apps_list[0]  # go to the beginning
             device["last_app_index"] = 0
 
-    db.save_user(user)
     print("got next_app_dict: "+ str(next_app_dict))
     app = next_app_dict
+    # check if the webp needs update/render and do it
+    possibly_render(user,app)
+    db.save_user(user)
 
     if app['enabled'] == 'false':
         # recurse until we find one that's enabled
@@ -600,8 +642,7 @@ def next_app(username,device_name):
 
         webp_path = "/app/tidbyt_manager/webp/{}.webp".format(app_basename)
         print(webp_path)
-        # check if the webp needs update/render and do it
-        
+
         # check if the file exists
         if db.file_exists(webp_path) and os.path.getsize(webp_path) > 0:
             # set last_pushed value
