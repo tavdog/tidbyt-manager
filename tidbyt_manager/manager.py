@@ -9,6 +9,7 @@ from flask import (
     send_file,
     abort,
     current_app,
+    Response,
 )
 
 from werkzeug.exceptions import abort
@@ -561,6 +562,13 @@ def configapp(id, iname, delete_on_cancel):
             return redirect(url_for("manager.index"))
 
 
+@bp.route("/<string:username>/<string:device_name>/brightness", methods=("GET",))
+def get_brightness(username, device_name):
+    user = db.get_user(username)
+    device = list(user["devices"].values())[0]
+    return Response('50', mimetype='text/plain')
+
+
 @bp.route("/<string:username>/<string:device_name>/next")
 def next_app(username,device_name):
     user = db.get_user(username)
@@ -592,6 +600,8 @@ def next_app(username,device_name):
 
         webp_path = "/app/tidbyt_manager/webp/{}.webp".format(app_basename)
         print(webp_path)
+        # check if the webp needs update/render and do it
+        
         # check if the file exists
         if db.file_exists(webp_path) and os.path.getsize(webp_path) > 0:
             # set last_pushed value
