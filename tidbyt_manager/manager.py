@@ -606,7 +606,13 @@ def configapp(id, iname, delete_on_cancel):
 def get_brightness(username, device_name):
     user = db.get_user(username)
     device = list(user["devices"].values())[0]
-    return Response('50', mimetype='text/plain')
+    brightness_mapping = { "dim": 10, "low": 20, "medium": 40, "high": 80 }
+    brightness_string = device.get("brightness", "medium").lower()  # Assume this is how you get the brightness value from your device
+    print(f"brightness string {brightness_string}")
+    brightness_value = brightness_mapping[brightness_string]  # Get the numerical value from the dictionary, default to 50 if not found
+
+    print(f"brightness value {brightness_value}")
+    return Response(str(brightness_value), mimetype='text/plain')
 
 
 @bp.route("/<string:username>/<string:device_name>/next")

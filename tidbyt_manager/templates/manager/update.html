@@ -13,9 +13,10 @@ value="{{ request.form['name'] or device['name'] }}" required>
 value="{{ request.form['api_id'] or device['api_id'] }}">
 <span><label for="brightness">Brightness</label></span>
 <select name="brightness" id="brightness">
-    <option value="low">Low</option>
-    <option value="medium">Medium</option> <!-- corrected option value -->
-    <option value="high">High</option>
+    <option value="dim" {% if device.brightness == 'dim' %}selected{% endif %}>Dim</option>
+    <option value="low" {% if device.brightness == 'low' %}selected{% endif %}>Low</option>
+    <option value="medium" {% if device.brightness == 'medium' %}selected{% endif %}>Medium</option>
+    <option value="high" {% if device.brightness == 'high' %}selected{% endif %}>High</option>
 </select>
 <label for="api_key">API KEY </label>
 <textarea name="api_key" id="api_key" rows="6">{{ request.form['api_key'] or device['api_key'] }}</textarea>
