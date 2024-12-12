@@ -31,7 +31,7 @@ def index():
 
     devices = dict()
     if "devices" in g.user:
-        devices = g.user["devices"].values()
+        devices = reversed(list(g.user["devices"].values()))
     return render_template("manager/index.html", devices=devices)
 
 
