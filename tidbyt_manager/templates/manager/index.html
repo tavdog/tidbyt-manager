@@ -17,7 +17,7 @@
 <a class="w3-button w3-teal w3-round" style="width: 100px;" href="{{ url_for('manager.update', id=device['id']) }}">Edit</a> <a class="w3-button w3-teal w3-round" style="width: 100px;" href="{{ url_for('manager.addapp', id=device['id']) }}">Add App</a>
 </td></tr></table>
 </header>
-<p class="body">API ID: {{ device['api_id'] }}</p>
+<p class="body">REMOTE URL: {{ device['api_id'] }}</p>
 <p class="body">API KEY: {{ device['api_key'][0:10] }} ... {{ device['api_key'][-10:-1] }}</p>
 {% if device['notes'] != '' %}
 <p class="body">Notes: {{ device['notes'] }}</p>

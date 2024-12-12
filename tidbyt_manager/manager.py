@@ -606,11 +606,7 @@ def configapp(id, iname, delete_on_cancel):
 def get_brightness(username, device_name):
     user = db.get_user(username)
     device = list(user["devices"].values())[0]
-    brightness_mapping = { "dim": 10, "low": 20, "medium": 40, "high": 80 }
-    brightness_string = device.get("brightness", "medium").lower()  # Assume this is how you get the brightness value from your device
-    print(f"brightness string {brightness_string}")
-    brightness_value = brightness_mapping[brightness_string]  # Get the numerical value from the dictionary, default to 50 if not found
-
+    brightness_value = db.brightness_int_from_string(device.get("brightness", "medium").lower())  # Assume this is how you get the brightness value from your device
     print(f"brightness value {brightness_value}")
     return Response(str(brightness_value), mimetype='text/plain')
 
@@ -655,7 +651,12 @@ def next_app(username,device_name):
             app["last_push"] = int(time.time())
             db.save_user(user)
             # if filesize is greater than zero
-            return send_file(webp_path, mimetype="image/webp")        
+            # return send_file(webp_path, mimetype="image/webp")
+            response = send_file(webp_path, mimetype="image/webp")
+            # Add custom header
+            
+            response.headers["Skidbyt-Brightness"] = db.brightness_int_from_string(app.get('brightness', device.get("brightness","medium")))
+            return response        
         else:
             print("file not found")
             return next_app(username,device_name) # run it recursively until we get a file.
