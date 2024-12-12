@@ -1,6 +1,5 @@
 #!/bin/sh
 rm /var/run/*.pid
-/etc/init.d/cron start
 # PRODUCTION
 #python3 -m gunicorn --config gunicorn.conf.py "tidbyt_manager:create_app()"
 

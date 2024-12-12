@@ -46,7 +46,7 @@ WORKDIR /app
 # RUN python3 ./gen_app_array.py
 
 # install the crontab directly 
-RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
-EXPOSE 8000 5100
+#RUN echo '* * * * * root cd /app ; python3 runner.py >> /app/runner.log 2>&1' > /etc/cron.d/tdmrunner
+EXPOSE 8000 5100 5101
 # start the app
 CMD ["./run"]

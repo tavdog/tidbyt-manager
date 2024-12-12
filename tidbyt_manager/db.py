@@ -5,7 +5,6 @@ from flask import current_app
 
 def brightness_int_from_string(brightness_string):
     brightness_mapping = { "dim": 10, "low": 20, "medium": 40, "high": 80 }
-    print(f"brightness string {brightness_string}")
     brightness_value = brightness_mapping[brightness_string]  # Get the numerical value from the dictionary, default to 50 if not found
     return brightness_value
 

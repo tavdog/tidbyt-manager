@@ -13,7 +13,6 @@ services:
       - .:/app # remove when ready for production
       - "/etc/localtime:/etc/localtime:ro" # used to sync docker with host time
     environment:
-      - MQTT_BROKER_HOST=mqtt # Name of the MQTT service (hostname inside the Docker network)
-      - MQTT_BROKER_PORT=1883
+      - SERVER_HOSTNAME=M1Pro.local:8000
       - PYTHONUNBUFFERED=1
       

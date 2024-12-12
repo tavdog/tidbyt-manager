@@ -10,7 +10,7 @@ def create_app(test_config=None):
         app.config.from_mapping(
         SECRET_KEY='lksdj;as987q3908475ukjhfgklauy983475iuhdfkjghairutyh',
         MAX_CONTENT_LENGTH = 1000 * 1000, # 1mbyte upload size limit
-        DOMAIN = os.environ['DOMAIN'] or 'localhost',
+        DOMAIN = os.environ['SERVER_HOSTNAME'] or 'localhost',
         USERS_DIR = 'users',
     )
         
@@ -18,7 +18,7 @@ def create_app(test_config=None):
         app.config.from_mapping(
         SECRET_KEY='lksdj;as987q3908475ukjhfgklauy983475iuhdfkjghairutyh',
         MAX_CONTENT_LENGTH = 1000 * 1000, # 1mbyte upload size limit
-        DOMAIN = 'localhost',
+        DOMAIN = os.environ['SERVER_HOSTANAME'] or 'localhost',
         USERS_DIR = 'tests/users',
     )
 

@@ -114,7 +114,7 @@ def deleteuser(username):
 def create():
     if request.method == "POST":
         name = request.form["name"]
-        api_id = request.form["api_id"]
+        api_id = request.form["api_id"] # using this for remote_url now
         api_key = request.form["api_key"]
         notes = request.form["notes"]
         error = None
@@ -127,6 +127,9 @@ def create():
             device["id"] = str(uuid.uuid4())
             print("id is :" + str(device["id"]))
             device["name"] = name
+            if not api_id:
+                sname = db.sanitize(name)
+                api_id = f"http://{current_app.config['DOMAIN']}/{g.user['username']}/{sname}/next" 
             device["api_id"] = api_id
             device["api_key"] = api_key
             device["notes"] = notes
@@ -614,7 +617,8 @@ def get_brightness(username, device_name):
 @bp.route("/<string:username>/<string:device_name>/next")
 def next_app(username,device_name):
     user = db.get_user(username)
-    device = list(user["devices"].values())[0]
+    # Pick the device out of the list of devices where device_name in contained in api_id
+    device = [d for d in user["devices"].values() if device_name in d['api_id']][0]
 
     # treat em like an array
     apps_list = list(device["apps"].values())
