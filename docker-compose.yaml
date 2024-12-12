@@ -13,6 +13,7 @@ services:
       - .:/app # remove when ready for production
       - "/etc/localtime:/etc/localtime:ro" # used to sync docker with host time
     environment:
-      - SERVER_HOSTNAME=M1Pro.local:8000
+      - SERVER_HOSTNAME=M1Pro.local
+      - SERVER_PORT=8000
       - PYTHONUNBUFFERED=1
       

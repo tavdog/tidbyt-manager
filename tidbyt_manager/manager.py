@@ -129,7 +129,7 @@ def create():
             device["name"] = name
             if not api_id:
                 sname = db.sanitize(name)
-                api_id = f"http://{current_app.config['DOMAIN']}/{g.user['username']}/{sname}/next" 
+                api_id = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{sname}/next"
             device["api_id"] = api_id
             device["api_key"] = api_key
             device["notes"] = notes

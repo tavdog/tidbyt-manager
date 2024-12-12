@@ -5,7 +5,7 @@
 {% endblock %}
 {% block content %}
 {% if g.user %}
-<br><a class="w3-button w3-purple w3-round w3-padding" href="{{ url_for('manager.create') }}">New Tidbyt</a> <a class="w3-button w3-purple w3-round w3-padding" href="{{ url_for('manager.uploadapp') }}">Upload .star file</a><hr>
+<br><a class="w3-button w3-purple w3-round w3-padding" href="{{ url_for('manager.create') }}">New Skidbyt</a> <a class="w3-button w3-purple w3-round w3-padding" href="{{ url_for('manager.uploadapp') }}">Upload .star file</a><hr>
 {% endif %}
 {% for device in devices %}
 <div class="w3-card-4 w3-padding">
