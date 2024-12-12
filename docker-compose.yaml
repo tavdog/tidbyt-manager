@@ -17,14 +17,3 @@ services:
       - MQTT_BROKER_PORT=1883
       - PYTHONUNBUFFERED=1
       
-
-    depends_on:
-      - mqtt
-
-  mqtt:
-    image: eclipse-mosquitto:latest
-    ports:
-      - "1883:1883" # MQTT broker port
-      - "9001:9001" # (optional) WebSocket support
-    volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
