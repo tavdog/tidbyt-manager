@@ -1,5 +1,0 @@
-[submodule "tidbyt-apps"]
-	path = tidbyt-apps
-	url = https://github.com/tavdog/tidbyt-apps
-	branch = master
-	ignore = dirty
