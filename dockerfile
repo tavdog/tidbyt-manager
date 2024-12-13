@@ -26,8 +26,8 @@ RUN npm install && npm run build && make build
 COPY . /app
 WORKDIR /app
 
-# install tidbyt apps
-RUN git clone --depth 1 $TIDBYT_APPS_REPO tidbyt-apps
+# install tidbyt apps, try pull first if already there
+RUN git clone $TIDBYT_APPS_REPO tidbyt-apps || echo "apps dir already there"
 # or copy  your own list over
 #COPY tidbyt-apps /app/tidbyt-apps 
 
