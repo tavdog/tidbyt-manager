@@ -1,0 +1,3 @@
+#!/bin/sh
+# PRODUCTION
+python3 -m gunicorn --config gunicorn.conf.py "tidbyt_manager:create_app()"

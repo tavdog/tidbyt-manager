@@ -16,4 +16,5 @@ services:
       - SERVER_HOSTNAME=${SERVER_HOSTNAME}
       - SERVER_PORT=${SERVER_PORT}
       - PYTHONUNBUFFERED=1
+    command: ./run_production
       
