@@ -10,8 +10,8 @@ services:
       - "5100:5100" # 5100 is used for pixlet serve interface during app configuration
       - "5101:5101" # user 2
     volumes:
-      - .:/app # remove when ready for production
       - "/etc/localtime:/etc/localtime:ro" # used to sync docker with host time
+#      - .:/app # remove when ready for production
     environment:
       - SERVER_HOSTNAME=M1Pro.local
       - SERVER_PORT=8000
