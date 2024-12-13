@@ -170,7 +170,7 @@ def update(id):
             if len(api_id) < 1:
                 print("no api_id in device")
                 topic = db.sanitize(name).lower()
-                device["api_id"] = f"{current_app.config['HOSTNAME']}:{current_app.config['MAIN_PORT']}/{g.user['username']/{topic}/next}"
+                device["api_id"] = f"mqtt://mqtt/{topic}"
             else:
                 device["api_id"] = api_id
 
