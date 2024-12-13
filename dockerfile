@@ -26,6 +26,8 @@ RUN npm install && npm run build && make build
 COPY . /app
 WORKDIR /app
 
+COPY users/admin/admin.json.default users/admin/admin.json
+
 # install tidbyt apps, try pull first if already there
 RUN git clone $TIDBYT_APPS_REPO tidbyt-apps || echo "apps dir already there"
 # or copy  your own list over
