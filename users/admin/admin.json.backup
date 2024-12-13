@@ -4,9 +4,9 @@
     "devices": {
         "9abe2858-554a-4913-92ce-c4c27dd16c53": {
             "id": "9abe2858-554a-4913-92ce-c4c27dd16c53",
-            "name": "Skidbyt 1",
+            "name": "Tronbyt 1",
             "brightness": "low",
-            "api_id": "http://192.168.1.75:8000/current/skidbyt_1",
+            "api_id": "http://192.168.1.75:8000/current/tronbyt_1",
             "api_key": "",
             "notes": "",
             "apps": {

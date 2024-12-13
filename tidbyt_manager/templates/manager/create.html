@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 {% block header %}
-<h1>{% block title %}New Skidbyt Device{% endblock %}</h1>
+<h1>{% block title %}New Tronbyt Device{% endblock %}</h1>
 {% endblock %}
 {% block content %} <form method="post">
-<span><label for="name">Name</label> (Descriptive name for this Skidbyt device)</span>
+<span><label for="name">Name</label> (Descriptive name for this Tronbyt device)</span>
 <input name="name" id="name" value="{{ request.form['name'] }}" required>
-<span><label for="api_id">Device ID</label> (Leave Blank if using docker-compose.) -- ID from Skidbyt app or mqtt url eg. mqtt://user:pass@hostname:1883/topic </span>
+<span><label for="api_id">Device ID</label> (Leave Blank if using docker-compose.) -- ID from Tronbyt app or mqtt url eg. mqtt://user:pass@hostname:1883/topic </span>
 <input name="api_id" id="api_id" value="{{ request.form['api_id'] }}" > 
 <span><label for="brightness">Brightness</label></span>
 <select name="brightness" id="brightness">

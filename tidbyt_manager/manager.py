@@ -659,7 +659,7 @@ def next_app(username,device_name):
             response = send_file(webp_path, mimetype="image/webp")
             # Add custom header
             
-            response.headers["Skidbyt-Brightness"] = db.brightness_int_from_string(app.get('brightness', device.get("brightness","medium")))
+            response.headers["Tronbyt-Brightness"] = db.brightness_int_from_string(app.get('brightness', device.get("brightness","medium")))
             return response        
         else:
             print("file not found")

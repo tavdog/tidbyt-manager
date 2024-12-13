@@ -1,7 +1,7 @@
 """
 Applet: XScreenSaver
 Summary: Hundreds of animations
-Description: Shows two hundred and sixty-five different XScreenSaver animations, all scaled (way) down for the Skidbyt.
+Description: Shows two hundred and sixty-five different XScreenSaver animations, all scaled (way) down for the Tronbyt.
 Author: Greg Knauss and XScreenSaver
 """
 
