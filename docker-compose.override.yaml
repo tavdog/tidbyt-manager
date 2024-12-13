@@ -4,5 +4,5 @@ services:
   web:
     volumes:
      - .:/app # remove when ready for production
-  ccommand: ./run_development
+    command: ["./run.development"]
       
