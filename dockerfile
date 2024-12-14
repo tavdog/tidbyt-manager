@@ -23,7 +23,7 @@ RUN npm install && npm run build && make build
 COPY . /app
 WORKDIR /app
 
-COPY users/admin/admin.json.default users/admin/admin.json
+RUN cp users/admin/admin.json.default users/admin/admin.json
 
 # if this errors it's because directory is probably already there
 RUN git clone $TIDBYT_APPS_REPO tidbyt-apps || echo "apps dir already there"

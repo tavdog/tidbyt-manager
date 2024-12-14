@@ -641,7 +641,7 @@ def next_app(username,device_name):
             next_app_dict = apps_list[0]  # go to the beginning
             device_last_app_index[device["id"]] = 0
 
-    print("got next_app_dict: "+ str(next_app_dict))
+    print("got next app: "+ next_app_dict['name'])
     app = next_app_dict
     # check if the webp needs update/render and do it, save if rendered
     if possibly_render(user,app):
