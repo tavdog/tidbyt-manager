@@ -417,15 +417,24 @@ def possibly_render(user,app):
     if "last_render" not in app or now - app["last_render"] > int(app["uinterval"]) * 60:
         print("\t\t\tRendering")
         # build the pixlet render command
-        command = [
-            "/pixlet/pixlet",
-            "render",
-            "-c",
-            config_path,
-            app_path,
-            "-o",
-            webp_path,
-        ]
+        if os.path.exists(config_path): 
+            command = [
+                "/pixlet/pixlet",
+                "render",
+                "-c",
+                config_path,
+                app_path,
+                "-o",
+                webp_path,
+            ]
+        else:  # if the path doesn't exist then don't include it in render command
+            command = [
+                "/pixlet/pixlet",
+                "render",
+                app_path,
+                "-o",
+                webp_path,
+            ]
         # print(command)
         result = subprocess.run(command)
         if result.returncode != 0:
