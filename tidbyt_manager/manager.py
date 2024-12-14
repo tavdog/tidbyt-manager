@@ -642,6 +642,7 @@ def next_app(username,device_name):
     if app['enabled'] == 'false':
         # recurse until we find one that's enabled
         print("disabled app")
+        time.sleep(0.25) #delay when recursing to avoid accidental runaway
         return next_app(username,device_name)
     else:
         app_basename = "{}-{}".format(app["name"], app["iname"])
@@ -663,6 +664,7 @@ def next_app(username,device_name):
             return response        
         else:
             print("file not found")
+            time.sleep(0.25) # delay when recursing to avoid accidental runaway
             return next_app(username,device_name) # run it recursively until we get a file.
 
 

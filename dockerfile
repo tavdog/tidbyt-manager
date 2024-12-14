@@ -18,9 +18,6 @@ RUN git clone --depth 1 -b config_merge $PIXLET_REPO /pixlet
 WORKDIR /pixlet
 RUN npm install && npm run build && make build
 
-####################################### uncomment all below for final deployment
-### during development use a mount to the app dir
-# ###################################
 
 # install tidbymanager app
 COPY . /app
@@ -28,7 +25,7 @@ WORKDIR /app
 
 COPY users/admin/admin.json.default users/admin/admin.json
 
-# install tidbyt apps, try pull first if already there
+# if this errors it's because directory is probably already there
 RUN git clone $TIDBYT_APPS_REPO tidbyt-apps || echo "apps dir already there"
 # or copy  your own list over
 #COPY tidbyt-apps /app/tidbyt-apps 
