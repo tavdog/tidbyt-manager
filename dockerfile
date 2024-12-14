@@ -30,9 +30,6 @@ RUN git clone $TIDBYT_APPS_REPO tidbyt-apps || echo "apps dir already there"
 # or copy  your own list over
 #COPY tidbyt-apps /app/tidbyt-apps 
 
-# populate the apps.json file
-RUN python3 ./gen_app_array.py
-
 # 8000 for main app, 5100,5102 for pixlet serve iframe 
 EXPOSE 8000 5100 5101
 # start the app
