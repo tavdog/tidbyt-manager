@@ -292,7 +292,6 @@ def addapp(id):
                 "false"  # start out false, only set to true after configure is finshed
             )
             app["last_render"] = 0
-            app["last_push"] = 0
             if "path" in app_details:
                 app["path"] = app_details["path"]  # this indicates a custom app
 
@@ -548,10 +547,7 @@ def configapp(id, iname, delete_on_cancel):
                         result = subprocess.run(command)
                         app["deleted"] = "true"
                     if result == 0:
-                        # set last_pushed to seconds
-                        g.user["devices"][id]["apps"][iname]["last_pushed"] = int(
-                            time.time()
-                        )
+                        pass
                     else:
                         print("error pushing App: " + str(result))
                         flash("Error Pushing App")
@@ -622,31 +618,34 @@ def get_brightness(username, device_name):
     print(f"brightness value {brightness_value}")
     return Response(str(brightness_value), mimetype='text/plain')
 
-
+device_last_app_index = {} # global last index dict
 @bp.route("/<string:username>/<string:device_name>/next")
 def next_app(username,device_name):
     user = db.get_user(username)
     # Pick the device out of the list of devices where device_name in contained in api_id
     device = [d for d in user["devices"].values() if device_name in d['api_id']][0]
-
     # treat em like an array
     apps_list = list(device["apps"].values())
-    if "last_app_index" not in device:
-        next_app_dict = apps_list[0]  # just use the first one if we haven't ever done this before
-        device['last_app_index'] = 0
+    if device['id'] not in device_last_app_index:
+        next_app_dict = apps_list[0]
+        device_last_app_index[device['id']] = 0 # just use the first one if we haven't ever done this before
     else:
-        if device["last_app_index"] + 1 < len(apps_list):  # will +1 be in bounds of array ?
-            next_app_dict = apps_list[device["last_app_index"] + 1]  # add 1 to get the next app
-            device["last_app_index"] += 1
+        if device_last_app_index[device["id"]] + 1 < len(
+            apps_list
+        ):  # will +1 be in bounds of array ?
+            next_app_dict = apps_list[
+                device_last_app_index[device["id"]] + 1
+            ]  # add 1 to get the next app
+            device_last_app_index[device["id"]] += 1
         else:
             next_app_dict = apps_list[0]  # go to the beginning
-            device["last_app_index"] = 0
+            device_last_app_index[device["id"]] = 0
 
     print("got next_app_dict: "+ str(next_app_dict))
     app = next_app_dict
-    # check if the webp needs update/render and do it
-    possibly_render(user,app)
-    db.save_user(user)
+    # check if the webp needs update/render and do it, save if rendered
+    if possibly_render(user,app):
+        db.save_user(user)
 
     if app['enabled'] == 'false':
         # recurse until we find one that's enabled
@@ -661,14 +660,11 @@ def next_app(username,device_name):
 
         # check if the file exists
         if db.file_exists(webp_path) and os.path.getsize(webp_path) > 0:
-            # set last_pushed value
-            app["last_push"] = int(time.time())
-            db.save_user(user)
             # if filesize is greater than zero
             # return send_file(webp_path, mimetype="image/webp")
             response = send_file(webp_path, mimetype="image/webp")
             # Add custom header
-            
+
             response.headers["Tronbyt-Brightness"] = db.brightness_int_from_string(app.get('brightness', device.get("brightness","medium")))
             return response        
         else:

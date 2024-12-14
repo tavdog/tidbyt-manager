@@ -61,8 +61,7 @@
                 </td>
                 <td><br><img class="w3-padding app-img" width=400 src="{{url_for('manager.appwebp', id=device['id'],iname=app['iname']) }}" alt="Preview" >
                   <br>
-                  Last Rendered: {{ app['last_render']|timeago }}<br>
-                  Last Pulled: {{ app['last_push']|timeago }}
+                  Last Rendered: {{ app['last_render']|timeago }}
           </div>
           </li>
           </td>
