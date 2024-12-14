@@ -81,9 +81,14 @@ def get_apps_list(user):
     app_list = list()
     # test for directory named dir and if not exist creat it
     if user == "system" or user == "":
-        dir = "tidbyt-apps/"
-        # open json file and convert to dictionary
-        with open("tidbyt-apps/apps.json",'r') as f:
+        list_file = "tidbyt-apps/apps.json"
+ 
+        if not os.path.exists(list_file):
+            print("Generating apps.json file...")
+            subprocess.run(["python3", "gen_app_array.py"])
+            print("apps.json file generated.")
+
+        with open(list_file,'r') as f:
             return json.load(f)
     else:
         dir = "{}/{}/apps".format(get_users_dir(), user)
