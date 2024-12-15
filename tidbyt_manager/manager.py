@@ -180,6 +180,8 @@ def update(id):
             device["id"] = id
             device["name"] = name
             device["brightness"] = brightness
+            device["night_brightness"] = int(request.form["night_brightness"])
+            device["night_start"] = int(request.form['night_start'])
             if len(api_id) < 1:
                 print("no api_id in device")
                 topic = db.sanitize(name).lower()
@@ -681,9 +683,7 @@ def next_app(username,device_name):
 
             # response.headers["Tronbyt-Brightness"] = db.brightness_int_from_string(app.get('brightness', device.get("brightness","medium")))
             # make sure we are sending an integer not a string
-            b = int(device.get("brightness"))
-            if not isinstance(b, int):
-                b = 30
+            b = db.get_device_brightness(device)
             print(f"sending brighness {b}")
             response.headers["Tronbyt-Brightness"] = b
             return response        

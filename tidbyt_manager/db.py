@@ -1,8 +1,24 @@
-import os,json,subprocess
+import os,json,subprocess,datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from flask import current_app
 
+
+def get_device_brightness(device):
+    current_hour = datetime.datetime.now().hour
+    if device.get("night_start",-1) > -1:
+        start_hour = device['night_start']
+        end_hour = 6 # 6am
+        if start_hour <= end_hour:  # Normal case (e.g., 9 to 17)
+            if start_hour <= current_hour <= end_hour:
+                print("nighttime brightness")
+                return int(device['night_brightness'])
+        else:  # Wrapped case (e.g., 22 to 6 - overnight)
+            if current_hour >= start_hour or current_hour <= end_hour:
+                print("nighttime brightness")
+                return int(device['night_brightness'])
+    return int(device.get("brightness",30))
+                
 def brightness_int_from_string(brightness_string):
     brightness_mapping = { "dim": 10, "low": 20, "medium": 40, "high": 80 }
     brightness_value = brightness_mapping[brightness_string]  # Get the numerical value from the dictionary, default to 50 if not found
@@ -126,7 +142,7 @@ def get_apps_list(user):
     else:
         print("no apps list found for {}".format(user))
         return []
-    
+
 def get_app_details(user,name):
     # first look for the app name in the custom apps
     custom_apps = get_apps_list(user)
@@ -173,7 +189,7 @@ def save_user_app(file,path):
         return True
     else:
         return False
-    
+
 def delete_user_upload(user,filename):
     path = "{}/{}/apps/".format(get_users_dir(), user['username'])
     try:
@@ -190,11 +206,10 @@ def get_all_users():
         users.append(get_user(user))
         
     return users
-        
+
 def get_user_render_port(username):
     users = get_all_users()
     for i in range(len(users)):
          if users[i]['username'] == username:
             print(f"got port {i} for {username}")
             return 5100+i
-

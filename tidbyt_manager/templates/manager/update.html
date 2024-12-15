@@ -15,6 +15,16 @@ value="{{ request.form['api_id'] or device['api_id'] }}">
 <input type="range" name="brightness" id="brightness" min="0" max="100" value="{{ device['brightness'] }}"
     oninput="this.previousElementSibling.value = this.value">
 
+<span><label for="night_brightness">Night Brightness</label></span><output>{{ device['night_brightness'] or 10 }}</output>
+
+<input type="range" name="night_brightness" id="night_brightness" min="0" max="100" value="{{ device['night_brightness'] or 10 }}"
+    oninput="this.previousElementSibling.value = this.value">
+
+<span><label for="night_start">Night Start Hour (24hr) (-1 for disabled)</label></span>
+
+<div>
+<input type="number" name="night_start" id="night_start" min="-1" max="24" value="{{ device['night_start'] or -1 }}">
+    </div>
 <label for="body">Notes</label>
 <input name="notes" id="notes" value="{{ request.form['notes'] or device['notes'] }}">
 <label for="api_key">API Key </label>
