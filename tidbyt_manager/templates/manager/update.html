@@ -8,17 +8,17 @@
 <label for="name">Name</label>
 <input name="name" id="name"
 value="{{ request.form['name'] or device['name'] }}" required>
-<span><label for="api_id">API ID</label> mqtt url eg. mqtt://user:pass@hostname:1883/topic </span>
+<span><label for="api_id">Remote URL</label></span>
 <input name="api_id" id="api_id"
 value="{{ request.form['api_id'] or device['api_id'] }}">
-<span><label for="brightness">Brightness</label></span>
-<input type="range" name="brightness" id="brightness" min="0" max="100" value="50"
-    oninput="this.nextElementSibling.value = this.value">
-<output>50</output>
-<label for="api_key">API KEY </label>
-<textarea name="api_key" id="api_key" rows="6">{{ request.form['api_key'] or device['api_key'] }}</textarea>
+<span><label for="brightness">Brightness</label></span><output>{{ device['brightness'] }}</output>
+<input type="range" name="brightness" id="brightness" min="0" max="100" value="{{ device['brightness'] }}"
+    oninput="this.previousElementSibling.value = this.value">
+
 <label for="body">Notes</label>
 <input name="notes" id="notes" value="{{ request.form['notes'] or device['notes'] }}">
+<label for="api_key">API Key </label>
+<input name="api_key" id="api_key" value="{{ request.form['api_key'] or device['api_key'] }}">
 <input type="submit" value="Save">
 </form>
 <hr>

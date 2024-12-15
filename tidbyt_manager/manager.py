@@ -133,7 +133,7 @@ def create():
             device["api_id"] = api_id
             device["api_key"] = api_key
             device["notes"] = notes
-            device["brightness"] = request.form["brightness"]
+            device["brightness"] = int(request.form["brightness"])
             user = g.user
             if "devices" not in user:
                 user["devices"] = {}
@@ -143,6 +143,19 @@ def create():
 
             return redirect(url_for("manager.index"))
     return render_template("manager/create.html")
+
+
+@bp.route("/<string:id>/update_brightness", methods=("GET", "POST"))
+@login_required
+def update_brightness(id):
+    if id not in g.user["devices"]:
+        abort(404)
+    if request.method == "POST":
+        brightness = int(request.form["brightness"])
+        user = g.user
+        user["devices"][id]["brightness"] = brightness
+        db.save_user(user)
+        return "",200
 
 
 @bp.route("/<string:id>/update", methods=("GET", "POST"))
@@ -156,7 +169,7 @@ def update(id):
         notes = request.form["notes"]
         api_id = request.form["api_id"]
         api_key = request.form["api_key"]
-        brightness = request.form["brightness"]
+        brightness = int(request.form["brightness"])
         error = None
         if not name or not id:
             error = "Id and Name is required."
@@ -614,7 +627,8 @@ def configapp(id, iname, delete_on_cancel):
 def get_brightness(username, device_name):
     user = db.get_user(username)
     device = list(user["devices"].values())[0]
-    brightness_value = db.brightness_int_from_string(device.get("brightness", "medium").lower())  # Assume this is how you get the brightness value from your device
+    # brightness_value = db.brightness_int_from_string(device.get("brightness", "medium").lower())  # Assume this is how you get the brightness value from your device
+    brightness_value = device.get("brightness", 30)  # Assume this is how you get the brightness value from your device
     print(f"brightness value {brightness_value}")
     return Response(str(brightness_value), mimetype='text/plain')
 
@@ -666,7 +680,12 @@ def next_app(username,device_name):
             # Add custom header
 
             # response.headers["Tronbyt-Brightness"] = db.brightness_int_from_string(app.get('brightness', device.get("brightness","medium")))
-            response.headers["Tronbyt-Brightness"] = app.get('brightness', device.get("brightness",30))
+            # make sure we are sending an integer not a string
+            b = int(device.get("brightness"))
+            if not isinstance(b, int):
+                b = 30
+            print(f"sending brighness {b}")
+            response.headers["Tronbyt-Brightness"] = b
             return response        
         else:
             print("file not found")

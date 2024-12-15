@@ -1,5 +1,36 @@
 {% extends 'base.html' %}
 {% block header %}
+<script>
+  // Function to update the numeric display in real-time (on slider move)
+  function updateDisplayedValue(brightness) {
+    document.getElementById('brightnessValue').innerText = brightness;
+  }
+
+  // Function to send the value to the server only when the slider is released
+  function updateBrightness(deviceId, brightness) {
+    const formData = new URLSearchParams();
+    formData.append('brightness', brightness);
+
+    fetch(`/${deviceId}/update_brightness`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString()
+    })
+      .then(response => {
+        if (!response.ok) {
+          console.error('Failed to update brightness');
+        } else {
+          console.log('Brightness updated successfully to', brightness);
+        }
+      })
+      .catch((error) => {
+        console.error('Unexpected error:', error);
+      });
+  }
+
+</script>
 <h1>{% block title %}{% endblock %}</h1>
 
 {% endblock %}
@@ -12,8 +43,19 @@
 <article>
 <div>
 <header>
-<h1>{{ device['name'] }}</h1>
-<table><tr><td>
+<h1>{{ device['name'] }}</h1><label for="brightness">Brightness</label> = <span id="brightnessValue">{{ device['brightness'] }}</span><br>
+<input type="range" name="brightness" id="brightness" min="0" max="100" value="{{ device['brightness'] }}"
+  oninput="updateDisplayedValue(this.value)" 
+  onmouseup="updateBrightness('{{ device['id'] }}', this.value)">
+<style>
+  /* Control the width of the slider */
+  #brightness {
+    width: 80%; /* Adjusts with the container */
+    /* Set the width in pixels */
+  }
+</style>
+  <table><tr><td>
+
 <a class="w3-button w3-teal w3-round" style="width: 100px;" href="{{ url_for('manager.update', id=device['id']) }}">Edit</a> <a class="w3-button w3-teal w3-round" style="width: 100px;" href="{{ url_for('manager.addapp', id=device['id']) }}">Add App</a>
 </td></tr></table>
 </header>
