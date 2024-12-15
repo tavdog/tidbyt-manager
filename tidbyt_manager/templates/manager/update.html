@@ -12,12 +12,9 @@ value="{{ request.form['name'] or device['name'] }}" required>
 <input name="api_id" id="api_id"
 value="{{ request.form['api_id'] or device['api_id'] }}">
 <span><label for="brightness">Brightness</label></span>
-<select name="brightness" id="brightness">
-    <option value="dim" {% if device.brightness == 'dim' %}selected{% endif %}>Dim</option>
-    <option value="low" {% if device.brightness == 'low' %}selected{% endif %}>Low</option>
-    <option value="medium" {% if device.brightness == 'medium' %}selected{% endif %}>Medium</option>
-    <option value="high" {% if device.brightness == 'high' %}selected{% endif %}>High</option>
-</select>
+<input type="range" name="brightness" id="brightness" min="0" max="100" value="50"
+    oninput="this.nextElementSibling.value = this.value">
+<output>50</output>
 <label for="api_key">API KEY </label>
 <textarea name="api_key" id="api_key" rows="6">{{ request.form['api_key'] or device['api_key'] }}</textarea>
 <label for="body">Notes</label>
