@@ -8,11 +8,11 @@
 <label for="name">Name</label>
 <input name="name" id="name"
 value="{{ request.form['name'] or device['name'] }}" required>
-<span><label for="api_id">Remote URL</label></span>
-{% if not device['api_id'].startswith('http') %}
-<input name="api_id" id="api_id" value="{{ server_root }}{{ device['api_id'] }}">
+<span><label for="img_url">Image URL</label></span>
+{% if not device['img_url'].startswith('http') %}
+<input name="img_url" id="img_url" value="{{ server_root }}{{ device['img_url'] }}">
 {% else %}
-<input name="api_id" id="api_id" value="{{ device['api_id'] }}">
+<input name="img_url" id="img_url" value="{{ device['img_url'] }}">
 {% endif %}
 <span><label for="brightness">Brightness</label></span><output>{{ device['brightness'] }}</output>
 <input type="range" name="brightness" id="brightness" min="0" max="100" value="{{ device['brightness'] }}"

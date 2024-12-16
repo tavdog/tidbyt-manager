@@ -60,10 +60,10 @@
 </td></tr></table>
 </header>
 
-{% if not device['api_id'].startswith('http') %}
-<p class="body">REMOTE URL: {{ server_root }}{{ device['api_id'] }}">
+{% if not device['img_url'].startswith('http') %}
+<p class="body">Image URL: {{ server_root }}{{ device['img_url'] }}">
 {% else %}
-<p class="body">REMOTE URL: {{ device['api_id'] }}</p>
+<p class="body">Image URL: {{ device['img_url'] }}</p>
 {% endif %}
 {% if not device['api_key'] == "" %}
 <p class="body">API KEY: {{ device['api_key'][0:10] }} ... {{ device['api_key'][-10:-1] }}</p>

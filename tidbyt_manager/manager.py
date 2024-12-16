@@ -117,7 +117,7 @@ def deleteuser(username):
 def create():
     if request.method == "POST":
         name = request.form["name"]
-        api_id = request.form["api_id"] # using this for remote_url now
+        img_url = request.form["img_url"] # using this for remote_url now
         api_key = request.form["api_key"]
         notes = request.form["notes"]
         error = None
@@ -130,10 +130,10 @@ def create():
             device["id"] = str(uuid.uuid4())
             print("id is :" + str(device["id"]))
             device["name"] = name
-            if not api_id:
+            if not img_url:
                 sname = db.sanitize(name)
-                api_id = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{sname}/next"
-            device["api_id"] = api_id
+                img_url = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{sname}/next"
+            device["img_url"] = img_url
             device["api_key"] = api_key
             device["notes"] = notes
             device["brightness"] = int(request.form["brightness"])
@@ -170,7 +170,7 @@ def update(id):
     if request.method == "POST":
         name = request.form["name"]
         notes = request.form["notes"]
-        api_id = request.form["api_id"]
+        img_url = request.form["img_url"]
         api_key = request.form["api_key"]
         brightness = int(request.form["brightness"])
         error = None
@@ -185,12 +185,12 @@ def update(id):
             device["brightness"] = brightness
             device["night_brightness"] = int(request.form["night_brightness"])
             device["night_start"] = int(request.form['night_start'])
-            if len(api_id) < 1:
-                print("no api_id in device")
+            if len(img_url) < 1:
+                print("no img_url in device")
                 topic = db.sanitize(name).lower()
-                device["api_id"] = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{topic}/next"
+                device["img_url"] = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{topic}/next"
             else:
-                device["api_id"] = api_id
+                device["img_url"] = img_url
 
             device["api_key"] = api_key
             device["notes"] = notes
@@ -245,7 +245,7 @@ def deleteapp(id, iname):
         command = [
             "/pixlet/pixlet",
             "delete",
-            g.user["devices"][id]["api_id"],
+            g.user["devices"][id]["img_url"],
             iname,
             "-t",
             g.user["devices"][id]["api_key"],
@@ -342,7 +342,7 @@ def toggle_enabled(id, iname):
             command = [
                 "/pixlet/pixlet",
                 "delete",
-                g.user["devices"][id]["api_id"],
+                g.user["devices"][id]["img_url"],
                 iname,
                 "-t",
                 g.user["devices"][id]["api_key"],
@@ -399,7 +399,7 @@ def updateapp(id, iname):
                     command = [
                         "/pixlet/pixlet",
                         "delete",
-                        g.user["devices"][id]["api_id"],
+                        g.user["devices"][id]["img_url"],
                         iname,
                         "-t",
                         g.user["devices"][id]["api_key"],
@@ -540,7 +540,7 @@ def configapp(id, iname, delete_on_cancel):
                         command = [
                             "/pixlet/pixlet",
                             "push",
-                            device["api_id"],
+                            device["img_url"],
                             webp_path,
                             "-b",
                             "-t",
@@ -557,7 +557,7 @@ def configapp(id, iname, delete_on_cancel):
                         command = [
                             "/pixlet/pixlet",
                             "delete",
-                            device["api_id"],
+                            device["img_url"],
                             app["iname"],
                             "-t",
                             device["api_key"],
@@ -642,8 +642,8 @@ device_last_app_index = {} # global last index dict
 @bp.route("/<string:username>/<string:device_name>/next")
 def next_app(username,device_name):
     user = db.get_user(username)
-    # Pick the device out of the list of devices where device_name in contained in api_id
-    device = [d for d in user["devices"].values() if device_name in d['api_id']][0]
+    # Pick the device out of the list of devices where device_name in contained in img_url
+    device = [d for d in user["devices"].values() if device_name in d['img_url']][0]
     # treat em like an array
     apps_list = list(device["apps"].values())
     if device['id'] not in device_last_app_index:

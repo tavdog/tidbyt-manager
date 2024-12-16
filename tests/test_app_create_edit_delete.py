@@ -4,7 +4,7 @@ from . import utils
 def test_app_create_edit_delete(client):
     client.post("/auth/register", data={"username": "testuser", "password": "password"})
     client.post("/auth/login",    data={"username": "testuser", "password": "password"})
-    client.post("/create", data={"name":"TESTDEVICE","api_id":"TESTID","api_key":"TESTKEY","notes":"TESTNOTES"})
+    client.post("/create", data={"name":"TESTDEVICE","img_url":"TESTID","api_key":"TESTKEY","notes":"TESTNOTES"})
 
     device_id = utils.get_test_device_id()
     r = client.post(f"/{device_id}/addapp", data={"name":"TESTAPP", "uinterval":"60", "display_time":"10", "notes":""})
