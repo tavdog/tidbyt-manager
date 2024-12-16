@@ -6,7 +6,8 @@ The docker-compose file will build and create the web app container and an mqtt/
 
 default login in admin / password
 
-docker needs port 8000 and 5100-5120 port range opened up (use --network=host to make it easy ((doesn't work on mac docker though))
+docker needs port 8000 and 5100,5101 ports opened up (use --network=host to make it easy ((doesn't work on mac docker though))
+docker-compose handles this though.
 
 set DOMAIN value in .env file if not running locally
 
