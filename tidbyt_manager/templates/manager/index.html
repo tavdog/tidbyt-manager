@@ -59,8 +59,15 @@
 <a class="w3-button w3-teal w3-round" style="width: 100px;" href="{{ url_for('manager.update', id=device['id']) }}">Edit</a> <a class="w3-button w3-teal w3-round" style="width: 100px;" href="{{ url_for('manager.addapp', id=device['id']) }}">Add App</a>
 </td></tr></table>
 </header>
+
+{% if not device['api_id'].startswith('http') %}
+<p class="body">REMOTE URL: {{ server_root }}{{ device['api_id'] }}">
+{% else %}
 <p class="body">REMOTE URL: {{ device['api_id'] }}</p>
+{% endif %}
+{% if not device['api_key'] == "" %}
 <p class="body">API KEY: {{ device['api_key'][0:10] }} ... {{ device['api_key'][-10:-1] }}</p>
+{% endif %}
 {% if device['notes'] != '' %}
 <p class="body">Notes: {{ device['notes'] }}</p>
 {% endif %}

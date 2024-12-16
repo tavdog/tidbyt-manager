@@ -9,8 +9,11 @@
 <input name="name" id="name"
 value="{{ request.form['name'] or device['name'] }}" required>
 <span><label for="api_id">Remote URL</label></span>
-<input name="api_id" id="api_id"
-value="{{ request.form['api_id'] or device['api_id'] }}">
+{% if not device['api_id'].startswith('http') %}
+<input name="api_id" id="api_id" value="{{ server_root }}{{ device['api_id'] }}">
+{% else %}
+<input name="api_id" id="api_id" value="{{ device['api_id'] }}">
+{% endif %}
 <span><label for="brightness">Brightness</label></span><output>{{ device['brightness'] }}</output>
 <input type="range" name="brightness" id="brightness" min="0" max="100" value="{{ device['brightness'] }}"
     oninput="this.previousElementSibling.value = this.value">

@@ -32,7 +32,10 @@ def index():
     devices = dict()
     if "devices" in g.user:
         devices = reversed(list(g.user["devices"].values()))
-    return render_template("manager/index.html", devices=devices)
+    server_root = (
+        f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}"
+    )
+    return render_template("manager/index.html", devices=devices, server_root=server_root )
 
 
 # new function to handle uploading a an app
@@ -200,7 +203,8 @@ def update(id):
 
             return redirect(url_for("manager.index"))
     device = g.user["devices"][id]
-    return render_template("manager/update.html", device=device)
+    server_root = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}"
+    return render_template("manager/update.html", device=device, server_root=server_root)
 
 
 @bp.route("/<string:id>/delete", methods=("POST",))
