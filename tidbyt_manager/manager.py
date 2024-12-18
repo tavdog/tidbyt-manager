@@ -191,7 +191,7 @@ def update(id):
                 device["img_url"] = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{topic}/next"
             else:
                 device["img_url"] = img_url
-
+            device['night_mode_app'] = request.form['night_mode_app']
             device["api_key"] = api_key
             device["notes"] = notes
 
@@ -202,7 +202,7 @@ def update(id):
             db.save_user(user)
 
             return redirect(url_for("manager.index"))
-    device = g.user["devices"][id]
+    device = g.user["devices"][id]    
     server_root = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}"
     return render_template("manager/update.html", device=device, server_root=server_root)
 
@@ -642,11 +642,14 @@ device_last_app_index = {} # global last index dict
 @bp.route("/<string:username>/<string:device_name>/next")
 def next_app(username,device_name):
     user = db.get_user(username)
+    #
     # Pick the device out of the list of devices where device_name in contained in img_url
     device = [d for d in user["devices"].values() if device_name in d['img_url']][0]
     # treat em like an array
     apps_list = list(device["apps"].values())
-    if device['id'] not in device_last_app_index:
+    if db.get_night_mode_is_active(device) and device.get('night_mode_app',"") != "":
+        next_app_dict = device["apps"][device['night_mode_app']]
+    elif device['id'] not in device_last_app_index:
         next_app_dict = apps_list[0]
         device_last_app_index[device['id']] = 0 # just use the first one if we haven't ever done this before
     else:

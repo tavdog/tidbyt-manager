@@ -24,10 +24,20 @@ value="{{ request.form['name'] or device['name'] }}" required>
     oninput="this.previousElementSibling.value = this.value">
 
 <span><label for="night_start">Night Start Hour (24hr) (-1 for disabled)</label></span>
-
 <div>
-<input type="number" name="night_start" id="night_start" min="-1" max="24" value="{{ device['night_start'] or -1 }}">
-    </div>
+    <input type="number" name="night_start" id="night_start" min="-1" max="24" value="{{ device['night_start'] or -1 }}">
+</div>
+<span>
+  <label for="installed_apps">Night Mode App:</label>
+  <select name="night_mode_app" id="night_mode_app">
+    <option value="None">
+    {% for app in device['apps'].values() %}
+      <option value="{{ app['iname'] }}" {% if 'night_mode_app' in device and device['night_mode_app'] == app['iname'] %}selected{% endif %}>
+        {{ app['iname'] }} {{ app['name'] }}
+      </option>
+    {% endfor %}
+  </select>
+</span>
 <label for="body">Notes</label>
 <input name="notes" id="notes" value="{{ request.form['notes'] or device['notes'] }}">
 <label for="api_key">API Key </label>

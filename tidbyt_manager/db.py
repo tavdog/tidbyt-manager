@@ -3,21 +3,26 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from flask import current_app
 
-
-def get_device_brightness(device):
+def get_night_mode_is_active(device):
     current_hour = datetime.datetime.now().hour
     if device.get("night_start",-1) > -1:
         start_hour = device['night_start']
         end_hour = 6 # 6am
         if start_hour <= end_hour:  # Normal case (e.g., 9 to 17)
             if start_hour <= current_hour <= end_hour:
-                print("nighttime brightness")
-                return int(device['night_brightness'])
+                print("nightmode active")
+                return True
         else:  # Wrapped case (e.g., 22 to 6 - overnight)
             if current_hour >= start_hour or current_hour <= end_hour:
-                print("nighttime brightness")
-                return int(device['night_brightness'])
-    return int(device.get("brightness",30))
+                print("nightmode active")
+                return True
+    return False
+
+def get_device_brightness(device):
+        if 'night_brightness' in device and get_night_mode_is_active(device):
+            return int(device['night_brightness'])
+        else:  # Wrapped case (e.g., 22 to 6 - overnight)
+            return int(device.get("brightness",30))
                 
 def brightness_int_from_string(brightness_string):
     brightness_mapping = { "dim": 10, "low": 20, "medium": 40, "high": 80 }
