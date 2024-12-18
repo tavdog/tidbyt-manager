@@ -8,20 +8,40 @@
 <label for="name">Name</label>
 <input name="name" id="name"
 value="{{ request.form['name'] or device['name'] }}" required>
-<span><label for="api_id">API ID</label> mqtt url eg. mqtt://user:pass@hostname:1883/topic </span>
-<input name="api_id" id="api_id"
-value="{{ request.form['api_id'] or device['api_id'] }}">
-<span><label for="brightness">Brightness</label></span>
-<select name="brightness" id="brightness">
-    <option value="dim" {% if device.brightness == 'dim' %}selected{% endif %}>Dim</option>
-    <option value="low" {% if device.brightness == 'low' %}selected{% endif %}>Low</option>
-    <option value="medium" {% if device.brightness == 'medium' %}selected{% endif %}>Medium</option>
-    <option value="high" {% if device.brightness == 'high' %}selected{% endif %}>High</option>
-</select>
-<label for="api_key">API KEY </label>
-<textarea name="api_key" id="api_key" rows="6">{{ request.form['api_key'] or device['api_key'] }}</textarea>
+<span><label for="img_url">Image URL</label></span>
+{% if not device['img_url'].startswith('http') %}
+<input name="img_url" id="img_url" value="{{ server_root }}{{ device['img_url'] }}">
+{% else %}
+<input name="img_url" id="img_url" value="{{ device['img_url'] }}">
+{% endif %}
+<span><label for="brightness">Brightness</label></span><output>{{ device['brightness'] }}</output>
+<input type="range" name="brightness" id="brightness" min="0" max="100" value="{{ device['brightness'] }}"
+    oninput="this.previousElementSibling.value = this.value">
+
+<span><label for="night_brightness">Night Brightness</label></span><output>{{ device['night_brightness'] or 10 }}</output>
+
+<input type="range" name="night_brightness" id="night_brightness" min="0" max="100" value="{{ device['night_brightness'] or 10 }}"
+    oninput="this.previousElementSibling.value = this.value">
+
+<span><label for="night_start">Night Start Hour (24hr) (-1 for disabled)</label></span>
+<div>
+    <input type="number" name="night_start" id="night_start" min="-1" max="24" value="{{ device['night_start'] or -1 }}">
+</div>
+<span>
+  <label for="installed_apps">Night Mode App:</label>
+  <select name="night_mode_app" id="night_mode_app">
+    <option value="None">
+    {% for app in device['apps'].values() %}
+      <option value="{{ app['iname'] }}" {% if 'night_mode_app' in device and device['night_mode_app'] == app['iname'] %}selected{% endif %}>
+        {{ app['iname'] }} {{ app['name'] }}
+      </option>
+    {% endfor %}
+  </select>
+</span>
 <label for="body">Notes</label>
 <input name="notes" id="notes" value="{{ request.form['notes'] or device['notes'] }}">
+<label for="api_key">API Key </label>
+<input name="api_key" id="api_key" value="{{ request.form['api_key'] or device['api_key'] }}">
 <input type="submit" value="Save">
 </form>
 <hr>

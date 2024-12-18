@@ -32,7 +32,10 @@ def index():
     devices = dict()
     if "devices" in g.user:
         devices = reversed(list(g.user["devices"].values()))
-    return render_template("manager/index.html", devices=devices)
+    server_root = (
+        f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}"
+    )
+    return render_template("manager/index.html", devices=devices, server_root=server_root )
 
 
 # new function to handle uploading a an app
@@ -114,7 +117,7 @@ def deleteuser(username):
 def create():
     if request.method == "POST":
         name = request.form["name"]
-        api_id = request.form["api_id"] # using this for remote_url now
+        img_url = request.form["img_url"] # using this for remote_url now
         api_key = request.form["api_key"]
         notes = request.form["notes"]
         error = None
@@ -127,13 +130,13 @@ def create():
             device["id"] = str(uuid.uuid4())
             print("id is :" + str(device["id"]))
             device["name"] = name
-            if not api_id:
+            if not img_url:
                 sname = db.sanitize(name)
-                api_id = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{sname}/next"
-            device["api_id"] = api_id
+                img_url = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{sname}/next"
+            device["img_url"] = img_url
             device["api_key"] = api_key
             device["notes"] = notes
-            device["brightness"] = request.form["brightness"]
+            device["brightness"] = int(request.form["brightness"])
             user = g.user
             if "devices" not in user:
                 user["devices"] = {}
@@ -145,6 +148,19 @@ def create():
     return render_template("manager/create.html")
 
 
+@bp.route("/<string:id>/update_brightness", methods=("GET", "POST"))
+@login_required
+def update_brightness(id):
+    if id not in g.user["devices"]:
+        abort(404)
+    if request.method == "POST":
+        brightness = int(request.form["brightness"])
+        user = g.user
+        user["devices"][id]["brightness"] = brightness
+        db.save_user(user)
+        return "",200
+
+
 @bp.route("/<string:id>/update", methods=("GET", "POST"))
 @login_required
 def update(id):
@@ -154,9 +170,9 @@ def update(id):
     if request.method == "POST":
         name = request.form["name"]
         notes = request.form["notes"]
-        api_id = request.form["api_id"]
+        img_url = request.form["img_url"]
         api_key = request.form["api_key"]
-        brightness = request.form["brightness"]
+        brightness = int(request.form["brightness"])
         error = None
         if not name or not id:
             error = "Id and Name is required."
@@ -167,13 +183,15 @@ def update(id):
             device["id"] = id
             device["name"] = name
             device["brightness"] = brightness
-            if len(api_id) < 1:
-                print("no api_id in device")
+            device["night_brightness"] = int(request.form["night_brightness"])
+            device["night_start"] = int(request.form['night_start'])
+            if len(img_url) < 1:
+                print("no img_url in device")
                 topic = db.sanitize(name).lower()
-                device["api_id"] = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{topic}/next"
+                device["img_url"] = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}/{g.user['username']}/{topic}/next"
             else:
-                device["api_id"] = api_id
-
+                device["img_url"] = img_url
+            device['night_mode_app'] = request.form['night_mode_app']
             device["api_key"] = api_key
             device["notes"] = notes
 
@@ -184,8 +202,9 @@ def update(id):
             db.save_user(user)
 
             return redirect(url_for("manager.index"))
-    device = g.user["devices"][id]
-    return render_template("manager/update.html", device=device)
+    device = g.user["devices"][id]    
+    server_root = f"http://{current_app.config['DOMAIN']}:{current_app.config['MAIN_PORT']}"
+    return render_template("manager/update.html", device=device, server_root=server_root)
 
 
 @bp.route("/<string:id>/delete", methods=("POST",))
@@ -226,7 +245,7 @@ def deleteapp(id, iname):
         command = [
             "/pixlet/pixlet",
             "delete",
-            g.user["devices"][id]["api_id"],
+            g.user["devices"][id]["img_url"],
             iname,
             "-t",
             g.user["devices"][id]["api_key"],
@@ -323,7 +342,7 @@ def toggle_enabled(id, iname):
             command = [
                 "/pixlet/pixlet",
                 "delete",
-                g.user["devices"][id]["api_id"],
+                g.user["devices"][id]["img_url"],
                 iname,
                 "-t",
                 g.user["devices"][id]["api_key"],
@@ -380,7 +399,7 @@ def updateapp(id, iname):
                     command = [
                         "/pixlet/pixlet",
                         "delete",
-                        g.user["devices"][id]["api_id"],
+                        g.user["devices"][id]["img_url"],
                         iname,
                         "-t",
                         g.user["devices"][id]["api_key"],
@@ -521,7 +540,7 @@ def configapp(id, iname, delete_on_cancel):
                         command = [
                             "/pixlet/pixlet",
                             "push",
-                            device["api_id"],
+                            device["img_url"],
                             webp_path,
                             "-b",
                             "-t",
@@ -538,7 +557,7 @@ def configapp(id, iname, delete_on_cancel):
                         command = [
                             "/pixlet/pixlet",
                             "delete",
-                            device["api_id"],
+                            device["img_url"],
                             app["iname"],
                             "-t",
                             device["api_key"],
@@ -614,7 +633,8 @@ def configapp(id, iname, delete_on_cancel):
 def get_brightness(username, device_name):
     user = db.get_user(username)
     device = list(user["devices"].values())[0]
-    brightness_value = db.brightness_int_from_string(device.get("brightness", "medium").lower())  # Assume this is how you get the brightness value from your device
+    # brightness_value = db.brightness_int_from_string(device.get("brightness", "medium").lower())  # Assume this is how you get the brightness value from your device
+    brightness_value = device.get("brightness", 30)  # Assume this is how you get the brightness value from your device
     print(f"brightness value {brightness_value}")
     return Response(str(brightness_value), mimetype='text/plain')
 
@@ -622,11 +642,14 @@ device_last_app_index = {} # global last index dict
 @bp.route("/<string:username>/<string:device_name>/next")
 def next_app(username,device_name):
     user = db.get_user(username)
-    # Pick the device out of the list of devices where device_name in contained in api_id
-    device = [d for d in user["devices"].values() if device_name in d['api_id']][0]
+    #
+    # Pick the device out of the list of devices where device_name in contained in img_url
+    device = [d for d in user["devices"].values() if device_name in d['img_url']][0]
     # treat em like an array
     apps_list = list(device["apps"].values())
-    if device['id'] not in device_last_app_index:
+    if db.get_night_mode_is_active(device) and device.get('night_mode_app',"") != "":
+        next_app_dict = device["apps"][device['night_mode_app']]
+    elif device['id'] not in device_last_app_index:
         next_app_dict = apps_list[0]
         device_last_app_index[device['id']] = 0 # just use the first one if we haven't ever done this before
     else:
@@ -665,7 +688,11 @@ def next_app(username,device_name):
             response = send_file(webp_path, mimetype="image/webp")
             # Add custom header
 
-            response.headers["Tronbyt-Brightness"] = db.brightness_int_from_string(app.get('brightness', device.get("brightness","medium")))
+            # response.headers["Tronbyt-Brightness"] = db.brightness_int_from_string(app.get('brightness', device.get("brightness","medium")))
+            # make sure we are sending an integer not a string
+            b = db.get_device_brightness(device)
+            print(f"sending brighness {b}")
+            response.headers["Tronbyt-Brightness"] = b
             return response        
         else:
             print("file not found")
