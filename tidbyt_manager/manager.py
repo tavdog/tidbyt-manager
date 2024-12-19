@@ -296,8 +296,8 @@ def addapp(id):
     elif request.method == "POST":
         name = request.form["name"]
         app_details = db.get_app_details(g.user["username"], name)
-        uinterval = request.form["uinterval"]
-        display_time = request.form["display_time"]
+        uinterval = int(request.form["uinterval"])
+        display_time = int(request.form["display_time"])
         notes = request.form["notes"]
         error = None
         # generate an iname from 3 digits. will be used later as the port number on which to run pixlet serve
