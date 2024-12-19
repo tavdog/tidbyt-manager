@@ -20,9 +20,9 @@ def get_night_mode_is_active(device):
 
 def get_device_brightness(device):
         if 'night_brightness' in device and get_night_mode_is_active(device):
-            return int(device['night_brightness'])
+            return int(device['night_brightness']*2)
         else:  # Wrapped case (e.g., 22 to 6 - overnight)
-            return int(device.get("brightness",30))
+            return int(device.get("brightness",30)*2)
                 
 def brightness_int_from_string(brightness_string):
     brightness_mapping = { "dim": 10, "low": 20, "medium": 40, "high": 80 }
