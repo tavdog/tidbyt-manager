@@ -296,8 +296,8 @@ def addapp(id):
     elif request.method == "POST":
         name = request.form["name"]
         app_details = db.get_app_details(g.user["username"], name)
-        uinterval = request.form["uinterval"]
-        display_time = request.form["display_time"]
+        uinterval = int(request.form["uinterval"])
+        display_time = int(request.form["display_time"])
         notes = request.form["notes"]
         error = None
         # generate an iname from 3 digits. will be used later as the port number on which to run pixlet serve
@@ -400,6 +400,9 @@ def updateapp(id, iname):
             app["uinterval"] = uinterval
             app["display_time"] = int(request.form["display_time"]) or 0
             app["notes"] = notes
+            app["start_time"] = request.form["start_time"]
+            app["end_time"] = request.form["end_time"]
+            app["days"] = request.form.getlist("days")
 
             if (
                 user["devices"][id]["apps"][iname]["enabled"] == "true"
@@ -650,9 +653,14 @@ def get_brightness(username, device_name):
     print(f"brightness value {brightness_value}")
     return Response(str(brightness_value), mimetype='text/plain')
 
+MAX_RECURSION_DEPTH = 10
 device_last_app_index = {} # global last index dict
 @bp.route("/<string:username>/<string:device_name>/next")
-def next_app(username,device_name):
+def next_app(username,device_name,recursion_depth=0):
+    if recursion_depth > MAX_RECURSION_DEPTH:
+        print("Maximum recursion depth exceeded")
+        return None  # or handle the situation as needed
+
     user = db.get_user(username)
     #
     # Pick the device out of the list of devices where device_name in contained in img_url
@@ -678,16 +686,17 @@ def next_app(username,device_name):
 
     print("got next app: "+ next_app_dict['name'])
     app = next_app_dict
-    # check if the webp needs update/render and do it, save if rendered
-    if possibly_render(user,app):
-        db.save_user(user)
 
-    if app['enabled'] == 'false':
+    if app['enabled'] == 'false' or db.get_is_app_schedule_active(app) == False:
         # recurse until we find one that's enabled
         print("disabled app")
         time.sleep(0.25) #delay when recursing to avoid accidental runaway
-        return next_app(username,device_name)
+        return next_app(username,device_name,recursion_depth+1)
     else:
+        # check if the webp needs update/render and do it, save if rendered
+        if possibly_render(user,app):
+            db.save_user(user)
+
         app_basename = "{}-{}".format(app["name"], app["iname"])
 
         webp_path = "/app/tidbyt_manager/webp/{}.webp".format(app_basename)
@@ -715,7 +724,7 @@ def next_app(username,device_name):
         else:
             print("file not found")
             time.sleep(0.25) # delay when recursing to avoid accidental runaway
-            return next_app(username,device_name) # run it recursively until we get a file.
+            return next_app(username,device_name, recursion_depth+1) # run it recursively until we get a file.
 
 
 @bp.route("/<string:id>/<string:iname>/appwebp")

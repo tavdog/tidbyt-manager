@@ -2,9 +2,11 @@ import os,json,subprocess,datetime
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 from flask import current_app
+from datetime import datetime
+import time
 
 def get_night_mode_is_active(device):
-    current_hour = datetime.datetime.now().hour
+    current_hour = datetime.now().hour
     if device.get("night_start",-1) > -1:
         start_hour = device['night_start']
         end_hour = 6 # 6am
@@ -23,7 +25,7 @@ def get_device_brightness(device):
             return int(device['night_brightness']*2)
         else:  # Wrapped case (e.g., 22 to 6 - overnight)
             return int(device.get("brightness",30)*2)
-                
+
 def brightness_int_from_string(brightness_string):
     brightness_mapping = { "dim": 10, "low": 20, "medium": 40, "high": 80 }
     brightness_value = brightness_mapping[brightness_string]  # Get the numerical value from the dictionary, default to 50 if not found
@@ -219,3 +221,38 @@ def get_user_render_port(username):
          if users[i]['username'] == username:
             print(f"got port {i} for {username}")
             return base_port+i
+
+def get_is_app_schedule_active(app):
+    # Check if the app should be displayed based on start and end times and active days
+    current_time = datetime.now().time()
+    current_day = datetime.now().strftime("%A").lower()
+    start_time_str = app.get("start_time", "00:00") or "00:00"
+    end_time_str = app.get("end_time", "23:59") or "23:59"
+    start_time = datetime.strptime(start_time_str, "%H:%M").time()
+    end_time = datetime.strptime(end_time_str, "%H:%M").time()
+    active_days = app.get(
+        "days",
+        ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+    )
+    if not active_days:
+        active_days = [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+        ]
+
+    schedule_active = False
+    if (
+        (start_time <= current_time <= end_time)
+        or (
+            start_time > end_time
+            and (current_time >= start_time or current_time <= end_time)
+        )
+    ) and current_day in active_days:
+        schedule_active = True
+
+    return schedule_active
