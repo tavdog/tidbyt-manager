@@ -160,6 +160,18 @@ def update_brightness(id):
         db.save_user(user)
         return "",200
 
+# duplicate this method and make for default_interval
+@bp.route("/<string:id>/update_interval", methods=("GET", "POST"))
+@login_required
+def update_interval(id):
+    if id not in g.user["devices"]:
+        abort(404)
+    if request.method == "POST":
+        interval = int(request.form["interval"])
+        user = g.user
+        user["devices"][id]["default_interval"] = interval
+        db.save_user(user)
+        return "",200
 
 @bp.route("/<string:id>/update", methods=("GET", "POST"))
 @login_required
@@ -172,7 +184,6 @@ def update(id):
         notes = request.form["notes"]
         img_url = request.form["img_url"]
         api_key = request.form["api_key"]
-        brightness = int(request.form["brightness"])
         error = None
         if not name or not id:
             error = "Id and Name is required."
@@ -182,7 +193,8 @@ def update(id):
             device = dict()
             device["id"] = id
             device["name"] = name
-            device["brightness"] = brightness
+            device['default_interval'] = int(request.form['default_interval'])
+            device["brightness"] = int(request.form["brightness"])
             device["night_brightness"] = int(request.form["night_brightness"])
             device["night_start"] = int(request.form['night_start'])
             if len(img_url) < 1:
@@ -694,7 +706,6 @@ def next_app(username,device_name):
             print(f"sending brighness {b}")
             response.headers["Tronbyt-Brightness"] = b
             s = app.get('display_time',None)
-            print(f"got app dwell : {s}")
             if not s or int(s) == 0:
                 s = device.get("default_interval", 5)
             print(f"sending dwell seconds {s}")
