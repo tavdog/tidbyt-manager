@@ -386,7 +386,7 @@ def updateapp(id, iname):
             print("iname is :" + str(app["iname"]))
             app["name"] = name
             app["uinterval"] = uinterval
-            app["display_time"] = request.form["display_time"]
+            app["display_time"] = int(request.form["display_time"]) or 0
             app["notes"] = notes
 
             if (
@@ -693,6 +693,13 @@ def next_app(username,device_name):
             b = db.get_device_brightness(device)
             print(f"sending brighness {b}")
             response.headers["Tronbyt-Brightness"] = b
+            s = app.get('display_time',None)
+            print(f"got app dwell : {s}")
+            if not s or int(s) == 0:
+                s = device.get("default_interval", 5)
+            print(f"sending dwell seconds {s}")
+            response.headers["Tronbyt-Dwell-Secs"] = s
+
             return response        
         else:
             print("file not found")
