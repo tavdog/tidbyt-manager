@@ -386,7 +386,7 @@ def updateapp(id, iname):
             print("iname is :" + str(app["iname"]))
             app["name"] = name
             app["uinterval"] = uinterval
-            app["display_time"] = request.form["display_time"]
+            app["display_time"] = int(request.form["display_time"]) or 0
             app["notes"] = notes
 
             if (
