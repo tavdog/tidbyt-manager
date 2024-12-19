@@ -1,12 +1,10 @@
 {% extends 'base.html' %}
 {% block header %}
-<h1>{% block title %}Edit "{{ app['iname'] }}"{% endblock %}</h1>
+<h1>{% block title %}Edit "{{ app['name'] }}-{{ app['iname'] }}"{% endblock %}</h1>
 {% endblock %}
 {% block content %} <form method="post">
-<label for="iname">Installation Id (eg. clock1)</label>
-<input name="iname" id="iname" value="{{ request.form['iname'] or app['iname'] }}" readonly> 
-<label for="name">App Name (eg. analogclock)</label>
-<input name="name" id="name" value="{{ request.form['name'] or app['name'] }}" readonly> 
+<input type="hidden" name="iname" id="iname" value="{{ request.form['iname'] or app['iname'] }}" readonly> 
+<input type="hidden" name="name" id="name" value="{{ request.form['name'] or app['name'] }}" readonly> 
 
 <label for="uinterval">Render Interval Minutes (Update ever X minutes)</label>
 <div><input type="number" name="uinterval" id="uinterval" value="{{ request.form['uinterval'] or app['uinterval'] }}" required></div>

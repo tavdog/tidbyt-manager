@@ -1,5 +1,56 @@
 {% extends 'base.html' %}
 {% block header %}
+<!-- Add viewport meta tag -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+  /* Responsive container */
+  .w3-card-4 {
+    margin: 10px 0;
+    padding: 15px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Make preview images responsive */
+  .app-img {
+    max-width: 100%;
+    height: auto;
+    width: auto;
+  }
+
+  /* Button layout */
+  .w3-button {
+    margin: 5px;
+    min-width: 100px;
+  }
+
+  /* Media queries for mobile */
+  @media screen and (max-width: 768px) {
+    .w3-button {
+      width: 100%;
+      margin: 5px 0;
+    }
+
+    table {
+      width: 100%;
+    }
+
+    td {
+      display: block;
+      width: 100%;
+      text-align: center;
+    }
+
+    /* Adjust sliders for mobile */
+    input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+    }
+  }
+</style>
+
+<!-- ...existing script code... -->
 <script>
   // Function to update the numeric display in real-time (on slider move)
   function updateBrightnessValue(brightness) {
@@ -77,14 +128,6 @@
         <span id="brightnessValue">{{device['brightness'] }}</span><br>
         <input type="range" name="brightness" id="brightness" min="0" max="100" value="{{ device['brightness'] }}"
           oninput="updateBrightnessValue(this.value)" onmouseup="updateBrightness('{{ device['id'] }}', this.value)">
-        <style>
-          /* Control the width of the slider */
-          #brightness {
-            width: 80%;
-            /* Adjusts with the container */
-            /* Set the width in pixels */
-          }
-        </style>
 </div>
 <div>
         <label for="default_interval">App Cycle Time (Seconds)</label> = <span id="intervalValue">{{
@@ -92,14 +135,6 @@
         <input type="range" name="default_interval" id="default_interval" min="1" max="30"
           value="{{ device['default_interval'] }}" oninput="updateIntervalValue(this.value)"
           onmouseup="updateInterval('{{ device['id'] }}', this.value)">
-                <style>
-                  /* Control the width of the slider */
-                  #default_interval {
-                    width: 80%;
-                    /* Adjusts with the container */
-                    /* Set the width in pixels */
-                  }
-                </style>
                 </div>
           <table>
           <tr>

@@ -1,7 +1,57 @@
 <!doctype html>
+<head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <title>{% block title %}{% endblock %}Tronbyt Manager (Beta)</title>
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+  /* Global responsive styles */
+  .w3-card-4 {
+    margin: 10px;
+    max-width: 100%;
+  }
+
+  /* Make inputs more touch-friendly on mobile */
+  input[type="range"] {
+    width: 100%;
+    max-width: 300px;
+    height: 30px; /* Larger touch target */
+  }
+
+  /* Responsive buttons */
+  .w3-button {
+    margin: 5px;
+    display: inline-block;
+    width: auto;
+  }
+
+  /* Media queries for different screen sizes */
+  @media screen and (max-width: 600px) {
+    .w3-button {
+      width: 100%;
+      margin: 5px 0;
+    }
+    
+    h1 {
+      font-size: 1.5em;
+    }
+
+    .w3-padding {
+      padding: 8px !important;
+    }
+  }
+
+  #brightness {
+    width: 100%;
+    max-width: 300px;
+    margin: 10px 0;
+  }
+  
+  #default_interval {
+    width: 100%;
+    max-width: 300px;
+    margin: 10px 0;
+  }
+</style>
 <nav>
     <h1 class="w3-sans-serif">Tronbyt Manager (Beta)</h1> <ul>
         {% if g.user %}
