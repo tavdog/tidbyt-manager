@@ -76,7 +76,7 @@
         <label for="brightness">Brightness</label> =
         <span id="brightnessValue">{{device['brightness'] }}</span><br>
         <input type="range" name="brightness" id="brightness" min="0" max="100" value="{{ device['brightness'] }}"
-          oninput="updateDisplayedValue(this.value)" onmouseup="updateBrightness('{{ device['id'] }}', this.value)">
+          oninput="updateBrightnessValue(this.value)" onmouseup="updateBrightness('{{ device['id'] }}', this.value)">
         <style>
           /* Control the width of the slider */
           #brightness {
