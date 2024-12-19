@@ -14,9 +14,15 @@ value="{{ request.form['name'] or device['name'] }}" required>
 {% else %}
 <input name="img_url" id="img_url" value="{{ device['img_url'] }}">
 {% endif %}
+  <label for="default_interval">App Cycle Time (Seconds)</label>
+  <output>{{ device['default_interval'] }}</output>
+  <input type="range" name="default_interval" id="default_interval" min="1" max="30"
+    value="{{ device['default_interval'] }}" oninput="this.previousElementSibling.value = this.value">
+
 <span><label for="brightness">Brightness</label></span><output>{{ device['brightness'] }}</output>
 <input type="range" name="brightness" id="brightness" min="0" max="100" value="{{ device['brightness'] }}"
     oninput="this.previousElementSibling.value = this.value">
+
 
 <span><label for="night_brightness">Night Brightness</label></span><output>{{ device['night_brightness'] or 10 }}</output>
 
