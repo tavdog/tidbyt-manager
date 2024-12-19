@@ -61,9 +61,9 @@
 </header>
 
 {% if not device['img_url'].startswith('http') %}
-<p class="body">Image URL: {{ server_root }}{{ device['img_url'] }}">
+<p class="body">Image URL: {{ server_root }}{{ device['img_url'] }} - <a href="{{ server_root }}{{ device['img_url'] }}">Test!</a>
 {% else %}
-<p class="body">Image URL: {{ device['img_url'] }}</p>
+<p class="body">Image URL: {{ device['img_url'] }} - <a href="{{ device['img_url'] }}">Test!</a></p>
 {% endif %}
 {% if not device['api_key'] == "" %}
 <p class="body">API KEY: {{ device['api_key'][0:10] }} ... {{ device['api_key'][-10:-1] }}</p>
