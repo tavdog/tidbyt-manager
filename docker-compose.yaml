@@ -6,14 +6,15 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8000:8000" # Map port 8000 on the host to port 8000 in the container
-      - "5100:5100" # 5100 is used for pixlet serve interface during app configuration
-      - "5101:5101" # user 2
+      - "${SERVER_PORT}:8000" # Map port 8000 on the host to port 8000 in the container
+      - "${PIXLET_SERVE_PORT1}:5100" # 5100 is used for pixlet serve interface during app configuration
+      - "${PIXLET_SERVE_PORT2}:5101" # user 2
     volumes:
       - "/etc/localtime:/etc/localtime:ro" # used to sync docker with host time
     environment:
-      - SERVER_HOSTNAME=${SERVER_HOSTNAME}
+      - SERVER_HOSTNAME=${SERVER_HOSTNAME_OR_IP:?SERVER_HOSTNAME_OR_IP MUST BE SET IN .env FILE !!!!!!!!!!!!!!!!!.}
       - SERVER_PORT=${SERVER_PORT}
+      - PIXLET_RENDER_PORT1=${PIXLET_SERVE_PORT1}
       - PYTHONUNBUFFERED=1
     command: ["./run.production"]
       
