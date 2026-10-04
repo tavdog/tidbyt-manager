@@ -4,6 +4,7 @@ package server
 // app-install-counts.v1 endpoint and cached locally.
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -21,34 +22,58 @@ type nibletCountResponse struct {
 	Niblet          map[string]int64 `json:"niblet"`
 }
 
-func (s *Server) fetchNibletCounts(ctx context.Context) ([]byte, error) {
+// nibletRequest calls Niblet Cloud. It allows HTTPS, or HTTP only on loopback
+// for development, follows no redirects, and reads at most 1 MiB.
+func (s *Server) nibletRequest(ctx context.Context, method, path, token string, body any) (int, []byte, error) {
 	base, err := url.Parse(s.Config.NibletCloudURL)
 	if err != nil || base == nil || base.Host == "" || base.User != nil || base.RawQuery != "" || base.Fragment != "" ||
 		(base.Scheme != "https" && (base.Scheme != "http" || (base.Hostname() != "127.0.0.1" && base.Hostname() != "localhost" && base.Hostname() != "::1"))) {
-		return nil, errors.New("niblet cloud requires HTTPS (HTTP is allowed only on loopback)")
+		return 0, nil, errors.New("niblet cloud requires HTTPS (HTTP is allowed only on loopback)")
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(base.String(), "/")+"/v1/catalog/install-counts", nil)
+	var encoded io.Reader
+	if body != nil {
+		payload, err := json.Marshal(body)
+		if err != nil {
+			return 0, nil, err
+		}
+		encoded = bytes.NewReader(payload)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, strings.TrimRight(base.String(), "/")+path, encoded)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
 	}
 	client := &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, errors.New("niblet cloud request failed")
+		return 0, nil, errors.New("niblet cloud request failed")
 	}
 	defer func() {
 		if err := res.Body.Close(); err != nil {
 			slog.Debug("Failed to close Niblet Cloud response", "error", err)
 		}
 	}()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, fmt.Errorf("niblet cloud returned HTTP %d", res.StatusCode)
-	}
 	payload, err := io.ReadAll(io.LimitReader(res.Body, 1024*1024+1))
 	if len(payload) > 1024*1024 {
-		return nil, errors.New("niblet response too large")
+		return res.StatusCode, nil, errors.New("niblet response too large")
 	}
-	return payload, err
+	return res.StatusCode, payload, err
+}
+
+func (s *Server) fetchNibletCounts(ctx context.Context) ([]byte, error) {
+	status, payload, err := s.nibletRequest(ctx, http.MethodGet, "/v1/catalog/install-counts", "", nil)
+	if err != nil {
+		return nil, err
+	}
+	if status < 200 || status >= 300 {
+		return nil, fmt.Errorf("niblet cloud returned HTTP %d", status)
+	}
+	return payload, nil
 }
 
 func (s *Server) runNibletSync() {

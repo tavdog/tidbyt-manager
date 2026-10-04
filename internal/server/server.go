@@ -37,6 +37,8 @@ import (
 
 type Server struct {
 	installCounts map[string]int64 // public app ID -> Niblet install count
+	usageMu       sync.Mutex
+	usageSyncs    sync.WaitGroup // background syncs started by a consent change
 	DB            *gorm.DB
 	Router        *http.ServeMux
 	DataDir       string
@@ -258,6 +260,7 @@ func NewServer(db *gorm.DB, cfg *config.Settings) *Server {
 	go s.autoRefreshCustomAppsRepos()
 	if cfg.NibletCloudURL != "" {
 		go s.runNibletSync()
+		go s.runUsageSync()
 	}
 
 	s.routes()
@@ -304,6 +307,8 @@ func (s *Server) routes() {
 	}))
 	s.Router.HandleFunc("GET /settings/admin", s.RequireLogin(s.handleAdminIndex))
 	s.Router.HandleFunc("POST /settings/admin/oidc", s.RequireLogin(s.handleAdminSettingsPost))
+	s.Router.Handle("POST /settings/admin/usage-sharing", http.NewCrossOriginProtection().Handler(s.RequireLogin(s.handleUsageSharingConsent)))
+	s.Router.HandleFunc("GET /.well-known/niblet-reporter", s.handleUsageChallenge)
 	s.Router.HandleFunc("GET /admin/settings", s.RequireLogin(s.handleAdminSettingsGet))   // Keep old path just in case
 	s.Router.HandleFunc("POST /admin/settings", s.RequireLogin(s.handleAdminSettingsPost)) // Keep old path just in case
 	s.Router.HandleFunc("DELETE /admin/users/{username}", s.RequireLogin(s.handleDeleteUser))

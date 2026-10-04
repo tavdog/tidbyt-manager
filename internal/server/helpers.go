@@ -64,14 +64,17 @@ type DeviceSummary struct {
 
 // TemplateData is a struct to pass data to HTML templates.
 type TemplateData struct {
-	User       *data.User
-	Users      []data.User // For admin view
-	Config     *config.TemplateConfig
-	Flashes    []string
-	Devices    []data.Device   // Filtered devices for rendering
-	AllDevices []DeviceSummary // Lightweight list for "Copy to" dropdown
-	Item       *data.Device    // For single item partials
-	Localizer  *i18n.Localizer
+	ShowUsagePrompt       bool // first-run app usage sharing prompt for admins
+	UsageSharingAvailable bool
+	UsageSharing          UsageSharingStatus
+	User                  *data.User
+	Users                 []data.User // For admin view
+	Config                *config.TemplateConfig
+	Flashes               []string
+	Devices               []data.Device   // Filtered devices for rendering
+	AllDevices            []DeviceSummary // Lightweight list for "Copy to" dropdown
+	Item                  *data.Device    // For single item partials
+	Localizer             *i18n.Localizer
 
 	UpdateAvailable  bool
 	LatestReleaseURL string
@@ -193,6 +196,9 @@ func (s *Server) renderTemplate(w http.ResponseWriter, r *http.Request, name str
 			}
 		}
 	}
+
+	tmplData.UsageSharingAvailable = s.Config.NibletCloudURL != ""
+	tmplData.ShowUsagePrompt = s.shouldPromptUsage(tmplData.User)
 
 	// Calculate IsAutoLoginActive
 	userCount, err := gorm.G[data.User](s.DB).Count(r.Context(), "*")
