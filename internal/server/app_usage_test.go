@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -27,6 +28,7 @@ type fakeUsageCloud struct {
 	deleteCode int
 	report     map[string]any
 	onVerify   func() int
+	onReport   func()
 }
 
 func (f *fakeUsageCloud) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +45,9 @@ func (f *fakeUsageCloud) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "POST /v1/tronbyt/reports":
 		assert.Equal(f.t, "Bearer "+testReporterToken, auth)
 		require.NoError(f.t, json.NewDecoder(r.Body).Decode(&f.report))
+		if f.onReport != nil {
+			f.onReport()
+		}
 		w.WriteHeader(f.reportCode)
 	case "POST /v1/tronbyt/reporters/self/checkin":
 		assert.Equal(f.t, "Bearer "+testReporterToken, auth)
@@ -72,6 +77,7 @@ func newUsageTest(t *testing.T) (*Server, *fakeUsageCloud) {
 	server := httptest.NewServer(cloud)
 	t.Cleanup(server.Close)
 	s.Config.NibletCloudURL = server.URL
+	require.NoError(t, s.DB.Create(&data.Device{ID: "dev1", Username: "admin", APIKey: "key-dev1"}).Error)
 	return s, cloud
 }
 
@@ -132,6 +138,52 @@ func TestUsageSharingReportsChangesAndChecksInWeekly(t *testing.T) {
 	assert.Len(t, cloud.requests, 4, "unchanged range: nothing to send")
 }
 
+func TestUsageSharingWaitsForADevice(t *testing.T) {
+	s, cloud := newUsageTest(t)
+	require.NoError(t, s.DB.Where("id = ?", "dev1").Delete(&data.Device{}).Error)
+	require.NoError(t, s.setSetting(settingUsageSharing, "true"))
+	require.NoError(t, s.syncUsage(context.Background()))
+	assert.Empty(t, cloud.requests, "a server without devices has nothing to share")
+	assert.Equal(t, "Contributing · starts when you add a device", s.usageSharingStatus().Status)
+	require.NoError(t, s.DB.Create(&data.Device{ID: "dev1", Username: "admin", APIKey: "key-dev1"}).Error)
+	require.NoError(t, s.syncUsage(context.Background()))
+	assert.Equal(t, []string{"POST /v1/tronbyt/reporters", "POST /v1/tronbyt/reports"}, cloud.requests)
+}
+
+func TestUsageConsentDuringSyncDoesNotWaitAndIsApplied(t *testing.T) {
+	s, cloud := newUsageTest(t)
+	require.NoError(t, s.setSetting(settingUsageSharing, "true"))
+	saved := make(chan error, 1)
+	cloud.onReport = func() {
+		cloud.onReport = nil
+		// The admin turns sharing off while the first report is in flight.
+		done := make(chan error, 1)
+		go func() {
+			done <- s.saveUsageConsent(httptest.NewRequest(http.MethodPost, "/settings/admin/usage-sharing", nil), false)
+		}()
+		select {
+		case err := <-done:
+			saved <- err
+		case <-time.After(2 * time.Second):
+			saved <- errors.New("saving consent waited for the running sync")
+		}
+	}
+	require.NoError(t, s.syncUsage(context.Background()))
+	require.NoError(t, <-saved)
+	s.usageSyncs.Wait()
+	assert.Equal(t, []string{"POST /v1/tronbyt/reporters", "POST /v1/tronbyt/reports", "DELETE /v1/tronbyt/reporters/self"}, cloud.requests,
+		"the running sync reruns and withdraws despite the report gap")
+	assert.Empty(t, setting(t, s, settingUsageToken))
+}
+
+func TestSetSettingsSavesAllValues(t *testing.T) {
+	s := newTestServer(t)
+	require.NoError(t, s.setSetting("usage_a", "old"))
+	require.NoError(t, s.setSettings(map[string]string{"usage_a": "1", "usage_b": "2"}))
+	assert.Equal(t, "1", setting(t, s, "usage_a"))
+	assert.Equal(t, "2", setting(t, s, "usage_b"))
+}
+
 func TestUsageSharingBacksOffWithJitter(t *testing.T) {
 	for failures, base := range map[int]time.Duration{1: time.Hour, 2: 2 * time.Hour, 3: 4 * time.Hour, 6: 24 * time.Hour, 20: 24 * time.Hour} {
 		for range 20 {
@@ -179,6 +231,7 @@ func TestUsageSharingRegistrationFailureIsShown(t *testing.T) {
 	}))
 	defer cloud.Close()
 	s.Config.NibletCloudURL = cloud.URL
+	require.NoError(t, s.DB.Create(&data.Device{ID: "dev1", Username: "admin", APIKey: "key-dev1"}).Error)
 	require.NoError(t, s.setSetting(settingUsageSharing, "true"))
 	require.Error(t, s.syncUsage(context.Background()))
 	assert.Equal(t, "Couldn't reach Niblet yet · will retry automatically", s.usageSharingStatus().Status)
@@ -274,9 +327,10 @@ func TestUsageReportCountsOnlyEnabledInstallations(t *testing.T) {
 		{ID: "clock", Path: enabled},
 		{ID: "weather", Path: disabled},
 	}
-	report, err := s.usageReport(context.Background())
+	report, devices, err := s.usageReport(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, []string{"clock"}, report["apps"])
+	assert.Zero(t, devices)
 }
 
 func TestDeviceCountRangesAndPublicBaseURL(t *testing.T) {

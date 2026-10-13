@@ -13,16 +13,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"math/rand/v2"
-	"net"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -60,18 +57,16 @@ const (
 	settingUsagePrompted  = "usage_prompted" // an admin has made a choice once
 )
 
-// errUsageUnauthorized means Cloud no longer knows the token.
-var errUsageUnauthorized = errors.New("niblet cloud rejected the reporter token")
-
-// UsageSharingStatus is shown in System Settings.
+// UsageSharingStatus describes community app stats for the System Settings card.
 type UsageSharingStatus struct {
-	Enabled    bool
-	Status     string // translation message ID
-	LastReport string
-	Hostname   string
-	Offline    bool // NIBLET_CLOUD_URL is empty, so withdrawal cannot reach Cloud
+	Enabled    bool   // an admin chose to contribute
+	Status     string // translation message ID for the status line
+	LastReport string // date of the last successful report or check-in
+	Hostname   string // verified public hostname, for hosted servers
+	Offline    bool   // NIBLET_CLOUD_URL is empty, so withdrawal cannot reach Cloud
 }
 
+// runUsageSync checks hourly whether community app stats need to be sent.
 func (s *Server) runUsageSync() {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
@@ -83,29 +78,6 @@ func (s *Server) runUsageSync() {
 	}
 }
 
-func (s *Server) usageCall(ctx context.Context, method, path, token string, body any, want int) ([]byte, error) {
-	status, payload, err := s.nibletRequest(ctx, method, path, token, body)
-	if err != nil {
-		return nil, err
-	}
-	if status == http.StatusUnauthorized && token != "" {
-		return nil, errUsageUnauthorized
-	}
-	if status != want {
-		return nil, fmt.Errorf("niblet cloud returned HTTP %d", status)
-	}
-	return payload, nil
-}
-
-func (s *Server) setSettings(values map[string]string) error {
-	for key, value := range values {
-		if err := s.setSetting(key, value); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // forgetUsageReporter drops the credential and everything tied to it.
 func (s *Server) forgetUsageReporter() error {
 	return s.setSettings(map[string]string{
@@ -114,13 +86,11 @@ func (s *Server) forgetUsageReporter() error {
 	})
 }
 
-// usageRetryDelay is the backoff after the given number of consecutive failures.
+// usageRetryDelay is the backoff after the given number of consecutive
+// failures: usageRetryMin doubling up to usageRetryMax, plus up to 50% jitter.
 func usageRetryDelay(failures int) time.Duration {
-	delay := usageRetryMin
-	for i := 1; i < failures && delay < usageRetryMax; i++ {
-		delay *= 2
-	}
-	delay = min(delay, usageRetryMax)
+	shift := min(max(failures-1, 0), 5)
+	delay := min(usageRetryMin<<shift, usageRetryMax)
 	return delay + time.Duration(rand.Int64N(int64(delay/2)+1))
 }
 
@@ -132,17 +102,32 @@ func usageFingerprint(report map[string]any) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// usageTimestamp formats a time for the usage settings.
 func usageTimestamp(t time.Time) string {
 	return t.UTC().Format(time.RFC3339)
 }
 
-// syncUsage registers, verifies a hosted hostname, reports a changed app list,
-// checks in, or withdraws. It runs hourly, so edits within the hour are sent
-// together. The retry time is persisted before networking so restarts cannot
-// flood Cloud.
-func (s *Server) syncUsage(ctx context.Context) (err error) {
-	s.usageMu.Lock()
-	defer s.usageMu.Unlock()
+// syncUsage runs one sync unless another is in progress. No lock is held while
+// talking to Cloud, so saving consent never waits on the network. A consent
+// change made during a sync is picked up by a forced rerun when it finishes.
+func (s *Server) syncUsage(ctx context.Context) error {
+	for {
+		if !s.usageRunning.CompareAndSwap(false, true) {
+			return nil // the running sync reruns if consent changed
+		}
+		err := s.syncUsageOnce(ctx, s.usageForce.Swap(false))
+		s.usageRunning.Store(false)
+		if !s.usageForce.Load() {
+			return err
+		}
+	}
+}
+
+// syncUsageOnce registers, verifies a hosted hostname, reports a changed app
+// list, checks in, or withdraws. It runs hourly, so edits within the hour are
+// sent together. The retry time is persisted before networking so restarts
+// cannot flood Cloud; force (a consent change) skips the wait.
+func (s *Server) syncUsageOnce(ctx context.Context, force bool) (err error) {
 	settings := make(map[string]string)
 	for _, key := range []string{settingUsageSharing, settingUsageToken, settingUsageNext, settingUsageCheckIn, settingUsageSent, settingUsageFailures} {
 		if settings[key], err = s.getSetting(key); err != nil {
@@ -151,7 +136,7 @@ func (s *Server) syncUsage(ctx context.Context) (err error) {
 	}
 	consent, token := settings[settingUsageSharing], settings[settingUsageToken]
 	now := time.Now()
-	if due, _ := time.Parse(time.RFC3339, settings[settingUsageNext]); now.Before(due) {
+	if due, _ := time.Parse(time.RFC3339, settings[settingUsageNext]); !force && now.Before(due) {
 		return nil
 	}
 	if consent != "true" && token == "" {
@@ -159,11 +144,17 @@ func (s *Server) syncUsage(ctx context.Context) (err error) {
 	}
 	var report map[string]any
 	fingerprint := ""
-	if consent == "true" && token != "" {
-		if report, err = s.usageReport(ctx); err != nil {
+	if consent == "true" {
+		var devices int64
+		if report, devices, err = s.usageReport(ctx); err != nil {
 			return err
 		}
+		if devices == 0 {
+			return nil // nothing to share until a device is added
+		}
 		fingerprint = usageFingerprint(report)
+	}
+	if consent == "true" && token != "" {
 		checkIn, _ := time.Parse(time.RFC3339, settings[settingUsageCheckIn])
 		if fingerprint == settings[settingUsageSent] && now.Before(checkIn) {
 			return nil // nothing changed and no check-in is due
@@ -184,7 +175,7 @@ func (s *Server) syncUsage(ctx context.Context) (err error) {
 
 	if consent != "true" {
 		// Withdrawal: delete everything shared, keeping the token until Cloud confirms.
-		if _, err := s.usageCall(ctx, http.MethodDelete, "/v1/tronbyt/reporters/self", token, nil, http.StatusNoContent); err != nil && !errors.Is(err, errUsageUnauthorized) {
+		if _, err := s.nibletCall(ctx, http.MethodDelete, "/v1/tronbyt/reporters/self", token, nil, http.StatusNoContent); err != nil && !errors.Is(err, errNibletUnauthorized) {
 			return err
 		}
 		if err := s.forgetUsageReporter(); err != nil {
@@ -193,7 +184,7 @@ func (s *Server) syncUsage(ctx context.Context) (err error) {
 		return s.setSetting(settingUsageNext, "")
 	}
 	if token == "" {
-		payload, err := s.usageCall(ctx, http.MethodPost, "/v1/tronbyt/reporters", "", map[string]any{
+		payload, err := s.nibletCall(ctx, http.MethodPost, "/v1/tronbyt/reporters", "", map[string]any{
 			"protocol_version": usageProtocol, "consent": true,
 		}, http.StatusCreated)
 		if err != nil {
@@ -210,10 +201,6 @@ func (s *Server) syncUsage(ctx context.Context) (err error) {
 		if err := s.setSettings(map[string]string{settingUsageToken: token, settingUsageNetwork: registered.Network, settingUsageSent: ""}); err != nil {
 			return err
 		}
-		if report, err = s.usageReport(ctx); err != nil {
-			return err
-		}
-		fingerprint = usageFingerprint(report)
 		settings[settingUsageSent] = ""
 	}
 	if err := s.verifyUsageHostname(ctx, token); err != nil {
@@ -223,14 +210,14 @@ func (s *Server) syncUsage(ctx context.Context) (err error) {
 
 	next := ""
 	if fingerprint != settings[settingUsageSent] {
-		_, err = s.usageCall(ctx, http.MethodPost, "/v1/tronbyt/reports", token, report, http.StatusNoContent)
+		_, err = s.nibletCall(ctx, http.MethodPost, "/v1/tronbyt/reports", token, report, http.StatusNoContent)
 		next = usageTimestamp(now.Add(usageReportGap))
 	} else {
-		_, err = s.usageCall(ctx, http.MethodPost, "/v1/tronbyt/reporters/self/checkin", token,
+		_, err = s.nibletCall(ctx, http.MethodPost, "/v1/tronbyt/reporters/self/checkin", token,
 			map[string]any{"protocol_version": usageProtocol}, http.StatusNoContent)
 	}
 	if err != nil {
-		if errors.Is(err, errUsageUnauthorized) {
+		if errors.Is(err, errNibletUnauthorized) {
 			if forgetErr := s.forgetUsageReporter(); forgetErr != nil {
 				return forgetErr
 			}
@@ -261,7 +248,7 @@ func (s *Server) verifyUsageHostname(ctx context.Context, token string) error {
 	if err != nil || verified != "" {
 		return err
 	}
-	payload, err := s.usageCall(ctx, http.MethodPost, "/v1/tronbyt/reporters/self/hostname", token, map[string]any{
+	payload, err := s.nibletCall(ctx, http.MethodPost, "/v1/tronbyt/reporters/self/hostname", token, map[string]any{
 		"protocol_version": usageProtocol, "base_url": baseURL,
 	}, http.StatusCreated)
 	if err != nil {
@@ -277,7 +264,7 @@ func (s *Server) verifyUsageHostname(ctx context.Context, token string) error {
 		return err
 	}
 	defer func() { _ = s.setSetting(settingUsageChallenge, "") }()
-	if _, err := s.usageCall(ctx, http.MethodPost, "/v1/tronbyt/reporters/self/hostname/verify", token, nil, http.StatusNoContent); err != nil {
+	if _, err := s.nibletCall(ctx, http.MethodPost, "/v1/tronbyt/reporters/self/hostname/verify", token, nil, http.StatusNoContent); err != nil {
 		return err
 	}
 	parsed, _ := url.Parse(baseURL)
@@ -296,20 +283,21 @@ func (s *Server) handleUsageChallenge(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write([]byte(challenge))
 }
 
-func (s *Server) usageReport(ctx context.Context) (map[string]any, error) {
+// usageReport builds the report body and returns the number of devices.
+func (s *Server) usageReport(ctx context.Context) (map[string]any, int64, error) {
 	installations, err := gorm.G[data.App](s.DB).Where("enabled = ?", true).Select("path").Find(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	devices, err := gorm.G[data.Device](s.DB).Count(ctx, "id")
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	return map[string]any{
 		"protocol_version": usageProtocol,
 		"apps":             usageApps(s.DataDir, s.ListSystemApps(), installations),
 		"device_count":     deviceCountRange(devices),
-	}, nil
+	}, devices, nil
 }
 
 // usageApps returns the sorted system app IDs used by the given installations.
@@ -347,6 +335,8 @@ func usageApps(dataDir string, catalog []apps.AppMetadata, installations []data.
 	return ids
 }
 
+// deviceCountRange reports devices as a coarse range. Servers without devices
+// send nothing, so the smallest range is 1.
 func deviceCountRange(devices int64) string {
 	switch {
 	case devices <= 1:
@@ -360,35 +350,17 @@ func deviceCountRange(devices int64) string {
 	}
 }
 
-// publicBaseURL returns the admin's https:// URL when it is a public hostname,
-// which hosted servers use to prove their identity.
-func publicBaseURL(raw string) string {
-	parsed, err := url.Parse(raw)
-	if err != nil || parsed.Scheme != "https" || (parsed.Port() != "" && parsed.Port() != "443") {
-		return ""
-	}
-	host := strings.ToLower(parsed.Hostname())
-	if net.ParseIP(host) != nil || !strings.Contains(host, ".") || host == "localhost" ||
-		strings.HasSuffix(host, ".local") || strings.HasSuffix(host, ".localhost") {
-		return ""
-	}
-	return "https://" + host
-}
-
 // saveUsageConsent records an admin's choice from setup, the first-run prompt
 // or System Settings, and acts on it right away.
 func (s *Server) saveUsageConsent(r *http.Request, enabled bool) error {
-	s.usageMu.Lock()
-	err := s.setSettings(map[string]string{
+	if err := s.setSettings(map[string]string{
 		settingUsageSharing:  map[bool]string{true: "true", false: "false"}[enabled],
 		settingUsageBaseURL:  publicBaseURL(s.GetBaseURL(r)),
 		settingUsagePrompted: "true",
-		settingUsageNext:     "", // act now rather than after a retry delay
-	})
-	s.usageMu.Unlock()
-	if err != nil {
+	}); err != nil {
 		return err
 	}
+	s.usageForce.Store(true) // act now rather than after a retry delay
 	if s.Config.NibletCloudURL != "" {
 		s.usageSyncs.Go(func() {
 			if err := s.syncUsage(context.Background()); err != nil {
@@ -413,14 +385,8 @@ func (s *Server) shouldPromptUsage(user *data.User) bool {
 	return err == nil && sharing == ""
 }
 
-// localReturnPath accepts only same-site paths, so the form cannot redirect elsewhere.
-func localReturnPath(raw string) string {
-	if !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") || strings.HasPrefix(raw, "/\\") || strings.ContainsAny(raw, "\r\n") {
-		return "/settings/admin"
-	}
-	return raw
-}
-
+// handleUsageSharingConsent saves an admin's choice from the prompt or System
+// Settings and returns to a same-site page.
 func (s *Server) handleUsageSharingConsent(w http.ResponseWriter, r *http.Request) {
 	if user := GetUser(r); user == nil || !user.IsAdmin {
 		http.Error(w, "Forbidden", http.StatusForbidden)
@@ -438,6 +404,13 @@ func (s *Server) handleUsageSharingConsent(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, localReturnPath(r.PostForm.Get("return_to")), http.StatusSeeOther)
 }
 
+// hasDevices reports whether any device is configured.
+func (s *Server) hasDevices() bool {
+	devices, err := gorm.G[data.Device](s.DB).Count(context.Background(), "id")
+	return err == nil && devices > 0
+}
+
+// usageSharingStatus describes the current state for System Settings.
 func (s *Server) usageSharingStatus() UsageSharingStatus {
 	consent, _ := s.getSetting(settingUsageSharing)
 	token, _ := s.getSetting(settingUsageToken)
@@ -453,6 +426,8 @@ func (s *Server) usageSharingStatus() UsageSharingStatus {
 		status.Status = "Off"
 	case status.Offline:
 		status.Status = "Paused · NIBLET_CLOUD_URL is empty"
+	case token == "" && !s.hasDevices():
+		status.Status = "Contributing · starts when you add a device"
 	case token == "" && failure != "":
 		status.Status = "Couldn't reach Niblet yet · will retry automatically"
 	case token == "":

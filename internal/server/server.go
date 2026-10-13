@@ -37,8 +37,9 @@ import (
 
 type Server struct {
 	installCounts map[string]int64 // public app ID -> Niblet install count
-	usageMu       sync.Mutex
-	usageSyncs    sync.WaitGroup // background syncs started by a consent change
+	usageRunning  atomic.Bool      // a community app stats sync is in progress
+	usageForce    atomic.Bool      // a consent change awaits a sync that ignores the retry wait
+	usageSyncs    sync.WaitGroup   // background syncs started by a consent change
 	DB            *gorm.DB
 	Router        *http.ServeMux
 	DataDir       string
