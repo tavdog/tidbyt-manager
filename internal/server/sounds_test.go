@@ -268,6 +268,7 @@ func TestTriggerSoundAPI(t *testing.T) {
 	pollRr := httptest.NewRecorder()
 	s.ServeHTTP(pollRr, pollReq)
 	assert.Equal(t, "https://example.com/bell.mp3", pollRr.Header().Get("Tronbyt-Sound"))
+	assert.Equal(t, "100", pollRr.Header().Get("Tronbyt-Volume"))
 
 	// Verify pending sound cleared in DB after consumption
 	dev, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())

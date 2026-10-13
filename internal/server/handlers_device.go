@@ -655,6 +655,7 @@ func (s *Server) handleUpdateDevicePost(w http.ResponseWriter, r *http.Request) 
 	user := GetUser(r)
 	s.invalidateDeviceAppRendersIfModeChanged(r.Context(), device, modeSnapshotBefore)
 	s.notifyDashboard(user.Username, WSEvent{Type: "apps_changed", DeviceID: device.ID})
+	s.Broadcaster.Notify(device.ID, nil)
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
@@ -896,6 +897,39 @@ func (s *Server) handleUpdateBrightness(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 }
 
+func (s *Server) handleUpdateVolume(w http.ResponseWriter, r *http.Request) {
+	device := GetDevice(r)
+
+	volStr := r.FormValue("volume")
+	vol, err := strconv.Atoi(volStr)
+	if err != nil || vol < 0 || vol > 100 {
+		slog.Warn("Invalid volume value", "device", device.ID, "value", volStr)
+		http.Error(w, "Volume must be between 0 and 100", http.StatusBadRequest)
+		return
+	}
+
+	device.Volume = vol
+
+	if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(r.Context(), "volume", vol); err != nil {
+		slog.Error("Failed to update device volume", "device", device.ID, "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Notify Device (Websocket)
+	s.Broadcaster.Notify(device.ID, nil)
+
+	// Notify Dashboard
+	user := GetUser(r)
+	s.notifyDashboard(user.Username, WSEvent{
+		Type:     "device_updated",
+		DeviceID: device.ID,
+		Payload:  map[string]any{"volume": vol},
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (s *Server) handleUpdateInterval(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -971,6 +1005,12 @@ func (s *Server) handleTestSoundDevice(w http.ResponseWriter, r *http.Request) {
 	soundID := r.FormValue("sound")
 	if soundID == "" {
 		soundID = "default:chime"
+	}
+
+	if volStr := r.FormValue("volume"); volStr != "" {
+		if vol, err := strconv.Atoi(volStr); err == nil && vol >= 0 && vol <= 100 {
+			device.Volume = vol
+		}
 	}
 
 	baseURL := s.GetDeviceBaseURL(device)

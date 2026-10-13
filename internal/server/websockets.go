@@ -230,6 +230,7 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 	var pendingImage []byte
 	device := *initialDevice
 	lastSentBrightness := -1
+	lastSentVolume := -1
 	sendImmediate := false
 
 	for {
@@ -297,6 +298,18 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 				return
 			}
 			lastSentBrightness = effectiveBrightness
+		}
+
+		// Only send volume if device has speaker capability and volume changed
+		if device.HasSpeaker() {
+			effectiveVolume := device.GetVolume()
+			if effectiveVolume != lastSentVolume {
+				if err := conn.WriteJSON(map[string]int{"volume": effectiveVolume}); err != nil {
+					slog.Error("Failed to write volume WS message", "error", err)
+					return
+				}
+				lastSentVolume = effectiveVolume
+			}
 		}
 
 		if err := conn.WriteMessage(websocket.BinaryMessage, imgData); err != nil {
@@ -392,7 +405,7 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 					waiting = false
 					sendImmediate = true
 				} else {
-					// State Change: Update Brightness immediately, but don't interrupt current app
+					// State Change: Update Brightness and Volume immediately, but don't interrupt current app
 					newBrightness := device.GetEffectiveBrightness()
 
 					if newBrightness != lastSentBrightness {
@@ -401,6 +414,17 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 							return
 						}
 						lastSentBrightness = newBrightness
+					}
+
+					if device.HasSpeaker() {
+						newVolume := device.GetVolume()
+						if newVolume != lastSentVolume {
+							if err := conn.WriteJSON(map[string]int{"volume": newVolume}); err != nil {
+								slog.Error("Failed to write volume WS message", "error", err)
+								return
+							}
+							lastSentVolume = newVolume
+						}
 					}
 				}
 			case <-timerC:

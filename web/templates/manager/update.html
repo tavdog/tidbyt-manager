@@ -180,7 +180,7 @@
                                    max="100"
                                    step="5"
                                    value="{{ .Device.GetVolume }}"
-                                   oninput="this.nextElementSibling.value = this.value">
+                                   oninput="this.nextElementSibling.value = this.value; sendVolumeToDevice(this.value)">
                             <output class="range-output">{{ .Device.GetVolume }}</output>
                         </div>
                         <p class="settings-help">{{ t .Localizer "Set playback volume for sound notifications and chimes (0–100%)." }}</p>
@@ -1227,9 +1227,38 @@
         document.getElementById('device-form').submit();
     }
 
+    let volumeDebounceTimer = null;
+    function sendVolumeToDevice(volume) {
+        if (volumeDebounceTimer) {
+            clearTimeout(volumeDebounceTimer);
+        }
+        volumeDebounceTimer = setTimeout(() => {
+            const formData = new URLSearchParams();
+            formData.append('volume', volume);
+
+            fetch('/devices/{{ .Device.ID }}/update_volume', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData.toString()
+            }).then(response => {
+                if (!response.ok) {
+                    console.error('Failed to update volume');
+                } else {
+                    console.log('Volume updated successfully to', volume);
+                }
+            }).catch(error => {
+                console.error('Unexpected error updating volume:', error);
+            });
+        }, 300);
+    }
+
     async function triggerDeviceTestSound(deviceId) {
         const sel = document.getElementById('test_sound_select');
         const sound = sel ? sel.value : 'default:chime';
+        const volInput = document.getElementById('volume');
+        const vol = volInput ? volInput.value : '';
         const statusSpan = document.getElementById('test-sound-status');
         if (statusSpan) {
             statusSpan.innerText = "{{ t .Localizer "Playing..." }}";
@@ -1238,6 +1267,9 @@
         try {
             const formData = new FormData();
             formData.append('sound', sound);
+            if (vol !== '') {
+                formData.append('volume', vol);
+            }
             const resp = await fetch(`/devices/${deviceId}/test_sound`, {
                 method: 'POST',
                 body: formData

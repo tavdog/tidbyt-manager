@@ -321,6 +321,7 @@ func (s *Server) routes() {
 	s.Router.HandleFunc("POST /devices/import", s.RequireLogin(s.handleImportNewDeviceConfig))
 
 	s.Router.HandleFunc("POST /devices/{id}/update_brightness", s.RequireLogin(s.RequireDevice(s.handleUpdateBrightness)))
+	s.Router.HandleFunc("POST /devices/{id}/update_volume", s.RequireLogin(s.RequireDevice(s.handleUpdateVolume)))
 	s.Router.HandleFunc("POST /devices/{id}/update_interval", s.RequireLogin(s.RequireDevice(s.handleUpdateInterval)))
 	s.Router.HandleFunc("POST /devices/{id}/set_night_mode_override", s.RequireLogin(s.RequireDevice(s.handleSetNightModeOverride)))
 	s.Router.HandleFunc("POST /devices/{id}/set_dim_mode_override", s.RequireLogin(s.RequireDevice(s.handleSetDimModeOverride)))

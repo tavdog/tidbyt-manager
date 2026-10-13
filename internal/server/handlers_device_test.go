@@ -708,4 +708,80 @@ func TestHandleTestSoundDevice(t *testing.T) {
 	s.handleTestSoundDevice(rr, req)
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Device is currently muted")
+
+	// 3. Test sound with custom volume override
+	device.Muted = false
+	form = strings.NewReader("sound=default:ding&volume=45")
+	req = httptest.NewRequest(http.MethodPost, "/devices/dev-test-sound/test_sound", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &user))
+	req = req.WithContext(context.WithValue(req.Context(), deviceContextKey, &device))
+	rr = httptest.NewRecorder()
+
+	s.handleTestSoundDevice(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, 45, device.Volume)
+}
+
+func TestUpdateVolume(t *testing.T) {
+	s := newTestServer(t)
+
+	user := data.User{Username: "testuser-vol"}
+	require.NoError(t, s.DB.Create(&user).Error)
+
+	device := data.Device{
+		ID:       "dev-vol-test",
+		Username: user.Username,
+		Name:     "Volume Device",
+		Volume:   100,
+	}
+	require.NoError(t, s.DB.Create(&device).Error)
+
+	// 1. Valid volume update
+	form := strings.NewReader("volume=65")
+	req := httptest.NewRequest(http.MethodPost, "/devices/dev-vol-test/update_volume", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &user))
+	req = req.WithContext(context.WithValue(req.Context(), deviceContextKey, &device))
+	rr := httptest.NewRecorder()
+
+	s.handleUpdateVolume(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	reloaded, err := gorm.G[data.Device](s.DB).Where("id = ?", "dev-vol-test").First(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 65, reloaded.Volume)
+
+	// 2. Invalid volume (< 0)
+	form = strings.NewReader("volume=-5")
+	req = httptest.NewRequest(http.MethodPost, "/devices/dev-vol-test/update_volume", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &user))
+	req = req.WithContext(context.WithValue(req.Context(), deviceContextKey, &device))
+	rr = httptest.NewRecorder()
+
+	s.handleUpdateVolume(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	// 3. Invalid volume (> 100)
+	form = strings.NewReader("volume=105")
+	req = httptest.NewRequest(http.MethodPost, "/devices/dev-vol-test/update_volume", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &user))
+	req = req.WithContext(context.WithValue(req.Context(), deviceContextKey, &device))
+	rr = httptest.NewRecorder()
+
+	s.handleUpdateVolume(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	// 4. Invalid volume (non-numeric)
+	form = strings.NewReader("volume=invalid")
+	req = httptest.NewRequest(http.MethodPost, "/devices/dev-vol-test/update_volume", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &user))
+	req = req.WithContext(context.WithValue(req.Context(), deviceContextKey, &device))
+	rr = httptest.NewRecorder()
+
+	s.handleUpdateVolume(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
