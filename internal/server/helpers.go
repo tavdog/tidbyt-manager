@@ -729,6 +729,8 @@ func (s *Server) GetBaseURL(r *http.Request) string {
 			host = h
 		}
 		host = net.JoinHostPort(host, port)
+	} else if r.Header.Get("X-Forwarded-Host") == "" && !strings.Contains(host, ":") && s.Config.Port != "" && s.Config.Port != "80" && s.Config.Port != "443" {
+		host = net.JoinHostPort(host, s.Config.Port)
 	}
 
 	return fmt.Sprintf("%s://%s", scheme, host)
@@ -737,7 +739,13 @@ func (s *Server) GetBaseURL(r *http.Request) string {
 func (s *Server) GetDeviceBaseURL(device *data.Device) string {
 	if device != nil && device.ImgURL != "" {
 		if u, err := url.Parse(device.ImgURL); err == nil && u.Host != "" && u.Scheme != "" {
-			return fmt.Sprintf("%s://%s", u.Scheme, u.Host)
+			scheme := u.Scheme
+			if scheme == "ws" {
+				scheme = "http"
+			} else if scheme == "wss" {
+				scheme = "https"
+			}
+			return fmt.Sprintf("%s://%s", scheme, u.Host)
 		}
 	}
 	return s.GetBaseURL(nil)

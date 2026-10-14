@@ -133,9 +133,9 @@ func (s *Server) GetNextAppImage(ctx context.Context, device *data.Device, user 
 	// Trigger every_display notification sound for HTTP polling devices
 	if device.Info.ProtocolType != data.ProtocolWS && app != nil && app.NotificationSound != nil && *app.NotificationSound != "" && *app.NotificationSound != "none" && app.NotificationSoundTrigger == "every_display" {
 		if device.HasSpeaker() && !device.IsMuted() {
-			baseURLToUse := baseURL
-			if baseURLToUse == "" {
-				baseURLToUse = s.GetDeviceBaseURL(device)
+			baseURLToUse := s.GetDeviceBaseURL(device)
+			if baseURLToUse == "" || (!strings.Contains(baseURLToUse, ":") && strings.Contains(baseURL, ":")) {
+				baseURLToUse = baseURL
 			}
 			_ = s.TriggerDeviceSound(ctx, device, *app.NotificationSound, baseURLToUse)
 		}

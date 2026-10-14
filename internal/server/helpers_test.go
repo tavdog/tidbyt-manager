@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"testing"
 
+	"tronbyt-server/internal/config"
 	"tronbyt-server/internal/data"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -128,3 +129,49 @@ func TestDeviceTypeChoicesOfferEveryTypeGroupedByPanelSize(t *testing.T) {
 			slug, seen[deviceType])
 	}
 }
+
+func TestGetBaseURLAndGetDeviceBaseURL(t *testing.T) {
+	s := &Server{
+		Config: &config.Settings{
+			Port: "7000",
+		},
+	}
+
+	// 1. Request with Host containing no port falls back to Config.Port when not behind proxy
+	reqDirect := &http.Request{Host: "192.168.1.15"}
+	assert.Equal(t, "http://192.168.1.15:7000", s.GetBaseURL(reqDirect))
+
+	// 2. Request with explicit port preserves it
+	reqWithPort := &http.Request{Host: "192.168.1.15:7000"}
+	assert.Equal(t, "http://192.168.1.15:7000", s.GetBaseURL(reqWithPort))
+
+	// 3. Request with X-Forwarded-Host preserves reverse proxy host
+	reqProxy := &http.Request{
+		Host: "192.168.1.15",
+		Header: http.Header{
+			"X-Forwarded-Host": []string{"tronbyt.example.com"},
+		},
+	}
+	assert.Equal(t, "http://tronbyt.example.com", s.GetBaseURL(reqProxy))
+
+	// 4. Request with X-Forwarded-Port
+	reqProxyPort := &http.Request{
+		Host: "tronbyt.example.com",
+		Header: http.Header{
+			"X-Forwarded-Port": []string{"8443"},
+			"X-Forwarded-Proto": []string{"https"},
+		},
+	}
+	assert.Equal(t, "https://tronbyt.example.com:8443", s.GetBaseURL(reqProxyPort))
+
+	// 5. GetDeviceBaseURL normalizes ws:// -> http:// and wss:// -> https://
+	devWS := &data.Device{ImgURL: "ws://192.168.1.15:7000/tronberry/ws"}
+	assert.Equal(t, "http://192.168.1.15:7000", s.GetDeviceBaseURL(devWS))
+
+	devWSS := &data.Device{ImgURL: "wss://mytronbyt.internal:9443/tronberry/ws"}
+	assert.Equal(t, "https://mytronbyt.internal:9443", s.GetDeviceBaseURL(devWSS))
+
+	devHTTP := &data.Device{ImgURL: "http://192.168.1.15:7000/tronberry/next"}
+	assert.Equal(t, "http://192.168.1.15:7000", s.GetDeviceBaseURL(devHTTP))
+}
+

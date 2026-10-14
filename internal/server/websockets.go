@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"tronbyt-server/internal/data"
@@ -363,9 +364,9 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 						// Play notification sound on every display if configured
 						if app.NotificationSound != nil && *app.NotificationSound != "" && *app.NotificationSound != "none" && app.NotificationSoundTrigger == "every_display" {
 							if device.HasSpeaker() && !device.IsMuted() {
-								baseURLToUse := baseURL
-								if baseURLToUse == "" {
-									baseURLToUse = s.GetDeviceBaseURL(&device)
+								baseURLToUse := s.GetDeviceBaseURL(&device)
+								if baseURLToUse == "" || (!strings.Contains(baseURLToUse, ":") && strings.Contains(baseURL, ":")) {
+									baseURLToUse = baseURL
 								}
 								payload := s.ResolveSoundPayload(&device, baseURLToUse, *app.NotificationSound)
 								if payload != "" {
