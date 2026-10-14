@@ -396,10 +396,7 @@ func TestNotificationSoundOptInAndTriggerLogic(t *testing.T) {
 	newHash := "hash2"
 	contentChanged := (appUnsetTrigger.LastRenderHash != newHash)
 	shouldPlay := false
-	switch appUnsetTrigger.NotificationSoundTrigger {
-	case "every_render":
-		shouldPlay = true
-	case "on_change":
+	if appUnsetTrigger.NotificationSoundTrigger == "on_change" {
 		shouldPlay = contentChanged
 	}
 	assert.False(t, shouldPlay, "Unset trigger must be off by default")
@@ -437,33 +434,16 @@ func TestNotificationSoundOptInAndTriggerLogic(t *testing.T) {
 	devCheck, _ = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())
 	assert.Empty(t, devCheck.PendingSound)
 
-	// 4. every_render triggers even if hash is identical
-	appEvery := &data.App{
-		ID:                       13,
-		DeviceID:                 deviceID,
-		NotificationSound:        &soundName,
-		NotificationSoundTrigger: "every_render",
-		LastRenderHash:           newHash,
-	}
-	shouldPlayEvery := (appEvery.NotificationSoundTrigger == "every_render")
-	assert.True(t, shouldPlayEvery)
-	require.NoError(t, s.TriggerDeviceSound(context.Background(), &dev, *appEvery.NotificationSound, baseURL))
-	devCheck, _ = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())
-	assert.NotEmpty(t, devCheck.PendingSound)
-
-	// 5. every_display does NOT trigger during render loop (triggers only on display)
+	// 4. every_display triggers on device display, not during background render
 	appDisplay := &data.App{
-		ID:                       14,
+		ID:                       13,
 		DeviceID:                 deviceID,
 		NotificationSound:        &soundName,
 		NotificationSoundTrigger: "every_display",
 		LastRenderHash:           newHash,
 	}
 	shouldPlayRender := false
-	switch appDisplay.NotificationSoundTrigger {
-	case "every_render":
-		shouldPlayRender = true
-	case "on_change":
+	if appDisplay.NotificationSoundTrigger == "on_change" {
 		shouldPlayRender = contentChanged
 	}
 	assert.False(t, shouldPlayRender, "every_display must not trigger in render loop")

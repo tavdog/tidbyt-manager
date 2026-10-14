@@ -1014,17 +1014,15 @@ func (s *Server) handlePatchInstallation(w http.ResponseWriter, r *http.Request)
 		} else {
 			app.NotificationSound = &clean
 			if app.NotificationSoundTrigger == "" {
-				app.NotificationSoundTrigger = "on_change"
+				app.NotificationSoundTrigger = "every_display"
 			}
 		}
 	}
 	if update.NotificationSoundTrigger != nil {
 		if app.NotificationSound == nil {
 			app.NotificationSoundTrigger = ""
-		} else if *update.NotificationSoundTrigger == "every_display" {
+		} else if *update.NotificationSoundTrigger == "every_display" || *update.NotificationSoundTrigger == "every_render" {
 			app.NotificationSoundTrigger = "every_display"
-		} else if *update.NotificationSoundTrigger == "every_render" {
-			app.NotificationSoundTrigger = "every_render"
 		} else if *update.NotificationSoundTrigger == "on_change" {
 			app.NotificationSoundTrigger = "on_change"
 		} else {

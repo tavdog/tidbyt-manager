@@ -244,20 +244,7 @@
         </tr>
         <!-- Notification Sound -->
         {{ $audioCap := .Device.GetAudioCapability }}
-        {{ if eq $audioCap "none" }}
-        <tr>
-            <td>
-                <label>{{ t .Localizer "Notification Sound" }}</label>
-            </td>
-            <td>
-                <p class="settings-help" style="margin: 0;">
-                    <i class="fa-solid fa-volume-xmark" aria-hidden="true"></i>
-                    {{ t .Localizer "Audio is disabled or not supported on this device. You can configure audio in" }}
-                    <a href="/devices/{{ .Device.ID }}/update#section-core-setup">{{ t .Localizer "Device Settings" }}</a>.
-                </p>
-            </td>
-        </tr>
-    {{ else }}
+        {{ if ne $audioCap "none" }}
         <tr>
             <td>
                 <label for="notification_sound_select">{{ t .Localizer "Notification Sound" }}</label>
@@ -362,15 +349,11 @@
                         id="notification_sound_trigger"
                         class="form-control">
                     <option value="every_display"
-                            {{ if eq .App.NotificationSoundTrigger "every_display" }}selected{{ end }}>
+                            {{ if ne .App.NotificationSoundTrigger "on_change" }}selected{{ end }}>
                         {{ t .Localizer "Every time app is displayed" }}
                     </option>
-                    <option value="every_render"
-                            {{ if eq .App.NotificationSoundTrigger "every_render" }}selected{{ end }}>
-                        {{ t .Localizer "Every time app renders" }}
-                    </option>
                     <option value="on_change"
-                            {{ if or (eq .App.NotificationSoundTrigger "on_change") (and (ne .App.NotificationSoundTrigger "every_display") (ne .App.NotificationSoundTrigger "every_render")) }}selected{{ end }}>
+                            {{ if eq .App.NotificationSoundTrigger "on_change" }}selected{{ end }}>
                         {{ t .Localizer "Only when display content changes" }}
                     </option>
                 </select>
@@ -2170,7 +2153,7 @@ function createImageUploadField(field, config) {
           color_filter: document.getElementById('color_filter').value,
           show_full_animation: document.getElementById('show_full_animation').value,
           notification_sound: selectedSound,
-          notification_sound_trigger: (selectedSound && selectedSound !== 'none') ? (document.getElementById('notification_sound_trigger') ? document.getElementById('notification_sound_trigger').value : 'on_change') : '',
+          notification_sound_trigger: (selectedSound && selectedSound !== 'none') ? (document.getElementById('notification_sound_trigger') ? document.getElementById('notification_sound_trigger').value : 'every_display') : '',
           days: days,
 
           use_custom_recurrence: document.getElementById('use_custom_recurrence').checked,

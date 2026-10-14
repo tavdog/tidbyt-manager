@@ -646,12 +646,10 @@ func (s *Server) handleConfigAppPost(w http.ResponseWriter, r *http.Request) {
 
 	if app.NotificationSound == nil {
 		app.NotificationSoundTrigger = ""
-	} else if payload.NotificationSoundTrigger == "every_display" {
-		app.NotificationSoundTrigger = "every_display"
-	} else if payload.NotificationSoundTrigger == "every_render" {
-		app.NotificationSoundTrigger = "every_render"
-	} else {
+	} else if payload.NotificationSoundTrigger == "on_change" {
 		app.NotificationSoundTrigger = "on_change"
+	} else {
+		app.NotificationSoundTrigger = "every_display"
 	}
 
 	// Save to DB
