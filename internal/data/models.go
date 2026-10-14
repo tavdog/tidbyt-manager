@@ -1201,30 +1201,21 @@ func (d Device) BrightnessUIScale() int {
 
 // GetAudioCapability returns the effective audio capability for the device:
 // explicitly configured setting if present, otherwise default for device type.
-func (d *Device) GetAudioCapability() AudioCapability {
-	if d != nil && d.AudioCapability != nil && *d.AudioCapability != "" {
+func (d Device) GetAudioCapability() AudioCapability {
+	if d.AudioCapability != nil && *d.AudioCapability != "" {
 		return *d.AudioCapability
 	}
-	if d != nil {
-		return d.Type.DefaultAudioCapability()
-	}
-	return AudioCapNone
+	return d.Type.DefaultAudioCapability()
 }
 
 // HasSpeaker reports whether the device has speaker or buzzer audio hardware.
-func (d *Device) HasSpeaker() bool {
-	if d == nil {
-		return false
-	}
+func (d Device) HasSpeaker() bool {
 	return d.GetAudioCapability() != AudioCapNone
 }
 
 // IsMuted reports whether sound notifications are currently suppressed on the device
 // (either manually muted or muted during active night mode).
-func (d *Device) IsMuted() bool {
-	if d == nil {
-		return false
-	}
+func (d Device) IsMuted() bool {
 	if d.Muted {
 		return true
 	}
@@ -1235,10 +1226,7 @@ func (d *Device) IsMuted() bool {
 }
 
 // GetVolume returns the device sound volume (0-100), defaulting to 100 if unset (0).
-func (d *Device) GetVolume() int {
-	if d == nil {
-		return 100
-	}
+func (d Device) GetVolume() int {
 	if d.Volume < 0 {
 		return 0
 	}

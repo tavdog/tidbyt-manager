@@ -599,8 +599,8 @@ func TestPushAppWithSound(t *testing.T) {
 }
 
 func TestDeviceIsMuted(t *testing.T) {
-	var nilDev *data.Device
-	assert.False(t, nilDev.IsMuted())
+	var emptyDev data.Device
+	assert.False(t, emptyDev.IsMuted())
 
 	dev := &data.Device{
 		Muted: false,
@@ -647,8 +647,8 @@ func TestTriggerDeviceSoundMuted(t *testing.T) {
 }
 
 func TestDeviceVolume(t *testing.T) {
-	var devNil *data.Device
-	assert.Equal(t, 100, devNil.GetVolume())
+	var emptyDev data.Device
+	assert.Equal(t, 100, emptyDev.GetVolume())
 
 	devZero := &data.Device{Volume: 0}
 	assert.Equal(t, 100, devZero.GetVolume())
