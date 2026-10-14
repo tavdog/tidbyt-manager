@@ -324,6 +324,28 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 			sendImmediate = false
 		}
 
+		// For legacy WS devices without ACK protocol, trigger every_display sound immediately upon sending
+		if device.Info.ProtocolVersion == nil && app != nil && app.NotificationSound != nil && *app.NotificationSound != "" && *app.NotificationSound != "none" && app.NotificationSoundTrigger == "every_display" {
+			if device.HasSpeaker() && !device.IsMuted() {
+				baseURLToUse := baseURL
+				if baseURLToUse == "" {
+					baseURLToUse = s.GetDeviceBaseURL(&device)
+				}
+				payload := s.ResolveSoundPayload(&device, baseURLToUse, *app.NotificationSound)
+				if payload != "" {
+					if err := conn.WriteJSON(map[string]any{
+						"type":   "sound",
+						"sound":  payload,
+						"volume": device.GetVolume(),
+					}); err != nil {
+						slog.Error("Failed to write sound WS message on display", "error", err)
+					}
+					device.PendingSound = payload
+					_, _ = gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_sound", payload)
+				}
+			}
+		}
+
 		// 3. Wait for displaying ACK, safety/legacy timeout, or interrupt.
 		// v1+ firmware sends displaying when the image is on screen (including long
 		// animations). We wait for that ACK, with a long safety timeout if it never arrives.
@@ -359,6 +381,28 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 						}
 						// Notify Dashboard
 						s.notifyDashboard(user.Username, WSEvent{Type: "image_updated", DeviceID: device.ID})
+
+						// Play notification sound on every display if configured
+						if app.NotificationSound != nil && *app.NotificationSound != "" && *app.NotificationSound != "none" && app.NotificationSoundTrigger == "every_display" {
+							if device.HasSpeaker() && !device.IsMuted() {
+								baseURLToUse := baseURL
+								if baseURLToUse == "" {
+									baseURLToUse = s.GetDeviceBaseURL(&device)
+								}
+								payload := s.ResolveSoundPayload(&device, baseURLToUse, *app.NotificationSound)
+								if payload != "" {
+									if err := conn.WriteJSON(map[string]any{
+										"type":   "sound",
+										"sound":  payload,
+										"volume": device.GetVolume(),
+									}); err != nil {
+										slog.Error("Failed to write sound WS message on display", "error", err)
+									}
+									device.PendingSound = payload
+									_, _ = gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_sound", payload)
+								}
+							}
+						}
 					} else {
 						slog.Debug("Received ACK for default or pushed image (no app context)", "device", device.ID)
 					}

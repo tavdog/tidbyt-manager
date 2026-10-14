@@ -301,7 +301,7 @@ alone.
 | `colorFilter` | One of the filters the app config page offers. `""` or `"inherit"` falls back to the device setting. |
 | `showFullAnimation` | `"true"` / `"false"`, or `"auto"` to inherit. Lets an animation run past the app's display time. |
 | `notificationSound` | Sound name (`"chime"`, `"ding"`, `"bell"`, `"pop"`, `"alert"`), custom uploaded sound filename, full URL (`"http(s)://..."`), piezo tone string, or `""` / `null` to disable. |
-| `notificationSoundTrigger` | `"on_change"` (play only when rendered WebP image hash changes) or `"every_render"` (play every render cycle). Defaults to `"on_change"`. |
+| `notificationSoundTrigger` | `"every_display"` (play every time app is shown in display rotation), `"every_render"` (play every render cycle), or `"on_change"` (play only when rendered WebP image hash changes). Defaults to `"on_change"`. |
 | `config` | Replaces the app's whole config map — there is no per-key merge, so send the full object. **Write-only:** it is never returned by GET or in this response. |
 
 **Response:** Updated installation object, in the same shape `GET` returns.

@@ -146,8 +146,12 @@ func (s *Server) possiblyRender(ctx context.Context, app *data.App, device *data
 	// 3. Starlark App - Check Interval
 	now := time.Now()
 	forceRender := s.filtersChangedSinceLastRender(device, app)
-	// uinterval is minutes
-	if forceRender || time.Since(app.LastRender) > time.Duration(app.UInterval)*time.Minute {
+	// uinterval is minutes. Allow a 5-second grace window to absorb rotation timer jitter for 1-minute apps.
+	uintervalDuration := time.Duration(app.UInterval) * time.Minute
+	if uintervalDuration >= 10*time.Second {
+		uintervalDuration -= 5 * time.Second
+	}
+	if forceRender || time.Since(app.LastRender) >= uintervalDuration {
 		slog.Info("Rendering app", "app", appBasename)
 
 		startTime := time.Now()

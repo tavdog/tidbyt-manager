@@ -1021,6 +1021,8 @@ func (s *Server) handlePatchInstallation(w http.ResponseWriter, r *http.Request)
 	if update.NotificationSoundTrigger != nil {
 		if app.NotificationSound == nil {
 			app.NotificationSoundTrigger = ""
+		} else if *update.NotificationSoundTrigger == "every_display" {
+			app.NotificationSoundTrigger = "every_display"
 		} else if *update.NotificationSoundTrigger == "every_render" {
 			app.NotificationSoundTrigger = "every_render"
 		} else if *update.NotificationSoundTrigger == "on_change" {

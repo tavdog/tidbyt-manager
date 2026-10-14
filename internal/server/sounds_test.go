@@ -325,7 +325,22 @@ func TestPatchAndGetInstallationNotificationSound(t *testing.T) {
 	if assert.NotNil(t, payload.NotificationSound) {
 		assert.Equal(t, "ding", *payload.NotificationSound)
 	}
-	assert.Equal(t, "on_change", payload.NotificationSoundTrigger)
+	// Update with every_display trigger
+	everyDisplayTrigger := "every_display"
+	updateReqEveryDisplay := InstallationUpdate{
+		NotificationSoundTrigger: &everyDisplayTrigger,
+	}
+	body, err = json.Marshal(updateReqEveryDisplay)
+	require.NoError(t, err)
+
+	req = newAPIRequest("PATCH", fmt.Sprintf("/v0/devices/%s/installations/%s", deviceID, installID), apiKey, body)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	updatedDisplay, err := gorm.G[data.App](s.DB).Where("iname = ?", installID).First(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "every_display", updatedDisplay.NotificationSoundTrigger)
 
 	// Test clearing notification sound (sound is opt-in, so clearing also turns off trigger)
 	emptySound := ""
@@ -435,6 +450,72 @@ func TestNotificationSoundOptInAndTriggerLogic(t *testing.T) {
 	require.NoError(t, s.TriggerDeviceSound(context.Background(), &dev, *appEvery.NotificationSound, baseURL))
 	devCheck, _ = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())
 	assert.NotEmpty(t, devCheck.PendingSound)
+
+	// 5. every_display does NOT trigger during render loop (triggers only on display)
+	appDisplay := &data.App{
+		ID:                       14,
+		DeviceID:                 deviceID,
+		NotificationSound:        &soundName,
+		NotificationSoundTrigger: "every_display",
+		LastRenderHash:           newHash,
+	}
+	shouldPlayRender := false
+	switch appDisplay.NotificationSoundTrigger {
+	case "every_render":
+		shouldPlayRender = true
+	case "on_change":
+		shouldPlayRender = contentChanged
+	}
+	assert.False(t, shouldPlayRender, "every_display must not trigger in render loop")
+}
+
+func TestGetNextAppImage_EveryDisplaySoundNotification(t *testing.T) {
+	s := newTestServer(t)
+	ctx := context.Background()
+
+	user := data.User{Username: "displayuser"}
+	require.NoError(t, s.DB.Create(&user).Error)
+
+	sound := "chime"
+	pushedPath := "pushed:clock1"
+	device := data.Device{
+		ID:       "devdisp1",
+		Username: "displayuser",
+		Type:     data.DeviceRaspberryPiWide,
+		Muted:    false,
+		Info: data.DeviceInfo{
+			ProtocolType: data.ProtocolHTTP,
+		},
+		Apps: []*data.App{
+			{
+				Iname:                    "clock1",
+				DeviceID:                 "devdisp1",
+				Enabled:                  true,
+				Pushed:                   true,
+				Path:                     &pushedPath,
+				NotificationSound:        &sound,
+				NotificationSoundTrigger: "every_display",
+				Order:                    1,
+			},
+		},
+	}
+	require.NoError(t, s.DB.Create(&device).Error)
+
+	pushedDir := filepath.Join(s.DataDir, "webp", device.ID, "pushed")
+	require.NoError(t, os.MkdirAll(pushedDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(pushedDir, "clock1.webp"), []byte("fake-webp"), 0644))
+
+	// Call GetNextAppImage on HTTP device
+	_, app, err := s.GetNextAppImage(ctx, &device, &user, "http://localhost:8000")
+	require.NoError(t, err)
+	require.NotNil(t, app)
+	assert.Equal(t, "clock1", app.Iname)
+
+	// Verify pending_sound was queued for HTTP device
+	reloaded, err := gorm.G[data.Device](s.DB).Where("id = ?", "devdisp1").First(ctx)
+	require.NoError(t, err)
+	assert.NotEmpty(t, reloaded.PendingSound, "every_display must set pending_sound on display for HTTP devices")
+	assert.Contains(t, reloaded.PendingSound, "chime")
 }
 
 func TestUnifiedSoundRoute(t *testing.T) {

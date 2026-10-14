@@ -361,12 +361,16 @@
                 <select name="notification_sound_trigger"
                         id="notification_sound_trigger"
                         class="form-control">
+                    <option value="every_display"
+                            {{ if eq .App.NotificationSoundTrigger "every_display" }}selected{{ end }}>
+                        {{ t .Localizer "Every time app is displayed" }}
+                    </option>
                     <option value="every_render"
-                            {{ if ne .App.NotificationSoundTrigger "on_change" }}selected{{ end }}>
+                            {{ if eq .App.NotificationSoundTrigger "every_render" }}selected{{ end }}>
                         {{ t .Localizer "Every time app renders" }}
                     </option>
                     <option value="on_change"
-                            {{ if eq .App.NotificationSoundTrigger "on_change" }}selected{{ end }}>
+                            {{ if or (eq .App.NotificationSoundTrigger "on_change") (and (ne .App.NotificationSoundTrigger "every_display") (ne .App.NotificationSoundTrigger "every_render")) }}selected{{ end }}>
                         {{ t .Localizer "Only when display content changes" }}
                     </option>
                 </select>
