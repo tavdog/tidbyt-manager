@@ -262,3 +262,39 @@ func TestGetAvailableFirmwareVersionsForDevice(t *testing.T) {
 	allVers := s.GetAvailableFirmwareVersionsForDevice(nil)
 	assert.Len(t, allVers, 2)
 }
+
+func TestUpdateFirmwareBinariesDownloadsTronberry(t *testing.T) {
+	s := newTestServerAPI(t)
+	t.Setenv("FIRMWARE_REPO", "none") // Skip ESP32
+	t.Setenv("TRONBERRY_REPO", "")
+
+	tronberryELF := []byte{0x7f, 'E', 'L', 'F', 0x02, 0x01, 0x01, 0x00}
+	tronberryELF = append(tronberryELF, make([]byte, 1024)...)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/repos/tronbyt/tronberry/releases"):
+			base := "http://" + r.Host
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `[{"tag_name":"v0.2.0","name":"Tronberry v0.2.0","body":"Release notes","assets":[{"name":"tronberry","url":"%s/api-asset","browser_download_url":"%s/browser"}]}]`, base, base)
+		case r.URL.Path == "/browser":
+			w.Header().Set("Content-Type", "application/octet-stream")
+			_, _ = w.Write(tronberryELF)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(ts.Close)
+	s.githubAPIBase = ts.URL
+
+	require.NoError(t, s.UpdateFirmwareBinaries(1))
+
+	localPath := filepath.Join(s.DataDir, "firmware", "releases", "v0.2.0", "tronberry")
+	got, err := os.ReadFile(localPath)
+	require.NoError(t, err)
+	assert.Equal(t, tronberryELF, got)
+
+	// Device query should find v0.2.0
+	piDev := &data.Device{Type: data.DeviceRaspberryPi}
+	assert.Equal(t, []string{"v0.2.0"}, s.GetAvailableFirmwareVersionsForDevice(piDev))
+}

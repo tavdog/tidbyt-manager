@@ -113,6 +113,22 @@ Sends a reboot command to the device via WebSocket. Returns immediately; the dev
 
 **Response:** `200 OK` — `"Reboot command sent."`
 
+### Trigger OTA Firmware Update
+
+```
+POST /devices/{id}/ota
+```
+
+Triggers an Over-The-Air (OTA) firmware update for the device. The server serves the binary and notifies the device via WebSocket (`{"ota_url": "..."}`) or HTTP response header (`Tronbyt-OTA-URL: ...`).
+
+Supported on all OTA-capable devices:
+- ESP32 devices (`Tidbyt Gen 1`, `Tidbyt Gen 2`, `Tronbyt S3`, `MatrixPortal S3`, `Waveshare S3`, etc.) running firmware v1.4.6 or newer.
+- Raspberry Pi devices running Tronberry (`Raspberry Pi`, `Raspberry Pi Wide`, `Raspberry Pi Square`).
+
+**Form Parameters (URL-encoded or multipart):**
+- `version`: (Optional) Release tag (e.g. `v1.6.6` for ESP32 or `v0.2.0` for Tronberry). Defaults to the latest available version containing a binary for this device type.
+- `firmware_file`: (Optional multipart file) Custom compiled binary to upload and flash/run on the device.
+
 ### Update Firmware Settings
 
 ```
