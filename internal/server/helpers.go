@@ -813,9 +813,10 @@ func (s *Server) GetDeviceBaseURL(device *data.Device) string {
 	if device != nil && device.ImgURL != "" {
 		if u, err := url.Parse(device.ImgURL); err == nil && u.Host != "" && u.Scheme != "" {
 			scheme := u.Scheme
-			if scheme == "ws" {
+			switch scheme {
+			case "ws":
 				scheme = "http"
-			} else if scheme == "wss" {
+			case "wss":
 				scheme = "https"
 			}
 			return fmt.Sprintf("%s://%s", scheme, u.Host)

@@ -447,7 +447,11 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 		if err != nil {
 			return nil
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				slog.Error("Failed to close response body", "error", err)
+			}
+		}()
 
 		if resp.StatusCode == http.StatusOK {
 			var info FirmwareReleaseInfo

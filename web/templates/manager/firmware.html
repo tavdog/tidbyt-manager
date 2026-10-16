@@ -69,7 +69,9 @@
                                rel="noopener noreferrer"
                                style="color: inherit;
                                       text-decoration: underline">
-                                {{ t .Localizer "Firmware Image Version" }} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.8em;" aria-hidden="true"></i>
+                                {{ t .Localizer "Firmware Image Version" }} <i class="fa-solid fa-arrow-up-right-from-square"
+    style="font-size: 0.8em"
+    aria-hidden="true"></i>
                             </a>
                         </label>
                     </div>
@@ -89,7 +91,9 @@
                         {{ end }}
                     </div>
                 </div>
-                <div class="settings-field-row" id="firmware_release_notes_row" style="display: none;">
+                <div class="settings-field-row"
+                     id="firmware_release_notes_row"
+                     style="display: none">
                     <div class="settings-field-label">
                         <label>{{ t .Localizer "Release Details" }}</label>
                     </div>
@@ -275,8 +279,8 @@
         if (!str) return '';
         return str
             .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
+            .replace(/\x3c/g, '&lt;')
+            .replace(/\x3e/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
     }
