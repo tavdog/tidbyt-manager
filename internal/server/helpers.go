@@ -115,6 +115,7 @@ type TemplateData struct {
 	FirmwareAvailable         bool
 	FirmwareVersion           string
 	AvailableFirmwareVersions []string
+	FirmwareReleases          map[string]FirmwareReleaseInfo
 	ServerVersion             string
 	CommitHash                string
 	IsAutoLoginActive         bool   // Indicate if single-user auto-login is active

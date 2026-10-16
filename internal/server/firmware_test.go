@@ -156,4 +156,81 @@ func TestUpdateFirmwareBinariesRejectsHTMLAndRetriesAPI(t *testing.T) {
 
 	_, err = os.Stat(localPath + ".tmp")
 	assert.True(t, os.IsNotExist(err), "temporary file should be cleaned up")
+
+	// release.json should be saved
+	releaseJSONPath := filepath.Join(s.DataDir, "firmware", "releases", "v9.9.9", "release.json")
+	assert.FileExists(t, releaseJSONPath)
+}
+
+func TestGetFirmwareReleaseInfo_Cached(t *testing.T) {
+	s := newTestServerAPI(t)
+
+	verDir := filepath.Join(s.DataDir, "firmware", "releases", "v1.2.3")
+	require.NoError(t, os.MkdirAll(verDir, 0755))
+
+	releaseJSON := `{"tag_name":"v1.2.3","name":"Release 1.2.3","body":"## What's Changed\n* Added test feature by @tester in https://github.com/tronbyt/firmware-esp32/pull/1","html_url":"https://github.com/tronbyt/firmware-esp32/releases/tag/v1.2.3"}`
+	require.NoError(t, os.WriteFile(filepath.Join(verDir, "release.json"), []byte(releaseJSON), 0644))
+
+	info, err := s.GetFirmwareReleaseInfo("v1.2.3")
+	require.NoError(t, err)
+	require.NotNil(t, info)
+	assert.Equal(t, "v1.2.3", info.TagName)
+	assert.Equal(t, "Release 1.2.3", info.Name)
+	assert.Contains(t, info.Body, "Added test feature")
+	assert.Equal(t, "https://github.com/tronbyt/firmware-esp32/releases/tag/v1.2.3", info.HTMLURL)
+}
+
+func TestGetFirmwareReleaseInfo_FetchAndCache(t *testing.T) {
+	s := newTestServerAPI(t)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/releases/tags/v2.0.0") {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"tag_name":"v2.0.0","name":"v2.0.0","body":"## What's Changed\n* Major update","html_url":"https://github.com/tronbyt/firmware-esp32/releases/tag/v2.0.0"}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer ts.Close()
+	s.githubAPIBase = ts.URL
+
+	info, err := s.GetFirmwareReleaseInfo("v2.0.0")
+	require.NoError(t, err)
+	require.NotNil(t, info)
+	assert.Equal(t, "v2.0.0", info.TagName)
+	assert.Contains(t, info.Body, "Major update")
+
+	// Verify it was cached to disk
+	cachedPath := filepath.Join(s.DataDir, "firmware", "releases", "v2.0.0", "release.json")
+	assert.FileExists(t, cachedPath)
+}
+
+func TestHandleFirmwareReleaseNotesEndpoint(t *testing.T) {
+	s := newTestServerAPI(t)
+
+	var user data.User
+	s.DB.First(&user, "username = ?", "testuser")
+	var device data.Device
+	s.DB.First(&device, "id = ?", "testdevice")
+
+	verDir := filepath.Join(s.DataDir, "firmware", "releases", "v1.5.0")
+	require.NoError(t, os.MkdirAll(verDir, 0755))
+	releaseJSON := `{"tag_name":"v1.5.0","name":"v1.5.0","body":"## What's Changed\n* Sound fixes","html_url":"https://github.com/tronbyt/firmware-esp32/releases/tag/v1.5.0"}`
+	require.NoError(t, os.WriteFile(filepath.Join(verDir, "release.json"), []byte(releaseJSON), 0644))
+
+	// 1. Missing version parameter
+	req := httptest.NewRequest(http.MethodGet, "/devices/testdevice/firmware/release_notes", nil)
+	ctx := context.WithValue(req.Context(), userContextKey, &user)
+	ctx = context.WithValue(ctx, deviceContextKey, &device)
+	rr := httptest.NewRecorder()
+	s.handleFirmwareReleaseNotes(rr, req.WithContext(ctx))
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	// 2. Valid request
+	req = httptest.NewRequest(http.MethodGet, "/devices/testdevice/firmware/release_notes?version=v1.5.0", nil)
+	rr = httptest.NewRecorder()
+	s.handleFirmwareReleaseNotes(rr, req.WithContext(ctx))
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, rr.Body.String(), `"tag_name":"v1.5.0"`)
+	assert.Contains(t, rr.Body.String(), "Sound fixes")
 }

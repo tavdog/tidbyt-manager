@@ -158,7 +158,7 @@ func TestGetBaseURLAndGetDeviceBaseURL(t *testing.T) {
 	reqProxyPort := &http.Request{
 		Host: "tronbyt.example.com",
 		Header: http.Header{
-			"X-Forwarded-Port": []string{"8443"},
+			"X-Forwarded-Port":  []string{"8443"},
 			"X-Forwarded-Proto": []string{"https"},
 		},
 	}
@@ -174,4 +174,3 @@ func TestGetBaseURLAndGetDeviceBaseURL(t *testing.T) {
 	devHTTP := &data.Device{ImgURL: "http://192.168.1.15:7000/tronberry/next"}
 	assert.Equal(t, "http://192.168.1.15:7000", s.GetDeviceBaseURL(devHTTP))
 }
-

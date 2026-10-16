@@ -2293,5 +2293,17 @@
   },
   "Contributing · starts when you add a device": {
     "other": "Beitrag aktiv · startet, sobald Sie ein Gerät hinzufügen"
+  },
+  "What's Changed": {
+    "other": "Änderungen"
+  },
+  "New Contributors": {
+    "other": "Neue Mitwirkende"
+  },
+  "Full Changelog": {
+    "other": "Vollständiges Änderungsprotokoll"
+  },
+  "Release Details": {
+    "other": "Versionsdetails"
   }
 }

@@ -248,12 +248,8 @@
             <p>{{ t .Localizer "Manage built-in and custom notification sounds for devices." }}</p>
         </div>
         <div class="settings-field-list">
-            <div class="settings-field-row"
-                 style="background-color: var(--card-bg, #f8f9fa);
-                        padding: 12px;
-                        border-radius: 6px;
-                        border-left: 4px solid var(--primary-color, #0284c7)">
-                <p class="settings-help" style="margin: 0;">
+            <div class="settings-info-box">
+                <p>
                     <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                     <strong>{{ t .Localizer "Audio Capability Note:" }}</strong>
                     {{ t .Localizer "Custom uploaded audio files and external URLs require devices configured with Full Speaker capability (such as a Raspberry Pi / Tronberry or ESP32 with DAC). Devices with Piezo Buzzers (such as Tidbyt Gen 2) play frequency tones and support the 5 default sounds below." }}

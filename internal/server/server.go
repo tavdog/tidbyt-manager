@@ -391,6 +391,7 @@ func (s *Server) routes() {
 
 	// Firmware
 	s.Router.HandleFunc("GET /devices/{id}/firmware", s.RequireLogin(s.RequireDevice(s.handleFirmwareGenerateGet)))
+	s.Router.HandleFunc("GET /devices/{id}/firmware/release_notes", s.RequireLogin(s.RequireDevice(s.handleFirmwareReleaseNotes)))
 	s.Router.HandleFunc("POST /devices/{id}/firmware", s.RequireLogin(s.RequireDevice(s.handleFirmwareGeneratePost)))
 	s.Router.HandleFunc("POST /devices/{id}/ota", s.RequireLogin(s.RequireDevice(s.handleTriggerOTA))) // OTA Update
 

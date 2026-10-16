@@ -2296,5 +2296,17 @@
   },
   "Contributing · starts when you add a device": {
     "other": "Contributing · starts when you add a device"
+  },
+  "What's Changed": {
+    "other": "What's Changed"
+  },
+  "New Contributors": {
+    "other": "New Contributors"
+  },
+  "Full Changelog": {
+    "other": "Full Changelog"
+  },
+  "Release Details": {
+    "other": "Release Details"
   }
 }

@@ -176,6 +176,16 @@ func (dt DeviceType) HasSpeaker() bool {
 	return dt.DefaultAudioCapability() != AudioCapNone
 }
 
+// IsRaspberryPi reports whether the device type is a Raspberry Pi variant running Tronberry.
+func (dt DeviceType) IsRaspberryPi() bool {
+	switch dt {
+	case DeviceRaspberryPi, DeviceRaspberryPiWide, DeviceRaspberryPiSquare:
+		return true
+	default:
+		return false
+	}
+}
+
 // Slug returns the URL-friendly slug for the DeviceType.
 func (dt DeviceType) Slug() string {
 	if s, ok := DeviceTypeToString[dt]; ok {
@@ -773,7 +783,7 @@ func (dt DeviceType) SupportsFirmware() bool {
 func (dt DeviceType) SupportsOTA() bool {
 	switch dt {
 	// DevicePixoticker is intentionally omitted (not enough flash memory)
-	case DeviceTidbytGen1, DeviceTidbytGen2, DeviceTronbytS3, DeviceTronbytS3Wide, DeviceMatrixPortal, DeviceMatrixPortalWS, DeviceMatrixPortalSquare, DeviceMatrixPortalWide, DeviceWaveshareS3:
+	case DeviceTidbytGen1, DeviceTidbytGen2, DeviceTronbytS3, DeviceTronbytS3Wide, DeviceMatrixPortal, DeviceMatrixPortalWS, DeviceMatrixPortalSquare, DeviceMatrixPortalWide, DeviceWaveshareS3, DeviceRaspberryPi, DeviceRaspberryPiWide, DeviceRaspberryPiSquare:
 		return true
 	default:
 		return false
@@ -805,6 +815,8 @@ func (dt DeviceType) FirmwareFilename(swapColors bool) string {
 		return "matrixportal-s3-wide.bin"
 	case DeviceWaveshareS3:
 		return "waveshare-s3.bin"
+	case DeviceRaspberryPi, DeviceRaspberryPiWide, DeviceRaspberryPiSquare:
+		return "tronberry"
 	default:
 		return ""
 	}
@@ -1114,6 +1126,9 @@ func (d *Device) OTACapable() bool {
 		return false
 	}
 	if v == "dev" {
+		return true
+	}
+	if d.Type.IsRaspberryPi() {
 		return true
 	}
 	if !strings.HasPrefix(v, "v") {
