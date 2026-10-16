@@ -205,3 +205,9 @@
   border-top: 1px solid var(--border-color);
   font-weight: 500;
 }
+
+.firmware-release-notes .firmware-no-changes {
+  margin: 0 0 10px 0;
+  color: var(--muted-text);
+  font-style: italic;
+}

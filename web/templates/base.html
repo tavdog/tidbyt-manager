@@ -213,7 +213,7 @@
             color: #888;
             text-align: center;
             margin-top: {{ if .UpdateAvailable }}5px{{ else }}20px{{ end }}">
-{{ t .Localizer "Server" }} {{ .ServerVersion }}{{ if .CommitHash }} (<a href="https://github.com/tronbyt/server/tree/{{ .CommitHash }}"
+{{ t .Localizer "Server" }} {{ .ServerVersion }}{{ if and .CommitHash (ne .CommitHash "unknown") }} (<a href="{{ if .CommitURL }}{{ .CommitURL }}{{ else }}https://github.com/tronbyt/server/tree/{{ .CommitHash }}{{ end }}"
    target="_blank"
    style="color: var(--primary-color);
           text-decoration: none;

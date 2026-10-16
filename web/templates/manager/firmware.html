@@ -378,6 +378,10 @@
             html += '</ul>';
         }
 
+        if (whatsChanged.length === 0 && newContributors.length === 0) {
+            html += '<p class="firmware-no-changes">{{ t .Localizer "No Changes Provided" }}</p>';
+        }
+
         if (changelogUrl) {
             html += `<div class="changelog-link-container">
                 <a href="${escapeHtml(changelogUrl)}" target="_blank" rel="noopener noreferrer">

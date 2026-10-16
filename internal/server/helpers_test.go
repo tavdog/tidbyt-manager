@@ -3,11 +3,13 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"tronbyt-server/internal/config"
 	"tronbyt-server/internal/data"
+	"tronbyt-server/internal/version"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/stretchr/testify/assert"
@@ -174,3 +176,18 @@ func TestGetBaseURLAndGetDeviceBaseURL(t *testing.T) {
 	devHTTP := &data.Device{ImgURL: "http://192.168.1.15:7000/tronberry/next"}
 	assert.Equal(t, "http://192.168.1.15:7000", s.GetDeviceBaseURL(devHTTP))
 }
+
+func TestRenderTemplatePopulatesVersionAndCommitURL(t *testing.T) {
+	s := newTestServerAPI(t)
+	req := httptest.NewRequest(http.MethodGet, "/login", nil)
+	rr := httptest.NewRecorder()
+
+	s.renderTemplate(rr, req, "login", TemplateData{})
+	assert.Equal(t, http.StatusOK, rr.Code)
+	body := rr.Body.String()
+	assert.Contains(t, body, "Server")
+	assert.NotContains(t, body, "(unknown)")
+	assert.Contains(t, body, version.CommitURL)
+	assert.Contains(t, body, version.Commit[:7])
+}
+
