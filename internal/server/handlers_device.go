@@ -350,7 +350,7 @@ func (s *Server) handleUpdateDeviceGet(w http.ResponseWriter, r *http.Request) {
 	localizer := s.getLocalizer(r)
 
 	// Check if specific firmware exists for this device
-	availableVersions := s.GetAvailableFirmwareVersions()
+	availableVersions := s.GetAvailableFirmwareVersionsForDevice(device)
 	firmwareAvailable := len(availableVersions) > 0
 	firmwareVersion := "Unknown"
 	if firmwareAvailable {

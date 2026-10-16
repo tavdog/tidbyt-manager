@@ -366,6 +366,51 @@ func (s *Server) GetAvailableFirmwareVersions() []string {
 	return versions
 }
 
+// GetAvailableFirmwareVersionsForDevice returns all available firmware versions
+// that include a binary suitable for the given device.
+func (s *Server) GetAvailableFirmwareVersionsForDevice(device *data.Device) []string {
+	if device == nil {
+		return s.GetAvailableFirmwareVersions()
+	}
+
+	binName := device.Type.FirmwareFilename(device.SwapColors)
+	if binName == "" {
+		return nil
+	}
+
+	releasesDir := filepath.Join(s.DataDir, "firmware", "releases")
+	entries, err := os.ReadDir(releasesDir)
+	if err != nil {
+		return nil
+	}
+
+	var versions []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			binPath := filepath.Join(releasesDir, entry.Name(), binName)
+			if info, err := os.Stat(binPath); err == nil && info.Size() > 0 {
+				versions = append(versions, entry.Name())
+			}
+		}
+	}
+
+	slices.SortFunc(versions, func(a, b string) int {
+		return semver.Compare(b, a) // Descending order
+	})
+
+	return versions
+}
+
+// GetLatestFirmwareVersionForDevice returns the latest available firmware version
+// for the given device.
+func (s *Server) GetLatestFirmwareVersionForDevice(device *data.Device) string {
+	versions := s.GetAvailableFirmwareVersionsForDevice(device)
+	if len(versions) > 0 {
+		return versions[0]
+	}
+	return ""
+}
+
 // GetFirmwareReleaseInfo returns metadata and release notes for a firmware release version.
 // It checks local cache (release.json) first, then queries the GitHub API if needed.
 func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, error) {
@@ -384,53 +429,48 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 		}
 	}
 
-	// 2. Fetch from GitHub API
+	// 2. Fetch from GitHub API (try ESP32 repo, then Tronberry repo)
 	firmwareRepo := os.Getenv("FIRMWARE_REPO")
-	if firmwareRepo == "" {
-		firmwareRepo = "https://github.com/tronbyt/firmware-esp32"
-	}
-	owner := "tronbyt"
-	repo := "firmware-esp32"
-	if strings.Contains(firmwareRepo, "github.com/") {
-		parts := strings.Split(strings.Split(firmwareRepo, "github.com/")[1], "/")
-		if len(parts) >= 2 {
-			owner = parts[0]
-			repo = strings.TrimSuffix(parts[1], ".git")
+	owner, repo := parseOwnerRepo(firmwareRepo, "tronbyt", "firmware-esp32")
+
+	fetchRelease := func(o, r string) *FirmwareReleaseInfo {
+		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases/tags/%s", s.githubAPIBaseURL(), o, r, version)
+		req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+		if err != nil {
+			return nil
 		}
-	}
+		if s.Config.GitHubToken != "" {
+			req.Header.Set("Authorization", "Bearer "+s.Config.GitHubToken)
+		}
+		client := &http.Client{Timeout: 10 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil
+		}
+		defer resp.Body.Close()
 
-	url := fmt.Sprintf("%s/repos/%s/%s/releases/tags/%s", s.githubAPIBaseURL(), owner, repo, version)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return &FirmwareReleaseInfo{
-			TagName: version,
-			HTMLURL: fmt.Sprintf("https://github.com/%s/%s/releases/tag/%s", owner, repo, version),
-		}, nil
-	}
-	if s.Config.GitHubToken != "" {
-		req.Header.Set("Authorization", "Bearer "+s.Config.GitHubToken)
-	}
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return &FirmwareReleaseInfo{
-			TagName: version,
-			HTMLURL: fmt.Sprintf("https://github.com/%s/%s/releases/tag/%s", owner, repo, version),
-		}, nil
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusOK {
-		var info FirmwareReleaseInfo
-		if err := json.NewDecoder(resp.Body).Decode(&info); err == nil {
-			if err := os.MkdirAll(versionDir, 0755); err == nil {
-				if metaBytes, err := json.Marshal(info); err == nil {
-					_ = os.WriteFile(releasePath, metaBytes, 0644)
+		if resp.StatusCode == http.StatusOK {
+			var info FirmwareReleaseInfo
+			if err := json.NewDecoder(resp.Body).Decode(&info); err == nil {
+				if err := os.MkdirAll(versionDir, 0755); err == nil {
+					if metaBytes, err := json.Marshal(info); err == nil {
+						_ = os.WriteFile(releasePath, metaBytes, 0644)
+					}
 				}
+				return &info
 			}
-			return &info, nil
 		}
+		return nil
+	}
+
+	if info := fetchRelease(owner, repo); info != nil {
+		return info, nil
+	}
+
+	tronberryRepo := os.Getenv("TRONBERRY_REPO")
+	tbOwner, tbRepo := parseOwnerRepo(tronberryRepo, "tronbyt", "tronberry")
+	if info := fetchRelease(tbOwner, tbRepo); info != nil {
+		return info, nil
 	}
 
 	return &FirmwareReleaseInfo{
@@ -474,7 +514,7 @@ func (s *Server) handleFirmwareGenerateGet(w http.ResponseWriter, r *http.Reques
 
 	// Check firmware availability
 	// Default to latest
-	version := s.GetLatestFirmwareVersion()
+	version := s.GetLatestFirmwareVersionForDevice(device)
 	binsAvailable := false
 
 	if version != "" {
@@ -496,7 +536,7 @@ func (s *Server) handleFirmwareGenerateGet(w http.ResponseWriter, r *http.Reques
 		Device:                    device,
 		FirmwareBinsAvailable:     binsAvailable,
 		FirmwareVersion:           version,
-		AvailableFirmwareVersions: s.GetAvailableFirmwareVersions(),
+		AvailableFirmwareVersions: s.GetAvailableFirmwareVersionsForDevice(device),
 		FirmwareReleases:          s.GetAllAvailableFirmwareReleaseNotes(),
 		DeviceTypeChoices:         s.getDeviceTypeChoices(localizer),
 		Localizer:                 localizer,
@@ -520,7 +560,7 @@ func (s *Server) handleFirmwareGeneratePost(w http.ResponseWriter, r *http.Reque
 	}
 
 	if version == "" {
-		version = s.GetLatestFirmwareVersion() // Default to latest
+		version = s.GetLatestFirmwareVersionForDevice(device) // Default to latest
 	}
 
 	if version == "" {
@@ -630,7 +670,7 @@ func (s *Server) handleTriggerOTA(w http.ResponseWriter, r *http.Request) {
 	if updateURL == "" {
 		version := r.FormValue("version")
 		if version == "" {
-			version = s.GetLatestFirmwareVersion() // Default to latest
+			version = s.GetLatestFirmwareVersionForDevice(device) // Default to latest for this device
 		}
 
 		if version == "" {

@@ -234,3 +234,31 @@ func TestHandleFirmwareReleaseNotesEndpoint(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), `"tag_name":"v1.5.0"`)
 	assert.Contains(t, rr.Body.String(), "Sound fixes")
 }
+
+func TestGetAvailableFirmwareVersionsForDevice(t *testing.T) {
+	s := newTestServerAPI(t)
+
+	// Create v1.0.0 with tidbyt-gen1 binary
+	v1Dir := filepath.Join(s.DataDir, "firmware", "releases", "v1.0.0")
+	require.NoError(t, os.MkdirAll(v1Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(v1Dir, "tidbyt-gen1.bin"), []byte("bin-data"), 0644))
+
+	// Create v2.0.0 with tronberry binary
+	v2Dir := filepath.Join(s.DataDir, "firmware", "releases", "v2.0.0")
+	require.NoError(t, os.MkdirAll(v2Dir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(v2Dir, "tronberry"), []byte("elf-data"), 0644))
+
+	gen1Dev := &data.Device{Type: data.DeviceTidbytGen1}
+	piDev := &data.Device{Type: data.DeviceRaspberryPi}
+
+	gen1Vers := s.GetAvailableFirmwareVersionsForDevice(gen1Dev)
+	assert.Equal(t, []string{"v1.0.0"}, gen1Vers)
+	assert.Equal(t, "v1.0.0", s.GetLatestFirmwareVersionForDevice(gen1Dev))
+
+	piVers := s.GetAvailableFirmwareVersionsForDevice(piDev)
+	assert.Equal(t, []string{"v2.0.0"}, piVers)
+	assert.Equal(t, "v2.0.0", s.GetLatestFirmwareVersionForDevice(piDev))
+
+	allVers := s.GetAvailableFirmwareVersionsForDevice(nil)
+	assert.Len(t, allVers, 2)
+}

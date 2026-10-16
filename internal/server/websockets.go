@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -232,6 +233,21 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 	device := *initialDevice
 	lastSentBrightness := -1
 	lastSentVolume := -1
+	// Send any pending OTA update on connection
+	if device.PendingUpdateURL != "" {
+		updateURL := device.PendingUpdateURL
+		slog.Info("Sending pending OTA update on WS connect", "device", device.ID, "url", updateURL)
+		payload := map[string]string{"ota_url": updateURL}
+		if jsonPayload, err := json.Marshal(payload); err == nil {
+			if err := conn.WriteMessage(websocket.TextMessage, jsonPayload); err == nil {
+				if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_update_url", ""); err != nil {
+					slog.Error("Failed to clear pending update", "error", err)
+				} else {
+					device.PendingUpdateURL = ""
+				}
+			}
+		}
+	}
 	sendImmediate := false
 
 	for {
