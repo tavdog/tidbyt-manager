@@ -62,6 +62,14 @@ func (s *Server) handleAddAppGet(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
 	systemApps := s.ListSystemApps()
+	// Use cached install counts; browsing never calls Niblet Cloud.
+	s.systemAppsCacheMutex.RLock()
+	for i := range systemApps {
+		if count, ok := s.installCounts[systemApps[i].ID]; ok {
+			systemApps[i].InstallCount = &count
+		}
+	}
+	s.systemAppsCacheMutex.RUnlock()
 	customApps := apps.ListUserApps(s.DataDir, user.Username)
 
 	s.markInstalledApps(device, systemApps, customApps)
@@ -1278,9 +1286,9 @@ func (s *Server) handleUploadAppPost(w http.ResponseWriter, r *http.Request) {
 	appName := strings.TrimSuffix(filename, ext)
 
 	userAppsDir := filepath.Join(s.DataDir, "users", user.Username, "apps")
-	appDir, err := securejoin.SecureJoin(userAppsDir, appName)
+	appDir, err := userAppDir(userAppsDir, appName)
 	if err != nil {
-		slog.Warn("Path traversal attempt blocked", "error", err)
+		slog.Warn("Rejected upload with invalid app name", "filename", filename, "error", err)
 		http.Error(w, "Invalid app name", http.StatusBadRequest)
 		return
 	}
@@ -1336,6 +1344,23 @@ func (s *Server) handleUploadAppPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/devices/%s/addapp", device.ID), http.StatusSeeOther)
+}
+
+// userAppDir returns the directory for one uploaded app inside userAppsDir.
+// The app name must be non-empty, must not start with a dot, and must
+// resolve to a subdirectory of userAppsDir.
+func userAppDir(userAppsDir, appName string) (string, error) {
+	if strings.TrimSpace(appName) == "" || strings.HasPrefix(appName, ".") {
+		return "", fmt.Errorf("invalid app name %q", appName)
+	}
+	appDir, err := securejoin.SecureJoin(userAppsDir, appName)
+	if err != nil {
+		return "", err
+	}
+	if appDir == filepath.Clean(userAppsDir) {
+		return "", fmt.Errorf("app name %q resolves to the apps directory", appName)
+	}
+	return appDir, nil
 }
 
 func (s *Server) parseManifest(tempExtractDir string) (string, error) {
@@ -1412,9 +1437,9 @@ func (s *Server) handleZipUpload(w http.ResponseWriter, r *http.Request, user *d
 	}
 
 	// Re-calculate appDir with potentially new appName
-	appDir, err := securejoin.SecureJoin(userAppsDir, appName)
+	appDir, err := userAppDir(userAppsDir, appName)
 	if err != nil {
-		slog.Warn("Path traversal attempt blocked", "error", err)
+		slog.Warn("Rejected zip upload with invalid app name", "app_name", appName, "error", err)
 		return err
 	}
 

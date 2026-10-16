@@ -62,12 +62,13 @@ func (s *Server) getSettingsContentData(user *data.User) TemplateData {
 	}
 
 	return TemplateData{
-		User:                user,
-		FirmwareVersion:     firmwareVersion,
-		SystemRepoInfo:      systemRepoInfo,
-		UserRepoInfo:        userRepoInfo,
-		GlobalSystemRepoURL: s.Config.SystemAppsRepo,
-		SettingsSection:     "content",
+		User:                  user,
+		FirmwareVersion:       firmwareVersion,
+		SystemRepoInfo:        systemRepoInfo,
+		UserRepoInfo:          userRepoInfo,
+		GlobalSystemRepoURL:   s.Config.SystemAppsRepo,
+		SystemAppsAutoRefresh: s.isSystemAppsAutoRefreshEnabled(),
+		SettingsSection:       "content",
 	}
 }
 
@@ -274,6 +275,12 @@ func (s *Server) handleRegisterPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !isValidUsername(username) {
+		slog.Warn("Registration rejected: invalid username", "username", username)
+		s.renderTemplate(w, r, "register", TemplateData{Flashes: []string{localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "Invalid username."})}})
+		return
+	}
+
 	if _, err := gorm.G[data.User](s.DB).Where("username = ?", username).First(r.Context()); err == nil {
 		s.renderTemplate(w, r, "register", TemplateData{Flashes: []string{localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: "Username already exists"})}})
 		return
@@ -325,6 +332,13 @@ func (s *Server) handleRegisterPost(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Failed to create user", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
+	}
+
+	// The first admin answers the app usage sharing question during setup.
+	if count == 0 && s.Config.NibletCloudURL != "" {
+		if err := s.saveUsageConsent(r, r.FormValue("usage_sharing") == "true"); err != nil {
+			slog.Error("Failed to save app usage sharing choice", "error", err)
+		}
 	}
 
 	// Auto-login the first created user

@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"tronbyt-server/internal/apps"
@@ -35,6 +36,10 @@ import (
 )
 
 type Server struct {
+	installCounts map[string]int64 // public app ID -> Niblet install count
+	usageRunning  atomic.Bool      // a community app stats sync is in progress
+	usageForce    atomic.Bool      // a consent change awaits a sync that ignores the retry wait
+	usageSyncs    sync.WaitGroup   // background syncs started by a consent change
 	DB            *gorm.DB
 	Router        *http.ServeMux
 	DataDir       string
@@ -50,8 +55,11 @@ type Server struct {
 	metrics       *appMetrics
 	OIDCProvider  *OIDCProvider
 
-	systemAppsCache      []apps.AppMetadata
-	systemAppsCacheMutex sync.RWMutex
+	systemAppsCache                      []apps.AppMetadata
+	systemAppsCacheMutex                 sync.RWMutex
+	systemAppsRefreshMutex               sync.Mutex
+	systemAppsAutoRefreshPreferenceMutex sync.Mutex
+	systemAppsAutoRefresh                atomic.Bool
 
 	// SchemaCache, when set, allows forcing a one-shot refetch of an app's
 	// cached HTTP responses so dynamic schema data (e.g. dropdown options
@@ -132,6 +140,12 @@ func NewServer(db *gorm.DB, cfg *config.Settings) *Server {
 	if err == nil && repo != "" {
 		cfg.SystemAppsRepo = repo
 	}
+	if val, err := s.getSetting(systemAppsAutoRefreshSettingKey); err != nil {
+		slog.Warn("Failed to load system apps auto-refresh setting", "error", err)
+	} else if val != "" {
+		cfg.SystemAppsAutoRefresh = val == "true"
+	}
+	s.systemAppsAutoRefresh.Store(cfg.SystemAppsAutoRefresh)
 
 	// Load OIDC settings from DB
 	if val, err := s.getSetting("oidc_enabled"); err == nil {
@@ -243,8 +257,12 @@ func NewServer(db *gorm.DB, cfg *config.Settings) *Server {
 	}
 
 	go s.checkForUpdates(context.Background())
-	go s.autoRefreshSystemRepo()
+	go s.autoRefreshSystemRepo(context.Background())
 	go s.autoRefreshCustomAppsRepos()
+	if cfg.NibletCloudURL != "" {
+		go s.runNibletSync()
+		go s.runUsageSync()
+	}
 
 	s.routes()
 	return s
@@ -308,6 +326,8 @@ func (s *Server) routes() {
 	}))
 	s.Router.HandleFunc("GET /settings/admin", s.RequireLogin(s.handleAdminIndex))
 	s.Router.HandleFunc("POST /settings/admin/oidc", s.RequireLogin(s.handleAdminSettingsPost))
+	s.Router.Handle("POST /settings/admin/usage-sharing", http.NewCrossOriginProtection().Handler(s.RequireLogin(s.handleUsageSharingConsent)))
+	s.Router.HandleFunc("GET /.well-known/niblet-reporter", s.handleUsageChallenge)
 	s.Router.HandleFunc("GET /admin/settings", s.RequireLogin(s.handleAdminSettingsGet))   // Keep old path just in case
 	s.Router.HandleFunc("POST /admin/settings", s.RequireLogin(s.handleAdminSettingsPost)) // Keep old path just in case
 	s.Router.HandleFunc("DELETE /admin/users/{username}", s.RequireLogin(s.handleDeleteUser))
@@ -358,6 +378,7 @@ func (s *Server) routes() {
 
 	s.Router.HandleFunc("POST /set_system_repo", s.RequireLogin(s.handleSetSystemRepo))
 	s.Router.HandleFunc("POST /refresh_system_repo", s.RequireLogin(s.handleRefreshSystemRepo))
+	s.Router.HandleFunc("POST /settings/system-apps-auto-refresh", s.RequireLogin(s.handleSetSystemAppsAutoRefresh))
 	s.Router.HandleFunc("POST /update_firmware", s.RequireLogin(s.handleUpdateFirmware))
 
 	// App broken status (development only)

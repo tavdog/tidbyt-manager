@@ -64,14 +64,17 @@ type DeviceSummary struct {
 
 // TemplateData is a struct to pass data to HTML templates.
 type TemplateData struct {
-	User       *data.User
-	Users      []data.User // For admin view
-	Config     *config.TemplateConfig
-	Flashes    []string
-	Devices    []data.Device   // Filtered devices for rendering
-	AllDevices []DeviceSummary // Lightweight list for "Copy to" dropdown
-	Item       *data.Device    // For single item partials
-	Localizer  *i18n.Localizer
+	ShowUsagePrompt       bool // first-run app usage sharing prompt for admins
+	UsageSharingAvailable bool
+	UsageSharing          UsageSharingStatus
+	User                  *data.User
+	Users                 []data.User // For admin view
+	Config                *config.TemplateConfig
+	Flashes               []string
+	Devices               []data.Device   // Filtered devices for rendering
+	AllDevices            []DeviceSummary // Lightweight list for "Copy to" dropdown
+	Item                  *data.Device    // For single item partials
+	Localizer             *i18n.Localizer
 
 	UpdateAvailable  bool
 	LatestReleaseURL string
@@ -84,9 +87,10 @@ type TemplateData struct {
 	Form              CreateDeviceFormData
 
 	// Repo Info for Admin/User Settings
-	SystemRepoInfo      *gitutils.RepoInfo
-	UserRepoInfo        *gitutils.RepoInfo
-	GlobalSystemRepoURL string
+	SystemRepoInfo        *gitutils.RepoInfo
+	UserRepoInfo          *gitutils.RepoInfo
+	GlobalSystemRepoURL   string
+	SystemAppsAutoRefresh bool
 
 	// App Config
 	App         *data.App
@@ -160,7 +164,7 @@ func (s *Server) renderTemplate(w http.ResponseWriter, r *http.Request, name str
 		tmplData.Config = &config.TemplateConfig{
 			EnableUserRegistration: s.Config.EnableUserRegistration,
 			SingleUserAutoLogin:    s.Config.SingleUserAutoLogin,
-			SystemAppsAutoRefresh:  s.Config.SystemAppsAutoRefresh,
+			SystemAppsAutoRefresh:  s.isSystemAppsAutoRefreshEnabled(),
 			Production:             s.Config.Production,
 		}
 	}
@@ -197,6 +201,9 @@ func (s *Server) renderTemplate(w http.ResponseWriter, r *http.Request, name str
 			}
 		}
 	}
+
+	tmplData.UsageSharingAvailable = s.Config.NibletCloudURL != ""
+	tmplData.ShowUsagePrompt = s.shouldPromptUsage(tmplData.User)
 
 	// Calculate IsAutoLoginActive
 	userCount, err := gorm.G[data.User](s.DB).Count(r.Context(), "*")
@@ -285,6 +292,7 @@ func (s *Server) getDeviceTypeChoices(localizer *i18n.Localizer) []DeviceTypeGro
 		data.DeviceMatrixPortal,
 		data.DeviceMatrixPortalWS,
 		data.DeviceMatrixPortalSquare,
+		data.DeviceMatrixPortalWide,
 		data.DeviceWaveshareS3,
 		data.DevicePixoticker,
 		data.DeviceRaspberryPi,
@@ -374,6 +382,24 @@ func generateSecureToken(length int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b)[:length], nil // Take only requested length
+}
+
+// validUsernameRe allows letters, digits and the punctuation found in email
+// addresses (OIDC usernames are often emails). The first character must be a
+// letter or digit, which rules out "." and "..".
+var validUsernameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._@+-]{0,127}$`)
+
+// isValidUsername reports whether a username can be created. Usernames are
+// used as directory names under DataDir/users.
+func isValidUsername(username string) bool {
+	return validUsernameRe.MatchString(username)
+}
+
+// isSinglePathComponent reports whether name is a single, non-empty path
+// component other than "." or "..". It covers usernames stored before
+// isValidUsername existed.
+func isSinglePathComponent(name string) bool {
+	return name != "" && name != "." && name != ".." && !strings.ContainsAny(name, `/\`)
 }
 
 // flashAndRedirect adds a flash message and redirects to the specified URL.
@@ -579,6 +605,10 @@ func (s *Server) saveSession(w http.ResponseWriter, r *http.Request, session *se
 
 // ensureDeviceImageDir is a helper to get and ensure the device webp directory exists.
 func (s *Server) ensureDeviceImageDir(deviceID string) (string, error) {
+	// Each device gets its own subdirectory of webp.
+	if !isSinglePathComponent(deviceID) {
+		return "", fmt.Errorf("invalid device ID for webp directory: %q", deviceID)
+	}
 	path, err := securejoin.SecureJoin(filepath.Join(s.DataDir, "webp"), deviceID)
 	if err != nil {
 		return "", fmt.Errorf("failed to securejoin path for device webp directory %s: %w", deviceID, err)
@@ -601,17 +631,25 @@ func (s *Server) ListSystemApps() []apps.AppMetadata {
 }
 
 func (s *Server) RefreshSystemAppsCache() {
-	s.systemAppsCacheMutex.Lock()
-	defer s.systemAppsCacheMutex.Unlock()
-
-	slog.Info("Refreshing system apps cache")
-	apps, err := apps.ListSystemApps(s.DataDir)
-	if err == nil {
-		s.systemAppsCache = apps
-		slog.Info("System apps cache refreshed", "count", len(s.systemAppsCache))
-	} else {
+	if err := s.replaceSystemAppsCache(); err != nil {
 		slog.Error("Failed to refresh system apps cache", "error", err)
 	}
+}
+
+func (s *Server) replaceSystemAppsCache() error {
+	slog.Info("Refreshing system apps cache")
+	refreshedApps, err := apps.ListSystemApps(s.DataDir)
+	if err != nil {
+		return err
+	}
+
+	s.systemAppsCacheMutex.Lock()
+	s.systemAppsCache = refreshedApps
+	count := len(s.systemAppsCache)
+	s.systemAppsCacheMutex.Unlock()
+
+	slog.Info("System apps cache refreshed", "count", count)
+	return nil
 }
 
 // getAppMetadata retrieves metadata for an app path, checking the system cache first,
@@ -683,6 +721,40 @@ func (s *Server) getSetting(key string) (string, error) {
 func (s *Server) setSetting(key, value string) error {
 	setting := data.Setting{Key: key, Value: value}
 	return gorm.G[data.Setting](s.DB, clause.OnConflict{UpdateAll: true}).Create(context.Background(), &setting)
+}
+
+// setSettings saves several settings in one transaction, so they change together.
+func (s *Server) setSettings(values map[string]string) error {
+	settings := make([]data.Setting, 0, len(values))
+	for key, value := range values {
+		settings = append(settings, data.Setting{Key: key, Value: value})
+	}
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		return gorm.G[data.Setting](tx, clause.OnConflict{UpdateAll: true}).CreateInBatches(context.Background(), &settings, len(settings))
+	})
+}
+
+// publicBaseURL returns the admin's https:// URL when it is a public hostname,
+// which hosted servers use to prove their identity.
+func publicBaseURL(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme != "https" || (parsed.Port() != "" && parsed.Port() != "443") {
+		return ""
+	}
+	host := strings.ToLower(parsed.Hostname())
+	if net.ParseIP(host) != nil || !strings.Contains(host, ".") || host == "localhost" ||
+		strings.HasSuffix(host, ".local") || strings.HasSuffix(host, ".localhost") {
+		return ""
+	}
+	return "https://" + host
+}
+
+// localReturnPath accepts only same-site paths, so the form cannot redirect elsewhere.
+func localReturnPath(raw string) string {
+	if !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") || strings.HasPrefix(raw, "/\\") || strings.ContainsAny(raw, "\r\n") {
+		return "/settings/admin"
+	}
+	return raw
 }
 
 func (s *Server) notifyDashboard(username string, event WSEvent) {
