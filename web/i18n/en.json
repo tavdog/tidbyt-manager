@@ -503,6 +503,9 @@
   "MatrixPortal S3 Square": {
     "other": "MatrixPortal S3 Square"
   },
+  "MatrixPortal S3 Wide": {
+    "other": "MatrixPortal S3 Wide"
+  },
   "MatrixPortal S3 Waveshare": {
     "other": "MatrixPortal S3 Waveshare"
   },
@@ -562,6 +565,9 @@
   },
   "Remove": {
     "other": "Remove"
+  },
+  "To use a branch other than the default, end the URL with #branch-name.": {
+    "other": "To use a branch other than the default, end the URL with #branch-name."
   },
   "Replacing an existing custom repo will delete the previous repo and break any apps using that repo.": {
     "other": "Replacing an existing custom repo will delete the previous repo and break any apps using that repo."
@@ -1787,6 +1793,9 @@
   "Username already exists": {
     "other": "Username already exists"
   },
+  "Invalid username.": {
+    "other": "Invalid username. Use letters, numbers and . _ @ + - only, starting with a letter or number."
+  },
   "Invalid username or password": {
     "other": "Invalid username or password"
   },
@@ -2164,5 +2173,83 @@
   },
   "You are accessing this server via localhost. For proper firmware generation you should use:": {
     "other": "You are accessing this server via localhost. For proper firmware generation you should use:"
+  },
+  "Number of installs": {
+    "other": "Number of installs"
+  },
+  "Popularity": {
+    "other": "Popularity"
+  },
+  "Automatic Updates": {
+    "other": "Automatic Updates"
+  },
+  "Update Schedule": {
+    "other": "Update Schedule"
+  },
+  "Automatically update system apps every 12 hours": {
+    "other": "Automatically update system apps every 12 hours"
+  },
+  "Automatic updates may change or break apps already installed on your devices.": {
+    "other": "Automatic updates may change or break apps already installed on your devices."
+  },
+  "Failed to save automatic update preference.": {
+    "other": "Failed to save automatic update preference."
+  },
+  "Automatic update preference saved.": {
+    "other": "Automatic update preference saved."
+  },
+  "Saving...": {
+    "other": "Saving..."
+  },
+  "Off": {
+    "other": "Off"
+  },
+  "Paused · NIBLET_CLOUD_URL is empty": {
+    "other": "Paused · NIBLET_CLOUD_URL is empty"
+  },
+  "verified": {
+    "other": "verified"
+  },
+  "You can change this anytime in System Settings.": {
+    "other": "You can change this anytime in System Settings."
+  },
+  "Not now": {
+    "other": "Not now"
+  },
+  "Contribute to community app stats": {
+    "other": "Contribute to community app stats"
+  },
+  "Help other Tidbyt owners discover great apps. Your Tronbyt shares which library apps you use and a rough device count only when they change, plus a tiny weekly check-in. Your name, devices, settings, and custom apps are never included.": {
+    "other": "Help other Tidbyt owners discover great apps. Your Tronbyt shares which library apps you use and a rough device count only when they change, plus a tiny weekly check-in. Your name, devices, settings, and custom apps are never included."
+  },
+  "Niblet manages the community stats. Your IP address is used only to block spam and isn't saved with your stats, which are removed 30 days after your Tronbyt stops checking in.": {
+    "other": "Niblet manages the community stats. Your IP address is used only to block spam and isn't saved with your stats, which are removed 30 days after your Tronbyt stops checking in."
+  },
+  "Community app stats": {
+    "other": "Community app stats"
+  },
+  "Contribute": {
+    "other": "Contribute"
+  },
+  "Turn this off before clearing NIBLET_CLOUD_URL, or your stats will only be removed after 30 days.": {
+    "other": "Turn this off before clearing NIBLET_CLOUD_URL, or your stats will only be removed after 30 days."
+  },
+  "Off · removing your stats": {
+    "other": "Off · removing your stats"
+  },
+  "Couldn't reach Niblet yet · will retry automatically": {
+    "other": "Couldn't reach Niblet yet · will retry automatically"
+  },
+  "Connecting to Niblet…": {
+    "other": "Connecting to Niblet…"
+  },
+  "Contributing · last shared": {
+    "other": "Contributing · last shared"
+  },
+  "Contributing · first update pending": {
+    "other": "Contributing · first update pending"
+  },
+  "Contributing · starts when you add a device": {
+    "other": "Contributing · starts when you add a device"
   }
 }

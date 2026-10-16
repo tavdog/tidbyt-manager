@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -86,6 +87,7 @@ func (s *Server) handleAdminIndex(w http.ResponseWriter, r *http.Request) {
 		User:                 user,
 		Users:                users,
 		SettingsSection:      "admin",
+		UsageSharing:         s.usageSharingStatus(),
 		OIDCEnabled:          s.Config.OIDCEnabled,
 		OIDCIssuerURL:        s.Config.OIDCIssuerURL,
 		OIDCClientID:         s.Config.OIDCClientID,
@@ -119,6 +121,11 @@ func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	// Clean up files
 	for _, d := range targetUser.Devices {
+		if !isSinglePathComponent(d.ID) {
+			// Devices created by older versions may have an empty ID.
+			slog.Warn("Skipping webp cleanup for device with unsafe ID", "device_id", d.ID)
+			continue
+		}
 		deviceWebpDir, err := s.ensureDeviceImageDir(d.ID)
 		if err != nil {
 			slog.Error("Failed to get device webp directory for deletion", "device_id", d.ID, "error", err)
@@ -129,9 +136,14 @@ func (s *Server) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 			slog.Error("Failed to remove device webp directory", "device_id", d.ID, "error", err)
 		}
 	}
-	userAppsDir := filepath.Join(s.DataDir, "users", targetUsername)
-	if err := os.RemoveAll(userAppsDir); err != nil {
-		slog.Error("Failed to remove user apps directory", "username", targetUsername, "error", err)
+	// Only remove the directory when the stored username is a single path component.
+	if isSinglePathComponent(targetUsername) {
+		userAppsDir := filepath.Join(s.DataDir, "users", targetUsername)
+		if err := os.RemoveAll(userAppsDir); err != nil {
+			slog.Error("Failed to remove user apps directory", "username", targetUsername, "error", err)
+		}
+	} else {
+		slog.Warn("Skipping removal of user directory for unsafe username", "username", targetUsername)
 	}
 
 	err = s.DB.Transaction(func(tx *gorm.DB) error {
@@ -495,6 +507,12 @@ func (s *Server) handleRefreshSystemRepo(w http.ResponseWriter, r *http.Request)
 
 	if err := s.refreshSystemRepo(); err != nil {
 		slog.Error("Failed to refresh system repo", "error", err)
+		if r.Header.Get("Accept") == "application/json" {
+			http.Error(w, "Failed to refresh system repository", http.StatusInternalServerError)
+			return
+		}
+		s.flashAndRedirect(w, r, "Failed to refresh system repository. Check server logs.", "/settings/content", http.StatusSeeOther)
+		return
 	}
 
 	if r.Header.Get("Accept") == "application/json" {
@@ -514,4 +532,44 @@ func (s *Server) handleRefreshSystemRepo(w http.ResponseWriter, r *http.Request)
 	}
 
 	http.Redirect(w, r, "/settings/content", http.StatusSeeOther)
+}
+
+func (s *Server) handleSetSystemAppsAutoRefresh(w http.ResponseWriter, r *http.Request) {
+	user := GetUser(r)
+	if !user.IsAdmin {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	wantsJSON := r.Header.Get("Accept") == "application/json"
+	enabled := r.FormValue("system_apps_auto_refresh") == "1"
+	if err := s.setSystemAppsAutoRefresh(enabled); err != nil {
+		slog.Error("Failed to save system apps auto-refresh setting", "error", err)
+		if wantsJSON {
+			http.Error(w, "Failed to save automatic update preference", http.StatusInternalServerError)
+			return
+		}
+		s.flashAndRedirect(w, r, "Failed to save automatic update preference.", "/settings/content", http.StatusSeeOther)
+		return
+	}
+
+	if wantsJSON {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]bool{"enabled": enabled}); err != nil {
+			slog.Error("Failed to encode system apps auto-refresh response", "error", err)
+		}
+		return
+	}
+	s.flashAndRedirect(w, r, "Automatic update preference saved.", "/settings/content", http.StatusSeeOther)
+}
+
+func (s *Server) setSystemAppsAutoRefresh(enabled bool) error {
+	s.systemAppsAutoRefreshPreferenceMutex.Lock()
+	defer s.systemAppsAutoRefreshPreferenceMutex.Unlock()
+
+	if err := s.setSetting(systemAppsAutoRefreshSettingKey, strconv.FormatBool(enabled)); err != nil {
+		return err
+	}
+	s.systemAppsAutoRefresh.Store(enabled)
+	return nil
 }

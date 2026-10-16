@@ -13,7 +13,7 @@ However, there are some drawbacks, including the lack of a mobile app, slightly 
 **Supported Devices:**
 *   Tidbyt Gen1 and Gen2
 *   Tronbyt S3 and S3 Wide
-*   MatrixPortal S3, MatrixPortal S3 Waveshare and MatrixPortal S3 Square (64x64)
+*   MatrixPortal S3, MatrixPortal S3 Waveshare, MatrixPortal S3 Wide (128x64) and MatrixPortal S3 Square (64x64)
 *   Raspberry Pi (64x32), Raspberry Pi Wide (128x64) and Raspberry Pi Square (64x64) connected to matrix LED panels
 *   Pixoticker (limited memory, not recommended)
 
@@ -105,9 +105,10 @@ The server can be configured via environment variables or `.env` file:
 *   `ENABLE_UPDATE_CHECKS`: Check for new releases on startup (default: `true`).
 *   `MAX_USERS`: Maximum number of user accounts (default: `0` / unlimited).
 *   `SINGLE_USER_AUTO_LOGIN`: Skip login when only one user exists (default: `false`).
-*   `SYSTEM_APPS_REPO`: Git repository URL for system apps (default: `https://github.com/tronbyt/apps.git`).
-*   `SYSTEM_APPS_AUTO_REFRESH`: Automatically refresh the system apps repository (default: `false`).
+*   `SYSTEM_APPS_REPO`: Git repository URL for system apps (default: `https://github.com/tronbyt/apps.git`). End the URL with `#branch-name` to use a branch other than the default.
+*   `SYSTEM_APPS_AUTO_REFRESH`: Initial default for refreshing the system apps repository every 12 hours (default: `false`). Administrators can change this under **Settings → Content and Firmware**; a saved web preference takes precedence on later starts.
 *   `CUSTOM_APPS_AUTO_REFRESH`: Automatically refresh every user's custom apps repository, every 12h (default: `false`).
+*   `NIBLET_CLOUD_URL`: Source of the install counts shown on system app cards, refreshed at most daily, and destination of the opt-in community app stats in System Settings, which are off by default (default: `https://cloud.heyniblet.com`). Set to an empty string to disable both.
 *   `GITHUB_TOKEN`: GitHub token for private app repositories (optional).
 *   `REDIS_URL`: Redis connection string for caching (optional).
 *   `LOG_LEVEL`: Logging verbosity: `DEBUG`, `INFO`, `WARN`, `ERROR` (default: `INFO`).
