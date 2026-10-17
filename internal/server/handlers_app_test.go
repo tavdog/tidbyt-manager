@@ -81,7 +81,7 @@ func TestHandleAddAppGet_CustomAppFilters(t *testing.T) {
 	device := data.Device{ID: "testdevice", Username: "testuser"}
 	s.DB.Create(&device)
 
-	s.systemAppsCache = []apps.AppMetadata{{Manifest: apps.Manifest{ID: "Clock", Name: "Clock"}}}
+	s.systemAppsCache = []apps.AppMetadata{{ID: "Clock", Name: "Clock"}}
 
 	appDir := filepath.Join(s.DataDir, "users", "testuser", "repo", "apps", "myclock")
 	require.NoError(t, os.MkdirAll(appDir, 0o755))
