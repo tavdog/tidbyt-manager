@@ -24,7 +24,7 @@
                 <div class="settings-field-label">{{ t .Localizer "Current Repository" }}</div>
                 <div class="settings-field-control">
                     {{ if .SystemRepoInfo }}
-                    <div class="settings-meta-block">
+                    <div class="settings-meta-block" id="system-repo-meta">
                         <a href="{{ .SystemRepoInfo.URL }}"
                            target="_blank"
                            id="system-repo-url-link">{{ .SystemRepoInfo.URL }}</a>
@@ -98,21 +98,36 @@
         </div>
         <div class="settings-card-subsection">
             <h3>{{ t .Localizer "Change Repository" }}</h3>
-            <form method="post" action="/set_system_repo" class="settings-form">
+            <div class="settings-form">
                 <div class="settings-field-row">
                     <div class="settings-field-label">
                         <label for="app_repo_url">{{ t .Localizer "Repository URL" }}</label>
                     </div>
                     <div class="settings-field-control">
-                        <div class="settings-inline-group">
+                        <div class="settings-inline-group settings-repo-url-row">
                             <input name="app_repo_url"
                                    id="app_repo_url"
+                                   form="set-system-repo-form"
                                    required
                                    value="{{ .GlobalSystemRepoURL }}"
-                                   class="settings-input settings-input-wide">
-                            <button type="submit" class="w3-button w3-green">
-                                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> {{ t .Localizer "Save" }}
-                            </button>
+                                   class="settings-input settings-input-wide settings-repo-url-input">
+                            <div class="settings-repo-url-actions">
+                                <form id="set-system-repo-form" method="post" action="/set_system_repo">
+                                    <button type="submit" class="w3-button w3-green">
+                                        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> {{ t .Localizer "Save" }}
+                                    </button>
+                                </form>
+                                <form method="post"
+                                      action="/clear_system_apps_repo"
+                                      onsubmit="event.preventDefault(); clearSystemAppsRepo(this);">
+                                    <button type="submit"
+                                            class="w3-button w3-red w3-round settings-icon-button"
+                                            aria-label="{{ t .Localizer "Delete downloaded repo" }}"
+                                            title="{{ t .Localizer "Delete downloaded repo" }}">
+                                        <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                         <p class="settings-help">
                             {{ t .Localizer "Replacing the existing system repo will delete the previous repo and break any apps using that repo." }}
@@ -120,7 +135,7 @@
                         <p class="settings-help">{{ t .Localizer "To use a branch other than the default, end the URL with #branch-name." }}</p>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     </section>
     {{ end }}
@@ -310,6 +325,46 @@
         })
         .finally(() => {
             checkbox.disabled = false;
+        });
+    }
+
+    function clearSystemAppsRepo(form) {
+        if (!confirm('{{ t .Localizer "Delete the downloaded repo from disk? Use Refresh to download it again." }}')) {
+            return;
+        }
+
+        const btn = form.querySelector('button');
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> {{ t .Localizer "Deleting..." }}';
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to clear system apps repository');
+            }
+            return response.json();
+        })
+        .then(() => {
+            const metaBlock = document.getElementById('system-repo-meta');
+            if (metaBlock) {
+                metaBlock.outerHTML = '<p class="settings-help" id="system-repo-cleared-notice">{{ t .Localizer "Repository not downloaded locally. Use Refresh to download it again." }}</p>';
+            }
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> {{ t .Localizer "Success" }}';
+        })
+        .catch(() => {
+            btn.innerHTML = '<i class="fa-solid fa-xmark"></i> {{ t .Localizer "Failed" }}';
+        })
+        .finally(() => {
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }, 2000);
         });
     }
 

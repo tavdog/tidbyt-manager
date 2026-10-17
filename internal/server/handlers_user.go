@@ -478,24 +478,33 @@ func (s *Server) handleSetSystemRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repoURL := r.FormValue("app_repo_url")
+	repoURL := strings.TrimSpace(r.FormValue("app_repo_url"))
 	if repoURL == "" {
 		repoURL = s.Config.SystemAppsRepo
 	}
 
-	// Save to global setting
-	if err := s.setSetting("system_apps_repo", repoURL); err != nil {
-		slog.Error("Failed to save system repo setting", "error", err)
+	previousURL := s.Config.SystemAppsRepo
+	if repoURL == previousURL {
+		http.Redirect(w, r, "/settings/content", http.StatusSeeOther)
+		return
 	}
 
-	// Update in-memory config
 	s.Config.SystemAppsRepo = repoURL
-
 	if err := s.refreshSystemRepo(); err != nil {
 		slog.Error("Failed to update system repo", "error", err)
+		s.Config.SystemAppsRepo = previousURL
+		s.flashAndRedirect(w, r, "Failed to update system repository. The previous URL is unchanged. Check server logs.", "/settings/content", http.StatusSeeOther)
+		return
 	}
 
-	http.Redirect(w, r, "/settings/content", http.StatusSeeOther)
+	if err := s.setSetting("system_apps_repo", repoURL); err != nil {
+		slog.Error("Failed to save system repo setting", "error", err)
+		s.Config.SystemAppsRepo = previousURL
+		s.flashAndRedirect(w, r, "Failed to save system repository setting.", "/settings/content", http.StatusSeeOther)
+		return
+	}
+
+	s.flashAndRedirect(w, r, "System repository updated successfully.", "/settings/content", http.StatusSeeOther)
 }
 
 func (s *Server) handleRefreshSystemRepo(w http.ResponseWriter, r *http.Request) {
@@ -532,6 +541,35 @@ func (s *Server) handleRefreshSystemRepo(w http.ResponseWriter, r *http.Request)
 	}
 
 	http.Redirect(w, r, "/settings/content", http.StatusSeeOther)
+}
+
+func (s *Server) handleClearSystemAppsRepo(w http.ResponseWriter, r *http.Request) {
+	user := GetUser(r)
+	if !user.IsAdmin {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	wantsJSON := r.Header.Get("Accept") == "application/json"
+	if err := s.clearSystemAppsRepo(); err != nil {
+		slog.Error("Failed to clear system apps repo", "error", err)
+		if wantsJSON {
+			http.Error(w, "Failed to clear system apps repository", http.StatusInternalServerError)
+			return
+		}
+		s.flashAndRedirect(w, r, "Failed to clear system apps repository. Check server logs.", "/settings/content", http.StatusSeeOther)
+		return
+	}
+
+	if wantsJSON {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]bool{"success": true}); err != nil {
+			slog.Error("Failed to encode clear system apps repo response", "error", err)
+		}
+		return
+	}
+
+	s.flashAndRedirect(w, r, "System apps repository cleared from disk.", "/settings/content", http.StatusSeeOther)
 }
 
 func (s *Server) handleSetSystemAppsAutoRefresh(w http.ResponseWriter, r *http.Request) {

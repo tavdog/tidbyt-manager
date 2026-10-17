@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -108,6 +110,16 @@ func (s *Server) refreshSystemRepo() error {
 			return err
 		}
 
+		return s.replaceSystemAppsCache()
+	})
+}
+
+func (s *Server) clearSystemAppsRepo() error {
+	return s.withSystemAppsRefresh(func() error {
+		appsPath := filepath.Join(s.DataDir, "system-apps")
+		if err := os.RemoveAll(appsPath); err != nil {
+			return fmt.Errorf("failed to remove system apps directory: %w", err)
+		}
 		return s.replaceSystemAppsCache()
 	})
 }
