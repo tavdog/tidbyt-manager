@@ -60,6 +60,26 @@ type RepoInfo struct {
 	CommitDate    string // Formatted date string
 }
 
+// githubRepoPathFromRemote returns owner/repo for a GitHub remote URL, or "" if unrecognized.
+func githubRepoPathFromRemote(remote string) string {
+	if remote == "" || !strings.Contains(remote, "github.com") {
+		return ""
+	}
+	remote = strings.TrimSuffix(remote, ".git")
+	switch {
+	case strings.HasPrefix(remote, "https://github.com/"):
+		return strings.TrimPrefix(remote, "https://github.com/")
+	case strings.HasPrefix(remote, "http://github.com/"):
+		return strings.TrimPrefix(remote, "http://github.com/")
+	case strings.HasPrefix(remote, "git@github.com:"):
+		return strings.TrimPrefix(remote, "git@github.com:")
+	case strings.HasPrefix(remote, "ssh://git@github.com/"):
+		return strings.TrimPrefix(remote, "ssh://git@github.com/")
+	default:
+		return ""
+	}
+}
+
 // GetRepoInfo retrieves detailed information about a local Git repository.
 func GetRepoInfo(path string, remoteURL string) (*RepoInfo, error) {
 	displayURL := parseRepoSource(remoteURL).url
@@ -100,12 +120,8 @@ func GetRepoInfo(path string, remoteURL string) (*RepoInfo, error) {
 		}
 	}
 
-	// Try to determine a GitHub commit URL
 	commitURL := ""
-	if displayURL != "" && strings.Contains(displayURL, "github.com") {
-		// Assuming GitHub URL format
-		repoPath := strings.TrimPrefix(displayURL, "https://github.com/")
-		repoPath = strings.TrimSuffix(repoPath, ".git")
+	if repoPath := githubRepoPathFromRemote(displayURL); repoPath != "" {
 		commitURL = fmt.Sprintf("https://github.com/%s/commit/%s", repoPath, commit.Hash.String())
 	}
 

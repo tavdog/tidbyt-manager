@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/config"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/stretchr/testify/assert"
@@ -185,6 +186,32 @@ func TestGetRepoInfoStripsBranchSuffixFromURL(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://github.com/example/apps.git", info.URL)
+	assert.Equal(t, "https://github.com/example/apps/commit/"+head.Hash().String(), info.CommitURL)
+}
+
+func TestGetRepoInfoGitHubCommitURLFromSSHOrigin(t *testing.T) {
+	src := newSourceRepo(t)
+	dst := filepath.Join(t.TempDir(), "clone")
+	require.NoError(t, EnsureRepo(dst, src.path, "", true, 0))
+
+	r, err := git.PlainOpen(dst)
+	require.NoError(t, err)
+	cfg, err := r.Config()
+	require.NoError(t, err)
+	cfg.Remotes["origin"] = &config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{"git@github.com:example/apps.git"},
+	}
+	require.NoError(t, r.SetConfig(cfg))
+	require.NoError(t, r.Close())
+
+	head, err := src.repo.Head()
+	require.NoError(t, err)
+
+	info, err := GetRepoInfo(dst, "")
+	require.NoError(t, err)
+
+	assert.Equal(t, "git@github.com:example/apps.git", info.URL)
 	assert.Equal(t, "https://github.com/example/apps/commit/"+head.Hash().String(), info.CommitURL)
 }
 
