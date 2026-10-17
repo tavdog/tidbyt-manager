@@ -188,6 +188,17 @@ func TestGetRepoInfoStripsBranchSuffixFromURL(t *testing.T) {
 	assert.Equal(t, "https://github.com/example/apps/commit/"+head.Hash().String(), info.CommitURL)
 }
 
+func TestGetRepoInfoUsesOriginRemoteURL(t *testing.T) {
+	src := newSourceRepo(t)
+	dst := filepath.Join(t.TempDir(), "clone")
+	require.NoError(t, EnsureRepo(dst, src.path, "", true, 0))
+
+	info, err := GetRepoInfo(dst, "https://github.com/example/wrong.git")
+	require.NoError(t, err)
+
+	assert.Equal(t, src.path, info.URL)
+}
+
 func TestReplaceRepoDirReplacesDestination(t *testing.T) {
 	parent := t.TempDir()
 	src := filepath.Join(parent, "src")

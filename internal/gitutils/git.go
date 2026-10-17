@@ -62,13 +62,17 @@ type RepoInfo struct {
 
 // GetRepoInfo retrieves detailed information about a local Git repository.
 func GetRepoInfo(path string, remoteURL string) (*RepoInfo, error) {
-	remoteURL = parseRepoSource(remoteURL).url
+	displayURL := parseRepoSource(remoteURL).url
 
 	r, err := git.PlainOpen(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open repo at %s: %w", path, err)
 	}
 	defer func() { _ = r.Close() }()
+
+	if rem, err := r.Remote("origin"); err == nil && len(rem.Config().URLs) > 0 {
+		displayURL = rem.Config().URLs[0]
+	}
 
 	headRef, err := r.Head()
 	if err != nil {
@@ -98,15 +102,15 @@ func GetRepoInfo(path string, remoteURL string) (*RepoInfo, error) {
 
 	// Try to determine a GitHub commit URL
 	commitURL := ""
-	if remoteURL != "" && strings.Contains(remoteURL, "github.com") {
+	if displayURL != "" && strings.Contains(displayURL, "github.com") {
 		// Assuming GitHub URL format
-		repoPath := strings.TrimPrefix(remoteURL, "https://github.com/")
+		repoPath := strings.TrimPrefix(displayURL, "https://github.com/")
 		repoPath = strings.TrimSuffix(repoPath, ".git")
 		commitURL = fmt.Sprintf("https://github.com/%s/commit/%s", repoPath, commit.Hash.String())
 	}
 
 	return &RepoInfo{
-		URL:           remoteURL,
+		URL:           displayURL,
 		Branch:        branchName,
 		CommitHash:    commit.Hash.String(),
 		CommitURL:     commitURL,

@@ -478,24 +478,33 @@ func (s *Server) handleSetSystemRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repoURL := r.FormValue("app_repo_url")
+	repoURL := strings.TrimSpace(r.FormValue("app_repo_url"))
 	if repoURL == "" {
 		repoURL = s.Config.SystemAppsRepo
 	}
 
-	// Save to global setting
-	if err := s.setSetting("system_apps_repo", repoURL); err != nil {
-		slog.Error("Failed to save system repo setting", "error", err)
+	previousURL := s.Config.SystemAppsRepo
+	if repoURL == previousURL {
+		http.Redirect(w, r, "/settings/content", http.StatusSeeOther)
+		return
 	}
 
-	// Update in-memory config
 	s.Config.SystemAppsRepo = repoURL
-
 	if err := s.refreshSystemRepo(); err != nil {
 		slog.Error("Failed to update system repo", "error", err)
+		s.Config.SystemAppsRepo = previousURL
+		s.flashAndRedirect(w, r, "Failed to update system repository. The previous URL is unchanged. Check server logs.", "/settings/content", http.StatusSeeOther)
+		return
 	}
 
-	http.Redirect(w, r, "/settings/content", http.StatusSeeOther)
+	if err := s.setSetting("system_apps_repo", repoURL); err != nil {
+		slog.Error("Failed to save system repo setting", "error", err)
+		s.Config.SystemAppsRepo = previousURL
+		s.flashAndRedirect(w, r, "Failed to save system repository setting.", "/settings/content", http.StatusSeeOther)
+		return
+	}
+
+	s.flashAndRedirect(w, r, "System repository updated successfully.", "/settings/content", http.StatusSeeOther)
 }
 
 func (s *Server) handleRefreshSystemRepo(w http.ResponseWriter, r *http.Request) {

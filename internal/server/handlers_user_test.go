@@ -181,6 +181,29 @@ func TestSettingsContentRendersSystemAppsAutoRefreshControl(t *testing.T) {
 	require.Contains(t, rr.Body.String(), `aria-label="Delete downloaded repo"`)
 }
 
+func TestHandleSetSystemRepoRevertsURLWhenRefreshFails(t *testing.T) {
+	s := newTestServer(t)
+	admin := data.User{Username: "admin", IsAdmin: true}
+
+	previousURL := "https://github.com/tronbyt/apps.git"
+	s.Config.SystemAppsRepo = previousURL
+	require.NoError(t, s.setSetting("system_apps_repo", previousURL))
+
+	form := url.Values{"app_repo_url": {"file:///path/that/does/not/exist"}}
+	req := httptest.NewRequest(http.MethodPost, "/set_system_repo", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &admin))
+	rr := httptest.NewRecorder()
+
+	s.handleSetSystemRepo(rr, req)
+
+	require.Equal(t, http.StatusSeeOther, rr.Code)
+	require.Equal(t, previousURL, s.Config.SystemAppsRepo)
+	stored, err := s.getSetting("system_apps_repo")
+	require.NoError(t, err)
+	require.Equal(t, previousURL, stored)
+}
+
 func TestHandleClearSystemAppsRepo(t *testing.T) {
 	s := newTestServer(t)
 	admin := data.User{Username: "admin", IsAdmin: true}
