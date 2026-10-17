@@ -276,27 +276,22 @@ func scanUserAppsDir(dataDir, username, subDir, defaultSummary string) ([]AppMet
 				if _, err := os.Stat(filepath.Join(appDir, preview2xWebP)); err == nil {
 					userApp.Preview2x = preview2xWebP
 				}
-
-				// Prefer the manifest's updated date, falling back to file mod time
-				if userApp.Updated != "" {
-					userApp.Date = userApp.Updated
-				} else if info, err := os.Stat(filepath.Join(appDir, starFile)); err == nil {
-					userApp.Date = info.ModTime().Format("2006-01-02 15:04")
-				}
-
-				apps = append(apps, userApp)
 			} else if webpFile != "" {
 				// No .star file, but we have a .webp file matching the app name
 				userApp.FileName = webpFile
 				userApp.Path = filepath.Join("users", username, subDir, appName, webpFile)
 				userApp.Preview = webpFile
-
-				// Use file mod time as date
-				if info, err := os.Stat(filepath.Join(appDir, webpFile)); err == nil {
-					userApp.Date = info.ModTime().Format("2006-01-02 15:04")
-				}
-				apps = append(apps, userApp)
+			} else {
+				continue
 			}
+
+			// Prefer the manifest's updated date, falling back to file mod time
+			if userApp.Updated != "" {
+				userApp.Date = userApp.Updated
+			} else if info, err := os.Stat(filepath.Join(appDir, userApp.FileName)); err == nil {
+				userApp.Date = info.ModTime().Format("2006-01-02 15:04")
+			}
+			apps = append(apps, userApp)
 		}
 	}
 

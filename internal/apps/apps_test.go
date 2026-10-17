@@ -138,6 +138,28 @@ func TestListUserAppsReadsManifest(t *testing.T) {
 	}
 }
 
+// Image-only custom apps (a .webp with no .star) follow the same date rule as
+// .star apps: the manifest's updated date wins over the file mod time.
+func TestListUserAppsImageOnlyUsesManifestUpdated(t *testing.T) {
+	tmpDir := t.TempDir()
+	appDir := filepath.Join(tmpDir, "users", "testuser", "apps", "pic")
+	if err := os.MkdirAll(appDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range map[string]string{"manifest.yaml": "updated: 2026-01-02 03:04\n", "pic.webp": ""} {
+		if err := os.WriteFile(filepath.Join(appDir, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	apps := ListUserApps(tmpDir, "testuser")
+	if len(apps) != 1 || apps[0].FileName != "pic.webp" {
+		t.Fatalf("expected one image-only app, got %+v", apps)
+	}
+	if apps[0].Date != "2026-01-02 03:04" {
+		t.Errorf("Date = %q, want manifest updated date", apps[0].Date)
+	}
+}
+
 func TestListUserAppsIgnoresInvalidManifest(t *testing.T) {
 	tmpDir := t.TempDir()
 	appDir := filepath.Join(tmpDir, "users", "testuser", "apps", "app1")
