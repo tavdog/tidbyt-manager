@@ -464,6 +464,18 @@
   "Refresh": {
     "other": "Aktualisieren"
   },
+  "Delete downloaded repo": {
+    "other": "Heruntergeladenes Repo löschen"
+  },
+  "Deleting...": {
+    "other": "Wird gelöscht..."
+  },
+  "Delete the downloaded repo from disk? Use Refresh to download it again.": {
+    "other": "Das heruntergeladene Repo vom Datenträger löschen? Zum erneuten Herunterladen auf Aktualisieren klicken."
+  },
+  "Repository not downloaded locally. Use Refresh to download it again.": {
+    "other": "Repository lokal nicht vorhanden. Zum Herunterladen auf Aktualisieren klicken."
+  },
   "Change Repository": {
     "other": "Repo ändern"
   },

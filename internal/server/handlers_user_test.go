@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -175,6 +177,48 @@ func TestSettingsContentRendersSystemAppsAutoRefreshControl(t *testing.T) {
 	require.Contains(t, rr.Body.String(), `onchange="saveSystemAppsAutoRefresh(this)"`)
 	require.Contains(t, rr.Body.String(), `id="system-apps-auto-refresh-status"`)
 	require.Contains(t, rr.Body.String(), `action="/refresh_system_repo"`)
+	require.Contains(t, rr.Body.String(), `action="/clear_system_apps_repo"`)
+	require.Contains(t, rr.Body.String(), `aria-label="Delete downloaded repo"`)
+}
+
+func TestHandleClearSystemAppsRepo(t *testing.T) {
+	s := newTestServer(t)
+	admin := data.User{Username: "admin", IsAdmin: true}
+
+	appDir := filepath.Join(s.DataDir, "system-apps", "apps", "cleartest")
+	require.NoError(t, os.MkdirAll(appDir, 0o755))
+	s.RefreshSystemAppsCache()
+	require.Len(t, s.ListSystemApps(), 1)
+
+	req := httptest.NewRequest(http.MethodPost, "/clear_system_apps_repo", nil)
+	req.Header.Set("Accept", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &admin))
+	rr := httptest.NewRecorder()
+
+	s.handleClearSystemAppsRepo(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	require.JSONEq(t, `{"success":true}`, rr.Body.String())
+	_, err := os.Stat(filepath.Join(s.DataDir, "system-apps"))
+	require.True(t, os.IsNotExist(err))
+	require.Empty(t, s.ListSystemApps())
+}
+
+func TestHandleClearSystemAppsRepoRequiresAdmin(t *testing.T) {
+	s := newTestServer(t)
+	user := data.User{Username: "user", IsAdmin: false}
+
+	appDir := filepath.Join(s.DataDir, "system-apps", "apps", "cleartest")
+	require.NoError(t, os.MkdirAll(appDir, 0o755))
+
+	req := httptest.NewRequest(http.MethodPost, "/clear_system_apps_repo", nil)
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &user))
+	rr := httptest.NewRecorder()
+
+	s.handleClearSystemAppsRepo(rr, req)
+
+	require.Equal(t, http.StatusForbidden, rr.Code)
+	require.DirExists(t, filepath.Join(s.DataDir, "system-apps"))
 }
 
 func TestHandleEditUserPostUpdatesEmail(t *testing.T) {

@@ -355,6 +355,7 @@ func (s *Server) routes() {
 
 	s.Router.HandleFunc("POST /set_system_repo", s.RequireLogin(s.handleSetSystemRepo))
 	s.Router.HandleFunc("POST /refresh_system_repo", s.RequireLogin(s.handleRefreshSystemRepo))
+	s.Router.HandleFunc("POST /clear_system_apps_repo", s.RequireLogin(s.handleClearSystemAppsRepo))
 	s.Router.HandleFunc("POST /settings/system-apps-auto-refresh", s.RequireLogin(s.handleSetSystemAppsAutoRefresh))
 	s.Router.HandleFunc("POST /update_firmware", s.RequireLogin(s.handleUpdateFirmware))
 

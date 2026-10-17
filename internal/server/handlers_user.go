@@ -534,6 +534,35 @@ func (s *Server) handleRefreshSystemRepo(w http.ResponseWriter, r *http.Request)
 	http.Redirect(w, r, "/settings/content", http.StatusSeeOther)
 }
 
+func (s *Server) handleClearSystemAppsRepo(w http.ResponseWriter, r *http.Request) {
+	user := GetUser(r)
+	if !user.IsAdmin {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	wantsJSON := r.Header.Get("Accept") == "application/json"
+	if err := s.clearSystemAppsRepo(); err != nil {
+		slog.Error("Failed to clear system apps repo", "error", err)
+		if wantsJSON {
+			http.Error(w, "Failed to clear system apps repository", http.StatusInternalServerError)
+			return
+		}
+		s.flashAndRedirect(w, r, "Failed to clear system apps repository. Check server logs.", "/settings/content", http.StatusSeeOther)
+		return
+	}
+
+	if wantsJSON {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]bool{"success": true}); err != nil {
+			slog.Error("Failed to encode clear system apps repo response", "error", err)
+		}
+		return
+	}
+
+	s.flashAndRedirect(w, r, "System apps repository cleared from disk.", "/settings/content", http.StatusSeeOther)
+}
+
 func (s *Server) handleSetSystemAppsAutoRefresh(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 	if !user.IsAdmin {
