@@ -54,3 +54,52 @@ func TestInitGitInfo(t *testing.T) {
 	assert.NotEmpty(t, CommitURL)
 	assert.Contains(t, CommitURL, RepoURL)
 }
+
+func TestEnvOverrides(t *testing.T) {
+	// Backup original state
+	origCommit, origBranch, origRepo, origURL := Commit, Branch, RepoURL, CommitURL
+	defer func() {
+		Commit, Branch, RepoURL, CommitURL = origCommit, origBranch, origRepo, origURL
+		ResetGitInfo()
+	}()
+
+	t.Setenv("TRONBYT_COMMIT", "abcdef1234567890abcdef1234567890abcdef12")
+	t.Setenv("TRONBYT_BRANCH", "custom-branch")
+	t.Setenv("TRONBYT_REPO_URL", "https://github.com/myfork/tronbyt-server")
+
+	Commit = ""
+	Branch = ""
+	RepoURL = ""
+	CommitURL = ""
+	ResetGitInfo()
+
+	EnsureGitInfo()
+
+	assert.Equal(t, "abcdef1234567890abcdef1234567890abcdef12", Commit)
+	assert.Equal(t, "custom-branch", Branch)
+	assert.Equal(t, "https://github.com/myfork/tronbyt-server", RepoURL)
+	assert.Equal(t, "https://github.com/myfork/tronbyt-server/tree/custom-branch", CommitURL)
+}
+
+func TestBranchFallbackWhenCommitUnknown(t *testing.T) {
+	origCommit, origBranch, origRepo, origURL := Commit, Branch, RepoURL, CommitURL
+	defer func() {
+		Commit, Branch, RepoURL, CommitURL = origCommit, origBranch, origRepo, origURL
+		ResetGitInfo()
+	}()
+
+	t.Setenv("TRONBYT_COMMIT", "unknown")
+	t.Setenv("TRONBYT_BRANCH", "nonexistent-branch-xyz")
+	t.Setenv("TRONBYT_REPO_URL", "https://github.com/myfork/tronbyt-server")
+
+	Commit = "unknown"
+	Branch = ""
+	RepoURL = ""
+	CommitURL = ""
+	ResetGitInfo()
+
+	EnsureGitInfo()
+
+	assert.Equal(t, "nonexistent-branch-xyz", Branch)
+	assert.Equal(t, "https://github.com/myfork/tronbyt-server/tree/nonexistent-branch-xyz", CommitURL)
+}

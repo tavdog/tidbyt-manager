@@ -114,6 +114,9 @@ The server can be configured via environment variables or `.env` file:
 *   `GITHUB_TOKEN`: GitHub token for private app repositories (optional).
 *   `REDIS_URL`: Redis connection string for caching (optional).
 *   `LOG_LEVEL`: Logging verbosity: `DEBUG`, `INFO`, `WARN`, `ERROR` (default: `INFO`).
+*   `TRONBYT_BRANCH`: Branch name override for footer links (e.g. `feat/custom-branch`, optional).
+*   `TRONBYT_REPO_URL`: Repository URL override for footer links and commit resolution (optional).
+*   `TRONBYT_COMMIT`: Commit hash override for footer display (optional).
 
 **HTTPS (TLS):**
 *   Can be achieved by configuring `TRONBYT_SSL_KEYFILE` and `TRONBYT_SSL_CERTFILE`.

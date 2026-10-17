@@ -190,4 +190,3 @@ func TestRenderTemplatePopulatesVersionAndCommitURL(t *testing.T) {
 	assert.Contains(t, body, version.CommitURL)
 	assert.Contains(t, body, version.Commit[:7])
 }
-
