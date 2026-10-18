@@ -718,10 +718,13 @@ type Device struct {
 	PendingUpdateURL string `json:"pending_update_url,omitempty"`
 
 	// Audio
-	AudioCapability *AudioCapability `gorm:"type:text"     json:"audio_capability,omitempty"`
-	Volume          int              `gorm:"default:100"   json:"volume"`
-	Muted           bool             `gorm:"default:false" json:"muted"`
-	NightModeMute   bool             `gorm:"default:false" json:"night_mode_mute"`
+	AudioCapability *AudioCapability `gorm:"type:text"                   json:"audio_capability,omitempty"`
+	Volume          int              `gorm:"default:100"                 json:"volume"`
+	Muted           bool             `gorm:"default:false"               json:"muted"`
+	NightModeMute   bool             `gorm:"default:false"               json:"night_mode_mute"`
+	NightModeVolume *int             `json:"night_mode_volume,omitempty"`
+	DimModeMute     bool             `gorm:"default:false"               json:"dim_mode_mute"`
+	DimModeVolume   *int             `json:"dim_mode_volume,omitempty"`
 
 	// HTTP device commands (delivered via /next response headers)
 	PendingImageURL string `json:"pending_image_url,omitempty"`
@@ -1238,7 +1241,7 @@ func (d Device) HasSpeaker() bool {
 }
 
 // IsMuted reports whether sound notifications are currently suppressed on the device
-// (either manually muted or muted during active night mode).
+// (either manually muted or muted during active night mode or dim mode).
 func (d Device) IsMuted() bool {
 	if d.Muted {
 		return true
@@ -1246,7 +1249,20 @@ func (d Device) IsMuted() bool {
 	if d.NightModeMute && d.GetNightModeIsActive() {
 		return true
 	}
+	if d.DimModeMute && d.GetDimModeIsActive() {
+		return true
+	}
 	return false
+}
+
+func clampVolume(v int) int {
+	if v < 0 {
+		return 0
+	}
+	if v > 100 {
+		return 100
+	}
+	return v
 }
 
 // GetVolume returns the device sound volume (0-100), defaulting to 100 if unset (0).
@@ -1261,4 +1277,31 @@ func (d Device) GetVolume() int {
 		return 100
 	}
 	return d.Volume
+}
+
+// GetEffectiveVolume returns the device sound volume (0-100), taking active Night Mode or Dim Mode into account.
+func (d Device) GetEffectiveVolume() int {
+	if d.GetNightModeIsActive() && d.NightModeVolume != nil {
+		return clampVolume(*d.NightModeVolume)
+	}
+	if d.GetDimModeIsActive() && d.DimModeVolume != nil {
+		return clampVolume(*d.DimModeVolume)
+	}
+	return d.GetVolume()
+}
+
+// GetNightModeVolume returns the configured Night Mode volume (0-100), or falls back to GetVolume() if unset.
+func (d Device) GetNightModeVolume() int {
+	if d.NightModeVolume != nil {
+		return clampVolume(*d.NightModeVolume)
+	}
+	return d.GetVolume()
+}
+
+// GetDimModeVolume returns the configured Dim Mode volume (0-100), or falls back to GetVolume() if unset.
+func (d Device) GetDimModeVolume() int {
+	if d.DimModeVolume != nil {
+		return clampVolume(*d.DimModeVolume)
+	}
+	return d.GetVolume()
 }

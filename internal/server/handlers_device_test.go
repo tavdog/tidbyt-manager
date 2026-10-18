@@ -102,6 +102,54 @@ func TestHandleUpdateDevicePost(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateDevicePost_VolumeModes(t *testing.T) {
+	s := newTestServer(t)
+
+	user := data.User{Username: "testuser"}
+	s.DB.Create(&user)
+	device := data.Device{
+		ID:         "testdevice-vol",
+		Username:   "testuser",
+		Name:       "Volume Device",
+		Brightness: data.Brightness(20),
+	}
+	s.DB.Create(&device)
+
+	form := url.Values{}
+	form.Add("name", "Volume Device Updated")
+	form.Add("device_type", "tidbyt_gen2")
+	form.Add("brightness", "5")
+	form.Add("default_interval", "10")
+	form.Add("night_mode_enabled", "on")
+	form.Add("night_mode_volume", "45")
+	form.Add("dim_mode_enabled", "on")
+	form.Add("dim_mode_mute", "on")
+	form.Add("dim_mode_volume", "20")
+
+	req, _ := http.NewRequest(http.MethodPost, "/devices/testdevice-vol/update", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	ctx := context.WithValue(req.Context(), userContextKey, &user)
+	ctx = context.WithValue(ctx, deviceContextKey, &device)
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(s.handleUpdateDevicePost)
+	handler.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusSeeOther, rr.Code)
+
+	var updatedDevice data.Device
+	err := s.DB.First(&updatedDevice, "id = ?", "testdevice-vol").Error
+	require.NoError(t, err)
+
+	require.NotNil(t, updatedDevice.NightModeVolume)
+	assert.Equal(t, 45, *updatedDevice.NightModeVolume)
+	assert.True(t, updatedDevice.DimModeMute)
+	require.NotNil(t, updatedDevice.DimModeVolume)
+	assert.Equal(t, 20, *updatedDevice.DimModeVolume)
+}
+
 func TestHandleDeleteDevice(t *testing.T) {
 	s := newTestServer(t)
 

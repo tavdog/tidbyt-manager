@@ -319,7 +319,7 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 
 		// Only send volume if device has speaker capability and volume changed
 		if device.HasSpeaker() {
-			effectiveVolume := device.GetVolume()
+			effectiveVolume := device.GetEffectiveVolume()
 			if effectiveVolume != lastSentVolume {
 				if err := conn.WriteJSON(map[string]int{"volume": effectiveVolume}); err != nil {
 					slog.Error("Failed to write volume WS message", "error", err)
@@ -369,6 +369,13 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 
 					// Update DisplayingApp confirmation in DB
 					if app != nil {
+						// Ensure app metadata reflects the latest configuration from device.Apps
+						for i := range device.Apps {
+							if device.Apps[i].ID == app.ID {
+								app = device.Apps[i]
+								break
+							}
+						}
 						slog.Debug("Received ACK, updating DisplayingApp", "app", app.Iname, "device", device.ID)
 						// Only now do we update the database that the device is truly displaying this app.
 						if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "displaying_app", app.Iname); err != nil {
@@ -389,7 +396,7 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 									if err := conn.WriteJSON(map[string]any{
 										"type":   "sound",
 										"sound":  payload,
-										"volume": device.GetVolume(),
+										"volume": device.GetEffectiveVolume(),
 									}); err != nil {
 										slog.Error("Failed to write sound WS message on display", "error", err)
 									}
@@ -410,6 +417,14 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 					return
 				}
 				device = reloaded
+				if app != nil {
+					for i := range device.Apps {
+						if device.Apps[i].ID == app.ID {
+							app = device.Apps[i]
+							break
+						}
+					}
+				}
 
 				var isCommand bool
 				var isImage bool
@@ -456,7 +471,7 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 					}
 
 					if device.HasSpeaker() {
-						newVolume := device.GetVolume()
+						newVolume := device.GetEffectiveVolume()
 						if newVolume != lastSentVolume {
 							if err := conn.WriteJSON(map[string]int{"volume": newVolume}); err != nil {
 								slog.Error("Failed to write volume WS message", "error", err)

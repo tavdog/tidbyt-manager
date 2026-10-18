@@ -538,6 +538,25 @@
                     {{ if .Device.HasSpeaker }}
                     <div class="settings-field-row">
                         <div class="settings-field-label">
+                            <label for="night_mode_volume">{{ t .Localizer "Night Mode Volume" }}</label>
+                        </div>
+                        <div class="settings-field-control">
+                            <div class="range-container">
+                                <input type="range"
+                                       name="night_mode_volume"
+                                       id="night_mode_volume"
+                                       min="0"
+                                       max="100"
+                                       step="5"
+                                       value="{{ .Device.GetNightModeVolume }}"
+                                       oninput="this.nextElementSibling.value = this.value">
+                                <output class="range-output">{{ .Device.GetNightModeVolume }}</output>
+                            </div>
+                            <p class="settings-help">{{ t .Localizer "Set playback volume during night mode (0–100%)." }}</p>
+                        </div>
+                    </div>
+                    <div class="settings-field-row">
+                        <div class="settings-field-label">
                             <label for="night_mode_mute">{{ t .Localizer "Mute in Night Mode" }}</label>
                         </div>
                         <div class="settings-field-control">
@@ -617,6 +636,41 @@
                             </select>
                         </div>
                     </div>
+                    {{ if .Device.HasSpeaker }}
+                    <div class="settings-field-row">
+                        <div class="settings-field-label">
+                            <label for="dim_mode_volume">{{ t .Localizer "Dim Mode Volume" }}</label>
+                        </div>
+                        <div class="settings-field-control">
+                            <div class="range-container">
+                                <input type="range"
+                                       name="dim_mode_volume"
+                                       id="dim_mode_volume"
+                                       min="0"
+                                       max="100"
+                                       step="5"
+                                       value="{{ .Device.GetDimModeVolume }}"
+                                       oninput="this.nextElementSibling.value = this.value">
+                                <output class="range-output">{{ .Device.GetDimModeVolume }}</output>
+                            </div>
+                            <p class="settings-help">{{ t .Localizer "Set playback volume during dim mode (0–100%)." }}</p>
+                        </div>
+                    </div>
+                    <div class="settings-field-row">
+                        <div class="settings-field-label">
+                            <label for="dim_mode_mute">{{ t .Localizer "Mute in Dim Mode" }}</label>
+                        </div>
+                        <div class="settings-field-control">
+                            <input type="checkbox"
+                                   name="dim_mode_mute"
+                                   id="dim_mode_mute"
+                                   {{ if .Device.DimModeMute }}
+                                   checked
+                                   {{ end }}>
+                            <p class="settings-help">{{ t .Localizer "Disable all sound notifications during dim mode." }}</p>
+                        </div>
+                    </div>
+                    {{ end }}
                 </div>
             </div>
         </section>
@@ -688,14 +742,36 @@
                     {{ if .AvailableFirmwareVersions }}
                     <div class="settings-field-row">
                         <div class="settings-field-label">
-                            <label for="firmware_version_select">{{ t .Localizer "Select Version" }}</label>
+                            <label for="firmware_version_select">
+                                <a href="{{ if .Device.Type.IsRaspberryPi }}https://github.com/tronbyt/tronberry/releases{{ else }}https://github.com/tronbyt/firmware-esp32/releases{{ end }}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   style="color: inherit;
+                                          text-decoration: underline">
+                                    {{ t .Localizer "Select Version" }} <i class="fa-solid fa-arrow-up-right-from-square"
+    style="font-size: 0.8em"
+    aria-hidden="true"></i>
+                                </a>
+                            </label>
                         </div>
                         <div class="settings-field-control">
-                            <select id="firmware_version_select" class="settings-input">
+                            <select id="firmware_version_select"
+                                    class="settings-input"
+                                    onchange="renderFirmwareReleaseNotes(this.value)">
                                 {{ range .AvailableFirmwareVersions }}
                                 <option value="{{ . }}" {{ if eq . $.FirmwareVersion }}selected{{ end }}>{{ . }}</option>
                                 {{ end }}
                             </select>
+                        </div>
+                    </div>
+                    <div class="settings-field-row"
+                         id="firmware_release_notes_row"
+                         style="display: none">
+                        <div class="settings-field-label">
+                            <label>{{ t .Localizer "Release Details" }}</label>
+                        </div>
+                        <div class="settings-field-control">
+                            <div id="firmware_release_notes" class="firmware-release-notes"></div>
                         </div>
                     </div>
                     {{ end }}
@@ -1294,5 +1370,179 @@
             }
         }
     }
+
+    const releaseDataEl = document.getElementById('firmware_releases_data');
+    let releasesMap = {};
+    if (releaseDataEl && releaseDataEl.textContent.trim()) {
+        try {
+            releasesMap = JSON.parse(releaseDataEl.textContent.trim()) || {};
+        } catch (e) {
+            console.error('Failed to parse releases data:', e);
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/\x3c/g, '&lt;')
+            .replace(/\x3e/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function formatMarkdownLine(text) {
+        let escaped = escapeHtml(text);
+        escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
+        escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        escaped = escaped.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        escaped = escaped.replace(/@([a-zA-Z0-9_-]+)/g, '<a href="https://github.com/$1" target="_blank" rel="noopener noreferrer">@$1</a>');
+        escaped = escaped.replace(/https?:\/\/[^\s<]+/g, function(url) {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        });
+        return escaped;
+    }
+
+    function parseReleaseNotes(body, tag, fallbackUrl) {
+        const whatsChanged = [];
+        const newContributors = [];
+        let changelogUrl = '';
+
+        if (body) {
+            const changelogMatch = body.match(/Full Changelog\*?\*?:\s*(https?:\/\/[^\s\)]+)/i);
+            if (changelogMatch) {
+                changelogUrl = changelogMatch[1];
+            }
+
+            const lines = body.split('\n');
+            let currentSection = '';
+            for (let rawLine of lines) {
+                const line = rawLine.trim();
+                if (/^#{1,3}\s*what/i.test(line)) {
+                    currentSection = 'whatsChanged';
+                    continue;
+                } else if (/^#{1,3}\s*new contributors/i.test(line)) {
+                    currentSection = 'newContributors';
+                    continue;
+                } else if (/^#{1,3}\s*/.test(line) || /^\*\*full changelog/i.test(line)) {
+                    currentSection = '';
+                    continue;
+                }
+
+                if (line.startsWith('* ') || line.startsWith('- ')) {
+                    const item = line.substring(2).trim();
+                    if (currentSection === 'newContributors') {
+                        newContributors.push(item);
+                    } else {
+                        whatsChanged.push(item);
+                    }
+                } else if (currentSection === 'whatsChanged' && line.length > 0) {
+                    whatsChanged.push(line);
+                }
+            }
+
+            if (whatsChanged.length === 0 && newContributors.length === 0) {
+                for (let rawLine of lines) {
+                    const line = rawLine.trim();
+                    if (line && !line.startsWith('#') && !/^\*\*full changelog/i.test(line)) {
+                        whatsChanged.push(line.replace(/^[\*\-]\s*/, ''));
+                    }
+                }
+            }
+        }
+
+        if (!changelogUrl) {
+            const defaultRepo = {{ if .Device.Type.IsRaspberryPi }}"tronbyt/tronberry"{{ else }}"tronbyt/firmware-esp32"{{ end }};
+            changelogUrl = fallbackUrl || `https://github.com/${defaultRepo}/releases/tag/${encodeURIComponent(tag)}`;
+        }
+
+        return { whatsChanged, newContributors, changelogUrl };
+    }
+
+    function renderReleaseContent(container, row, release, version) {
+        if (!release || (!release.body && !release.html_url)) {
+            row.style.display = 'none';
+            return;
+        }
+
+        const { whatsChanged, newContributors, changelogUrl } = parseReleaseNotes(
+            release.body || '',
+            version,
+            release.html_url
+        );
+
+        let html = '';
+
+        if (whatsChanged.length > 0) {
+            html += '<h4>{{ t .Localizer "What's Changed" }}</h4><ul>';
+            for (const item of whatsChanged) {
+                html += `<li>${formatMarkdownLine(item)}</li>`;
+            }
+            html += '</ul>';
+        }
+
+        if (newContributors.length > 0) {
+            html += '<h4>{{ t .Localizer "New Contributors" }}</h4><ul>';
+            for (const item of newContributors) {
+                html += `<li>${formatMarkdownLine(item)}</li>`;
+            }
+            html += '</ul>';
+        }
+
+        if (whatsChanged.length === 0 && newContributors.length === 0) {
+            html += '<p class="firmware-no-changes">{{ t .Localizer "No Changes Provided" }}</p>';
+        }
+
+        if (changelogUrl) {
+            html += `<div class="changelog-link-container">
+                <a href="${escapeHtml(changelogUrl)}" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-code-compare" aria-hidden="true"></i> {{ t .Localizer "Full Changelog" }}
+                </a>
+            </div>`;
+        }
+
+        if (html.trim() !== '') {
+            container.innerHTML = html;
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+
+    async function renderFirmwareReleaseNotes(version) {
+        const row = document.getElementById('firmware_release_notes_row');
+        const container = document.getElementById('firmware_release_notes');
+        if (!row || !container || !version) return;
+
+        if (releasesMap[version]) {
+            renderReleaseContent(container, row, releasesMap[version], version);
+            return;
+        }
+
+        const defaultRepo = {{ if .Device.Type.IsRaspberryPi }}"tronbyt/tronberry"{{ else }}"tronbyt/firmware-esp32"{{ end }};
+        const defaultFallbackUrl = `https://github.com/${defaultRepo}/releases/tag/${encodeURIComponent(version)}`;
+
+        try {
+            const resp = await fetch(`/devices/{{ .Device.ID }}/firmware/release_notes?version=${encodeURIComponent(version)}`);
+            if (resp.ok) {
+                const data = await resp.json();
+                releasesMap[version] = data;
+                renderReleaseContent(container, row, data, version);
+            } else {
+                renderReleaseContent(container, row, { html_url: defaultFallbackUrl }, version);
+            }
+        } catch (e) {
+            console.error('Failed to fetch release notes:', e);
+            renderReleaseContent(container, row, { html_url: defaultFallbackUrl }, version);
+        }
+    }
+
+    (function() {
+        const verSelect = document.getElementById('firmware_version_select');
+        if (verSelect && verSelect.value) {
+            renderFirmwareReleaseNotes(verSelect.value);
+        }
+    })();
 </script>
+<script id="firmware_releases_data" type="application/json">{{ json .FirmwareReleases }}</script>
 {{ end }}

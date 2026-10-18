@@ -39,16 +39,24 @@ Returns all devices accessible to the authenticated API key.
       "notes": "",
       "intervalSec": 30,
       "brightness": 100,
+      "volume": 100,
+      "muted": false,
+      "isMuted": false,
       "nightMode": {
         "enabled": false,
         "app": "",
         "startTime": "",
         "endTime": "",
-        "brightness": 0
+        "brightness": 0,
+        "mute": false,
+        "volume": 20
       },
       "dimMode": {
+        "enabled": false,
         "startTime": null,
-        "brightness": null
+        "brightness": null,
+        "mute": false,
+        "volume": null
       },
       "pinnedApp": null,
       "interstitial": {
@@ -89,14 +97,20 @@ Update device settings. All fields are optional.
 ```json
 {
   "brightness": 80,
+  "volume": 80,
+  "muted": false,
   "intervalSec": 60,
   "nightModeEnabled": true,
   "nightModeApp": "clock",
   "nightModeBrightness": 10,
+  "nightModeMute": false,
+  "nightModeVolume": 20,
   "nightModeStartTime": "22:00",
   "nightModeEndTime": "07:00",
   "dimModeStartTime": "20:00",
   "dimModeBrightness": 30,
+  "dimModeMute": false,
+  "dimModeVolume": 50,
   "pinnedApp": "weather"
 }
 ```

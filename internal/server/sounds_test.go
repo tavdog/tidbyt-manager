@@ -724,6 +724,81 @@ func TestDeviceVolume(t *testing.T) {
 	assert.Equal(t, 100, devHigh.GetVolume())
 }
 
+func TestDeviceEffectiveVolume_NightAndDimModes(t *testing.T) {
+	trueVal := true
+	future := time.Now().Add(1 * time.Hour)
+	nmVol := 35
+	dmVol := 55
+
+	// Case 1: Normal mode (neither night nor dim mode active)
+	devNormal := &data.Device{Volume: 80}
+	assert.Equal(t, 80, devNormal.GetEffectiveVolume())
+	assert.Equal(t, 80, devNormal.GetNightModeVolume())
+	assert.Equal(t, 80, devNormal.GetDimModeVolume())
+	assert.False(t, devNormal.IsMuted())
+
+	// Case 2: Night mode active with custom volume
+	devNightVol := &data.Device{
+		Volume:                 80,
+		NightModeEnabled:       true,
+		NightModeOverride:      &trueVal,
+		NightModeOverrideUntil: &future,
+		NightModeVolume:        &nmVol,
+	}
+	assert.True(t, devNightVol.GetNightModeIsActive())
+	assert.Equal(t, 35, devNightVol.GetEffectiveVolume())
+	assert.Equal(t, 35, devNightVol.GetNightModeVolume())
+	assert.False(t, devNightVol.IsMuted())
+
+	// Case 3: Night mode active with NightModeMute
+	devNightMute := &data.Device{
+		Volume:                 80,
+		NightModeEnabled:       true,
+		NightModeOverride:      &trueVal,
+		NightModeOverrideUntil: &future,
+		NightModeMute:          true,
+	}
+	assert.True(t, devNightMute.GetNightModeIsActive())
+	assert.True(t, devNightMute.IsMuted())
+
+	// Case 4: Dim mode active with custom volume
+	devDimVol := &data.Device{
+		Volume:               80,
+		DimModeEnabled:       true,
+		DimModeOverride:      &trueVal,
+		DimModeOverrideUntil: &future,
+		DimModeVolume:        &dmVol,
+	}
+	assert.True(t, devDimVol.GetDimModeIsActive())
+	assert.Equal(t, 55, devDimVol.GetEffectiveVolume())
+	assert.Equal(t, 55, devDimVol.GetDimModeVolume())
+	assert.False(t, devDimVol.IsMuted())
+
+	// Case 5: Dim mode active with DimModeMute
+	devDimMute := &data.Device{
+		Volume:               80,
+		DimModeEnabled:       true,
+		DimModeOverride:      &trueVal,
+		DimModeOverrideUntil: &future,
+		DimModeMute:          true,
+	}
+	assert.True(t, devDimMute.GetDimModeIsActive())
+	assert.True(t, devDimMute.IsMuted())
+
+	// Case 6: Fallback when mode volumes are nil
+	devNilModes := &data.Device{
+		Volume:                 70,
+		NightModeEnabled:       true,
+		NightModeOverride:      &trueVal,
+		NightModeOverrideUntil: &future,
+		NightModeVolume:        nil,
+		DimModeVolume:          nil,
+	}
+	assert.Equal(t, 70, devNilModes.GetEffectiveVolume())
+	assert.Equal(t, 70, devNilModes.GetNightModeVolume())
+	assert.Equal(t, 70, devNilModes.GetDimModeVolume())
+}
+
 func TestSoundDebounceCooldown(t *testing.T) {
 	sound := "default:chime"
 	app := &data.App{

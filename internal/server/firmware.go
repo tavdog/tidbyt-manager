@@ -477,9 +477,17 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 		return info, nil
 	}
 
+	fallbackOwner, fallbackRepo := owner, repo
+	relDir := filepath.Join(s.DataDir, "firmware", "releases", version)
+	if _, err := os.Stat(filepath.Join(relDir, "tronberry")); err == nil {
+		if _, espErr := os.Stat(filepath.Join(relDir, "tronbyt-gen1")); os.IsNotExist(espErr) {
+			fallbackOwner, fallbackRepo = tbOwner, tbRepo
+		}
+	}
+
 	return &FirmwareReleaseInfo{
 		TagName: version,
-		HTMLURL: fmt.Sprintf("https://github.com/%s/%s/releases/tag/%s", owner, repo, version),
+		HTMLURL: fmt.Sprintf("https://github.com/%s/%s/releases/tag/%s", fallbackOwner, fallbackRepo, version),
 	}, nil
 }
 

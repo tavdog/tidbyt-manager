@@ -447,7 +447,7 @@ func (s *Server) TriggerDeviceSound(ctx context.Context, device *data.Device, so
 	wsMsg, err := json.Marshal(map[string]any{
 		"type":   "sound",
 		"sound":  payload,
-		"volume": device.GetVolume(),
+		"volume": device.GetEffectiveVolume(),
 	})
 	if err != nil {
 		return fmt.Errorf("marshal sound ws message: %w", err)

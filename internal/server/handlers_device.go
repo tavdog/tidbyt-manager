@@ -395,6 +395,7 @@ func (s *Server) handleUpdateDeviceGet(w http.ResponseWriter, r *http.Request) {
 		FirmwareAvailable:         firmwareAvailable,
 		FirmwareVersion:           firmwareVersion,
 		AvailableFirmwareVersions: availableVersions,
+		FirmwareReleases:          s.GetAllAvailableFirmwareReleaseNotes(),
 		Localizer:                 localizer,
 		URLWarning:                urlWarning,
 	})
@@ -510,6 +511,13 @@ func (s *Server) handleUpdateDevicePost(w http.ResponseWriter, r *http.Request) 
 	nightEndWas := device.NightEnd
 	device.NightModeEnabled = r.FormValue("night_mode_enabled") == "on"
 	device.NightModeMute = r.FormValue("night_mode_mute") == "on"
+	if nmVolStr := r.FormValue("night_mode_volume"); nmVolStr != "" {
+		if nmVol, err := strconv.Atoi(nmVolStr); err == nil && nmVol >= 0 && nmVol <= 100 {
+			device.NightModeVolume = &nmVol
+		}
+	} else {
+		device.NightModeVolume = nil
+	}
 
 	nightStart := r.FormValue("night_start")
 	if nightStart != "" {
@@ -571,6 +579,14 @@ func (s *Server) handleUpdateDevicePost(w http.ResponseWriter, r *http.Request) 
 		dimTimeWas = *device.DimTime
 	}
 	device.DimModeEnabled = r.FormValue("dim_mode_enabled") == "on"
+	device.DimModeMute = r.FormValue("dim_mode_mute") == "on"
+	if dmVolStr := r.FormValue("dim_mode_volume"); dmVolStr != "" {
+		if dmVol, err := strconv.Atoi(dmVolStr); err == nil && dmVol >= 0 && dmVol <= 100 {
+			device.DimModeVolume = &dmVol
+		}
+	} else {
+		device.DimModeVolume = nil
+	}
 
 	dimTime := r.FormValue("dim_time")
 	if dimTime != "" {

@@ -97,6 +97,34 @@ function updateInterval(deviceId, interval) {
         console.log('interval updated successfully to', interval);
       }
     })
+}
+
+function updateVolumeValue(deviceId, volume) {
+  const el = document.getElementById(`volumeValue-${deviceId}`);
+  if (el) el.innerText = volume + '%';
+  const slider = document.getElementById(`volume-${deviceId}`);
+  if (slider && slider.value !== String(volume)) slider.value = volume;
+}
+
+// Function to send volume to the server only when the slider is released
+function updateVolume(deviceId, volume) {
+  const formData = new URLSearchParams();
+  formData.append('volume', volume);
+
+  fetch(`/devices/${deviceId}/update_volume`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData.toString()
+  })
+    .then(response => {
+      if (!response.ok) {
+        console.error('Failed to update volume');
+      } else {
+        console.log('Volume updated successfully to', volume);
+      }
+    })
     .catch((error) => {
       console.error('Unexpected error:', error);
     });
@@ -1882,6 +1910,13 @@ document.addEventListener('DOMContentLoaded', function () {
           }
           if (msg.payload.interval !== undefined) {
             updateIntervalValue(msg.device_id, msg.payload.interval);
+          }
+          if (msg.payload.volume !== undefined) {
+            updateVolumeValue(msg.device_id, msg.payload.volume);
+          }
+          if (msg.payload.muted !== undefined) {
+            const muteCb = document.getElementById(`mute-toggle-${msg.device_id}`);
+            if (muteCb) muteCb.checked = Boolean(msg.payload.muted);
           }
         }
       } else if (msg.type === 'image_updated' && msg.device_id) {

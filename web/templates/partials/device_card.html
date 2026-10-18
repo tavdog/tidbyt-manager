@@ -159,9 +159,28 @@
                     {{ if .Item.HasSpeaker }}
                     <div class="settings-field-row">
                         <div class="settings-field-label">
-                            <label for="mute-toggle-{{ .Item.ID }}">{{ t .Localizer "Mute Sounds" }}</label>
+                            <label for="volume-{{ .Item.ID }}">{{ t .Localizer "Volume" }}</label>
                         </div>
                         <div class="settings-field-control">
+                            <div class="settings-inline-group"
+                                 style="align-items: center;
+                                        gap: 8px;
+                                        margin-bottom: 6px">
+                                <input type="range"
+                                       name="volume"
+                                       id="volume-{{ .Item.ID }}"
+                                       min="0"
+                                       max="100"
+                                       step="5"
+                                       value="{{ .Item.GetVolume }}"
+                                       {{ if .ReadOnly }}
+                                       disabled
+                                       {{ else }}
+                                       oninput="updateVolumeValue('{{ .Item.ID }}', this.value)"
+                                       onchange="updateVolume('{{ .Item.ID }}', this.value)"
+                                       {{ end }}>
+                                <span id="volumeValue-{{ .Item.ID }}">{{ .Item.GetVolume }}%</span>
+                            </div>
                             <label class="settings-inline-option settings-toggle-row"
                                    for="mute-toggle-{{ .Item.ID }}">
                                 <input type="checkbox"

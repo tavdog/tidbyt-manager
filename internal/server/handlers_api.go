@@ -33,11 +33,14 @@ type DeviceUpdate struct {
 	NightModeApp        *string `json:"nightModeApp"`
 	NightModeBrightness *int    `json:"nightModeBrightness"`
 	NightModeMute       *bool   `json:"nightModeMute"`
+	NightModeVolume     *int    `json:"nightModeVolume"`
 	NightModeStartTime  *string `json:"nightModeStartTime"`
 	NightModeEndTime    *string `json:"nightModeEndTime"`
 	DimModeActive       *bool   `json:"dimModeActive"`
 	DimModeStartTime    *string `json:"dimModeStartTime"`
 	DimModeBrightness   *int    `json:"dimModeBrightness"`
+	DimModeMute         *bool   `json:"dimModeMute"`
+	DimModeVolume       *int    `json:"dimModeVolume"`
 	PinnedApp           *string `json:"pinnedApp"`
 	AutoDim             *bool   `json:"autoDim"` // Legacy
 }
@@ -71,6 +74,7 @@ type NightMode struct {
 	EndTime       string  `json:"endTime"`
 	Brightness    int     `json:"brightness"`
 	Mute          bool    `json:"mute"`
+	Volume        *int    `json:"volume,omitempty"`
 	OverrideUntil *string `json:"overrideUntil,omitempty"`
 }
 
@@ -80,6 +84,8 @@ type DimMode struct {
 	Active        bool    `json:"active"`
 	StartTime     *string `json:"startTime"`
 	Brightness    *int    `json:"brightness"`
+	Mute          bool    `json:"mute"`
+	Volume        *int    `json:"volume,omitempty"`
 	OverrideUntil *string `json:"overrideUntil,omitempty"`
 }
 
@@ -180,6 +186,7 @@ func (s *Server) toDevicePayload(d *data.Device) DevicePayload {
 			EndTime:       d.NightEnd,
 			Brightness:    int(d.NightBrightness),
 			Mute:          d.NightModeMute,
+			Volume:        d.NightModeVolume,
 			OverrideUntil: nightModeOverrideUntil,
 		},
 		DimMode: DimMode{
@@ -187,6 +194,8 @@ func (s *Server) toDevicePayload(d *data.Device) DevicePayload {
 			Active:        d.GetDimModeIsActive(),
 			StartTime:     d.DimTime,
 			Brightness:    dimBrightnessPtr,
+			Mute:          d.DimModeMute,
+			Volume:        d.DimModeVolume,
 			OverrideUntil: dimModeOverrideUntil,
 		},
 		PinnedApp: d.PinnedApp,
@@ -766,6 +775,14 @@ func (s *Server) handlePatchDevice(w http.ResponseWriter, r *http.Request) {
 	if update.NightModeBrightness != nil {
 		device.NightBrightness = data.Brightness(*update.NightModeBrightness)
 	}
+	if update.NightModeVolume != nil {
+		if *update.NightModeVolume >= 0 && *update.NightModeVolume <= 100 {
+			device.NightModeVolume = update.NightModeVolume
+		} else {
+			http.Error(w, "Night mode volume must be between 0 and 100", http.StatusBadRequest)
+			return
+		}
+	}
 	if update.PinnedApp != nil {
 		if *update.PinnedApp != "" {
 			if device.GetApp(*update.PinnedApp) == nil {
@@ -792,6 +809,17 @@ func (s *Server) handlePatchDevice(w http.ResponseWriter, r *http.Request) {
 	if update.DimModeBrightness != nil {
 		val := data.Brightness(*update.DimModeBrightness)
 		device.DimBrightness = &val
+	}
+	if update.DimModeMute != nil {
+		device.DimModeMute = *update.DimModeMute
+	}
+	if update.DimModeVolume != nil {
+		if *update.DimModeVolume >= 0 && *update.DimModeVolume <= 100 {
+			device.DimModeVolume = update.DimModeVolume
+		} else {
+			http.Error(w, "Dim mode volume must be between 0 and 100", http.StatusBadRequest)
+			return
+		}
 	}
 
 	if !device.NightModeEnabled || nightModeWasEnabled != device.NightModeEnabled || nightStartWas != device.NightStart || nightEndWas != device.NightEnd {

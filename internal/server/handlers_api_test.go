@@ -889,6 +889,63 @@ func TestPatchDevice_Mute(t *testing.T) {
 	assert.True(t, updatedDevice.NightModeMute)
 }
 
+func TestPatchDevice_VolumeAndModes(t *testing.T) {
+	s := newTestServerAPI(t)
+	apiKey := "test_api_key"
+	deviceID := "testdevice"
+
+	vol := 75
+	nmVol := 40
+	dmMute := true
+	dmVol := 25
+
+	update := DeviceUpdate{
+		Volume:          &vol,
+		NightModeVolume: &nmVol,
+		DimModeMute:     &dmMute,
+		DimModeVolume:   &dmVol,
+	}
+	body, _ := json.Marshal(update)
+	req := newAPIRequest("PATCH", fmt.Sprintf("/v0/devices/%s", deviceID), apiKey, body)
+	rr := httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var payload DevicePayload
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&payload))
+	assert.Equal(t, 75, payload.Volume)
+	require.NotNil(t, payload.NightMode.Volume)
+	assert.Equal(t, 40, *payload.NightMode.Volume)
+	assert.True(t, payload.DimMode.Mute)
+	require.NotNil(t, payload.DimMode.Volume)
+	assert.Equal(t, 25, *payload.DimMode.Volume)
+
+	updatedDevice, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 75, updatedDevice.Volume)
+	require.NotNil(t, updatedDevice.NightModeVolume)
+	assert.Equal(t, 40, *updatedDevice.NightModeVolume)
+	assert.True(t, updatedDevice.DimModeMute)
+	require.NotNil(t, updatedDevice.DimModeVolume)
+	assert.Equal(t, 25, *updatedDevice.DimModeVolume)
+
+	// Test validation bounds: NightModeVolume < 0 or > 100
+	invalidLow := -5
+	body, _ = json.Marshal(DeviceUpdate{NightModeVolume: &invalidLow})
+	req = newAPIRequest("PATCH", fmt.Sprintf("/v0/devices/%s", deviceID), apiKey, body)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+
+	invalidHigh := 105
+	body, _ = json.Marshal(DeviceUpdate{DimModeVolume: &invalidHigh})
+	req = newAPIRequest("PATCH", fmt.Sprintf("/v0/devices/%s", deviceID), apiKey, body)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
 func TestHandlePatchInstallation(t *testing.T) {
 	s := newTestServerAPI(t)
 	apiKey := "test_api_key"
