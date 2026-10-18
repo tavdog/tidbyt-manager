@@ -180,8 +180,9 @@ func TestGetBaseURLAndGetDeviceBaseURL(t *testing.T) {
 func TestRenderTemplatePopulatesVersionAndCommitURL(t *testing.T) {
 	s := newTestServerAPI(t)
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
-	rr := httptest.NewRecorder()
 
+	// Case 1: When ShowBranchTag is true (default in this test environment on custom branch)
+	rr := httptest.NewRecorder()
 	s.renderTemplate(rr, req, "login", TemplateData{})
 	assert.Equal(t, http.StatusOK, rr.Code)
 	body := rr.Body.String()
@@ -189,4 +190,20 @@ func TestRenderTemplatePopulatesVersionAndCommitURL(t *testing.T) {
 	assert.NotContains(t, body, "(unknown)")
 	assert.Contains(t, body, version.CommitURL)
 	assert.Contains(t, body, version.Commit[:7])
+	if version.ShowBranchTag {
+		assert.Contains(t, body, "["+version.Branch+"]("+version.Commit[:7]+")")
+	}
+
+	// Case 2: When ShowBranchTag is false (upstream main)
+	origShowBranchTag := version.ShowBranchTag
+	defer func() { version.ShowBranchTag = origShowBranchTag }()
+	version.ShowBranchTag = false
+
+	rr2 := httptest.NewRecorder()
+	s.renderTemplate(rr2, req, "login", TemplateData{})
+	assert.Equal(t, http.StatusOK, rr2.Code)
+	body2 := rr2.Body.String()
+	assert.Contains(t, body2, "Server")
+	assert.Contains(t, body2, version.Commit[:7])
+	assert.NotContains(t, body2, "["+version.Branch+"]")
 }

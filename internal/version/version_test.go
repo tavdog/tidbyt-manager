@@ -103,3 +103,37 @@ func TestBranchFallbackWhenCommitUnknown(t *testing.T) {
 	assert.Equal(t, "nonexistent-branch-xyz", Branch)
 	assert.Equal(t, "https://github.com/myfork/tronbyt-server/tree/nonexistent-branch-xyz", CommitURL)
 }
+
+func TestIsUpstreamRepo(t *testing.T) {
+	assert.True(t, IsUpstreamRepo(""))
+	assert.True(t, IsUpstreamRepo("https://github.com/tronbyt/server"))
+	assert.True(t, IsUpstreamRepo("https://github.com/tronbyt/server.git"))
+	assert.True(t, IsUpstreamRepo("git@github.com:tronbyt/server.git"))
+
+	assert.False(t, IsUpstreamRepo("https://github.com/brombomb/tronbyt-server"))
+	assert.False(t, IsUpstreamRepo("https://github.com/brombomb/tronbyt-server.git"))
+	assert.False(t, IsUpstreamRepo("git@github.com:brombomb/tronbyt-server.git"))
+	assert.False(t, IsUpstreamRepo("https://github.com/otheruser/server"))
+}
+
+func TestShouldShowBranchTag(t *testing.T) {
+	upstream := "https://github.com/tronbyt/server"
+	fork := "https://github.com/brombomb/tronbyt-server"
+
+	// Upstream repo on main/master should NOT show branch tag
+	assert.False(t, ShouldShowBranchTag(upstream, "main"))
+	assert.False(t, ShouldShowBranchTag(upstream, "master"))
+	assert.False(t, ShouldShowBranchTag(upstream, ""))
+	assert.False(t, ShouldShowBranchTag(upstream, "HEAD"))
+
+	// Upstream repo on a non-main branch SHOULD show branch tag
+	assert.True(t, ShouldShowBranchTag(upstream, "dev"))
+	assert.True(t, ShouldShowBranchTag(upstream, "feat/new-ui"))
+
+	// Fork repo on main branch SHOULD show branch tag (since it's a fork)
+	assert.True(t, ShouldShowBranchTag(fork, "main"))
+	assert.True(t, ShouldShowBranchTag(fork, "master"))
+
+	// Fork repo on a feature branch SHOULD show branch tag
+	assert.True(t, ShouldShowBranchTag(fork, "feat/notification-sounds"))
+}

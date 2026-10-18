@@ -16,12 +16,13 @@ import (
 )
 
 var (
-	Version   = "dev"
-	Commit    = ""
-	Branch    = ""
-	BuildDate = ""
-	RepoURL   = ""
-	CommitURL = ""
+	Version       = "dev"
+	Commit        = ""
+	Branch        = ""
+	BuildDate     = ""
+	RepoURL       = ""
+	CommitURL     = ""
+	ShowBranchTag = false
 
 	gitInfoOnce sync.Once
 )
@@ -148,6 +149,8 @@ func initGitInfo() {
 			CommitURL = RepoURL
 		}
 	}
+
+	ShowBranchTag = ShouldShowBranchTag(RepoURL, Branch)
 }
 
 func fetchGitHubCommitSHA(repoURL, branch string) string {
@@ -232,4 +235,24 @@ func NormalizeGitURL(raw string) string {
 		return fmt.Sprintf("%s://%s%s", u.Scheme, u.Host, u.Path)
 	}
 	return strings.TrimSuffix(raw, ".git")
+}
+
+// IsUpstreamRepo returns true if repoURL points to the official upstream tronbyt/server repository.
+func IsUpstreamRepo(repoURL string) bool {
+	normalized := strings.ToLower(NormalizeGitURL(repoURL))
+	normalized = strings.TrimSuffix(normalized, ".git")
+	normalized = strings.TrimPrefix(normalized, "https://")
+	normalized = strings.TrimPrefix(normalized, "http://")
+	return normalized == "" || normalized == "github.com/tronbyt/server"
+}
+
+// ShouldShowBranchTag returns true if the checkout is on a fork or on a non-main branch.
+func ShouldShowBranchTag(repoURL, branch string) bool {
+	b := strings.ToLower(strings.TrimSpace(branch))
+	if b == "" || b == "unknown" || b == "head" {
+		return false
+	}
+	isFork := !IsUpstreamRepo(repoURL)
+	notMain := b != "main" && b != "master"
+	return isFork || notMain
 }

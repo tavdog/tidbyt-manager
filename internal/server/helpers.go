@@ -120,6 +120,7 @@ type TemplateData struct {
 	CommitHash                string
 	CommitURL                 string
 	Branch                    string
+	ShowBranchTag             bool
 	IsAutoLoginActive         bool   // Indicate if single-user auto-login is active
 	UserCount                 int    // Number of users, for registration logic
 	DeleteOnCancel            bool   // Indicate if app should be deleted on cancel
@@ -183,6 +184,7 @@ func (s *Server) renderTemplate(w http.ResponseWriter, r *http.Request, name str
 	tmplData.CommitHash = version.Commit
 	tmplData.CommitURL = version.CommitURL
 	tmplData.Branch = version.Branch
+	tmplData.ShowBranchTag = version.ShowBranchTag
 
 	// Suggest a LAN URL to replace localhost on login pages
 	if name == "login" && tmplData.DetectedAccessURL == "" {
