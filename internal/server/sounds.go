@@ -34,7 +34,7 @@ type SoundItem struct {
 	Size      int64  `json:"size,omitempty"`
 }
 
-// DefaultNotificationSounds holds the 5 built-in notification sounds with mapped piezo tone patterns.
+// DefaultNotificationSounds holds the 6 built-in notification sounds with mapped piezo tone patterns.
 // Frequencies in Hz, durations in milliseconds (frequency:duration_ms pairs).
 var DefaultNotificationSounds = []SoundItem{
 	{
@@ -177,7 +177,7 @@ func (s *Server) findAppDir(appID string) string {
 	}
 
 	cleanID := filepath.Clean(appID)
-	if strings.Contains(cleanID, "..") || filepath.IsAbs(cleanID) {
+	if strings.Contains(cleanID, "..") || filepath.IsAbs(cleanID) || strings.HasPrefix(cleanID, "users") {
 		return ""
 	}
 

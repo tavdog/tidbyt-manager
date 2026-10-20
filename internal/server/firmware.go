@@ -543,11 +543,22 @@ func (s *Server) handleFirmwareGenerateGet(w http.ResponseWriter, r *http.Reques
 	if strings.Contains(imgURL, "localhost") || strings.Contains(imgURL, "127.0.0.1") {
 		urlWarning = "localhost"
 	}
+
+	firmwareRepoURL := os.Getenv("FIRMWARE_REPO")
+	defaultOwner, defaultRepo := "tronbyt", "firmware-esp32"
+	if device != nil && device.Type.IsRaspberryPi() {
+		firmwareRepoURL = os.Getenv("TRONBERRY_REPO")
+		defaultOwner, defaultRepo = "tronbyt", "tronberry"
+	}
+	owner, repo := parseOwnerRepo(firmwareRepoURL, defaultOwner, defaultRepo)
+	releasesURL := fmt.Sprintf("https://github.com/%s/%s/releases", owner, repo)
+
 	s.renderTemplate(w, r, "firmware", TemplateData{
 		User:                      user,
 		Device:                    device,
 		FirmwareBinsAvailable:     binsAvailable,
 		FirmwareVersion:           version,
+		FirmwareReleasesURL:       releasesURL,
 		AvailableFirmwareVersions: s.GetAvailableFirmwareVersionsForDevice(device),
 		FirmwareReleases:          s.GetAllAvailableFirmwareReleaseNotes(),
 		DeviceTypeChoices:         s.getDeviceTypeChoices(localizer),

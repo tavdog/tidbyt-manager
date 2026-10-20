@@ -64,7 +64,7 @@
                 <div class="settings-field-row">
                     <div class="settings-field-label">
                         <label for="firmware_version_select">
-                            <a href="https://github.com/tronbyt/firmware-esp32/releases"
+                            <a href="{{ .FirmwareReleasesURL }}"
                                target="_blank"
                                rel="noopener noreferrer"
                                style="color: inherit;
@@ -415,11 +415,11 @@
                 releasesMap[version] = data;
                 renderReleaseContent(container, row, data, version);
             } else {
-                renderReleaseContent(container, row, { html_url: `https://github.com/tronbyt/firmware-esp32/releases/tag/${encodeURIComponent(version)}` }, version);
+                renderReleaseContent(container, row, { html_url: `{{ .FirmwareReleasesURL }}/tag/${encodeURIComponent(version)}` }, version);
             }
         } catch (e) {
             console.error('Failed to fetch release notes:', e);
-            renderReleaseContent(container, row, { html_url: `https://github.com/tronbyt/firmware-esp32/releases/tag/${encodeURIComponent(version)}` }, version);
+            renderReleaseContent(container, row, { html_url: `{{ .FirmwareReleasesURL }}/tag/${encodeURIComponent(version)}` }, version);
         }
     }
 

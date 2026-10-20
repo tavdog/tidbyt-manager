@@ -825,3 +825,72 @@ func TestSoundDebounceCooldown(t *testing.T) {
 	shouldPlay = (renderTime2.Sub(*app.LastSoundAt) >= 30*time.Second)
 	assert.True(t, shouldPlay, "Sound should play after 30s cooldown has elapsed")
 }
+
+func TestCustomSoundsSecurityAndDirectoryTraversal(t *testing.T) {
+	s := newTestServerAPI(t)
+	require.NoError(t, s.EnsureSoundsDir())
+
+	// 1. Valid custom sound file
+	customWav := filepath.Join(s.SoundsDir(), "sample.wav")
+	require.NoError(t, os.WriteFile(customWav, []byte("valid-wav-content"), 0644))
+
+	req := httptest.NewRequest(http.MethodGet, "/static/custom_sounds/sample.wav", nil)
+	rr := httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, "valid-wav-content", rr.Body.String())
+
+	// 2. Non-audio file in soundsDir must be rejected
+	nonAudioFile := filepath.Join(s.SoundsDir(), "secret.txt")
+	require.NoError(t, os.WriteFile(nonAudioFile, []byte("sensitive-data"), 0644))
+
+	req = httptest.NewRequest(http.MethodGet, "/static/custom_sounds/secret.txt", nil)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+
+	// 3. Subdirectory in soundsDir must not be readable as a file or directory listing
+	subDir := filepath.Join(s.SoundsDir(), "subfolder")
+	require.NoError(t, os.MkdirAll(subDir, 0755))
+
+	req = httptest.NewRequest(http.MethodGet, "/static/custom_sounds/subfolder", nil)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+
+	req = httptest.NewRequest(http.MethodGet, "/static/custom_sounds/subfolder/", nil)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+
+	// 4. Directory traversal attempts in /static/custom_sounds/
+	for _, path := range []string{
+		"/static/custom_sounds/..%2f..%2fetc%2fpasswd",
+		"/static/custom_sounds/%2e%2e%2fsample.wav",
+		"/static/custom_sounds/..%2f..%2f..%2fetc%2fshadow",
+	} {
+		req = httptest.NewRequest(http.MethodGet, path, nil)
+		rr = httptest.NewRecorder()
+		s.ServeHTTP(rr, req)
+		assert.Equal(t, http.StatusNotFound, rr.Code, "Path %s must return 404", path)
+	}
+
+	// 5. Multi-user directory traversal protection:
+	// A file in a user's directory must not be accessible via appId="users/victim"
+	victimDir := filepath.Join(s.DataDir, "users", "victim")
+	require.NoError(t, os.MkdirAll(victimDir, 0755))
+	victimSound := filepath.Join(victimDir, "victim_sound.wav")
+	require.NoError(t, os.WriteFile(victimSound, []byte("victim-audio"), 0644))
+
+	// Attempting to resolve via appId="users/victim" directly
+	req = httptest.NewRequest(http.MethodGet, "/sounds/app/victim_sound.wav?appId=users/victim", nil)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusNotFound, rr.Code, "Probing user folder directly via appId must return 404")
+
+	// Attempting to resolve via path traversal appId="../users/victim"
+	req = httptest.NewRequest(http.MethodGet, "/sounds/app/victim_sound.wav?appId=../users/victim", nil)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusNotFound, rr.Code, "Traversal via appId must return 404")
+}

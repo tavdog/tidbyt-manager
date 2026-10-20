@@ -218,16 +218,16 @@ Or raw piezo tone string for piezo devices:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `sound` | No* | Sound identifier: default sound name (`chime`, `ding`, `bell`, `pop`, `alert`), app sound (`app:<app_id>:<filename>` or just filename when `app_id` is supplied), custom uploaded sound filename, full audio URL, or piezo frequency:duration tone string. |
+| `sound` | No* | Sound identifier: default sound name (`chime`, `ding`, `bell`, `pop`, `alert`, `tron`), app sound (`app:<app_id>:<filename>` or just filename when `app_id` is supplied), custom uploaded sound filename, full audio URL, or piezo frequency:duration tone string. |
 | `app_id` | No | App identifier for resolving app-specific sounds. |
 | `url` | No* | Alias for `sound` when passing an audio URL. |
 
 *Either `sound` or `url` must be provided.
 
 Based on the device's audio capability (`piezo` or `full`):
-- `piezo` devices receive the frequency:duration tone string. Default sounds and app sounds with matching keywords (`ding`, `chime`, `bell`, `pop`, `alert`) map to tuned buzzer tones, with a pleasant 2-tone chime fallback for other app sounds.
+- `piezo` devices receive the frequency:duration tone string. Default sounds and app sounds with matching keywords (`ding`, `chime`, `bell`, `pop`, `alert`, `tron`, `bit`) map to tuned buzzer tones, with a pleasant 2-tone chime fallback for other app sounds.
 - `full` devices receive the full audio stream URL (resolved against `/sounds/{appId}/{filename}` or external URL).
-- `none` devices ignore sound playback.
+- `none` devices reject sound playback (returns `400 Bad Request` with "Device audio capability is disabled or none").
 
 **Response:** `200 OK` — `{"status":"ok","device":"...","sound":"...","payload":"..."}`
 

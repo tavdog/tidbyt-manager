@@ -14,6 +14,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,6 +25,8 @@ import (
 	"tronbyt-server/internal/config"
 	syncer "tronbyt-server/internal/sync"
 	"tronbyt-server/web"
+
+	securejoin "github.com/cyphar/filepath-securejoin"
 
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/gorilla/sessions"
@@ -293,17 +296,33 @@ func (s *Server) routes() {
 	firmwareDir := filepath.Join(s.DataDir, "firmware")
 	s.Router.Handle("GET /static/firmware/", http.StripPrefix("/static/firmware/", http.FileServer(http.Dir(firmwareDir))))
 
-	// Serve custom sound files (files only, no directory browsing)
+	// Serve custom sound files (files only, audio extensions only, no directory browsing)
 	soundsDir := filepath.Join(s.DataDir, "sounds")
-	soundFileServer := http.StripPrefix("/static/custom_sounds/", http.FileServer(http.Dir(soundsDir)))
 	s.Router.HandleFunc("GET /static/custom_sounds/", http.NotFound)
 	s.Router.HandleFunc("GET /static/custom_sounds/{filename}", func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.PathValue("filename"))
-		if filename == "" || filename == "." {
+		rawFilename := r.PathValue("filename")
+		filename := filepath.Base(rawFilename)
+		if filename == "" || filename == "." || filename != rawFilename {
 			http.NotFound(w, r)
 			return
 		}
-		soundFileServer.ServeHTTP(w, r)
+		ext := strings.ToLower(filepath.Ext(filename))
+		if !slices.Contains(allowedAudioExtensions, ext) {
+			http.NotFound(w, r)
+			return
+		}
+		targetPath, err := securejoin.SecureJoin(soundsDir, filename)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		fi, err := os.Stat(targetPath)
+		if err != nil || fi.IsDir() {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		http.ServeFile(w, r, targetPath)
 	})
 
 	// Unified sound route for apps, custom uploads, and built-in sounds

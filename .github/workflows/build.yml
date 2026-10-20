@@ -150,7 +150,10 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME}
           COMMIT=${GITHUB_SHA}
-          BRANCH=${GITHUB_REF_NAME}
+          BRANCH=""
+          if [ "${GITHUB_REF_TYPE}" == "branch" ]; then
+            BRANCH=${GITHUB_REF_NAME}
+          fi
           REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
           DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 

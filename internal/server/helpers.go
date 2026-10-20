@@ -114,6 +114,7 @@ type TemplateData struct {
 	FirmwareBinsAvailable     bool
 	FirmwareAvailable         bool
 	FirmwareVersion           string
+	FirmwareReleasesURL       string
 	AvailableFirmwareVersions []string
 	FirmwareReleases          map[string]FirmwareReleaseInfo
 	ServerVersion             string
