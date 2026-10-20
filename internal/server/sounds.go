@@ -439,8 +439,10 @@ func (s *Server) TriggerDeviceSound(ctx context.Context, device *data.Device, so
 	device.PendingSound = payload
 
 	// 2. Update PendingSound in DB for HTTP polling devices
-	if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_sound", payload); err != nil {
-		slog.Error("Failed to set pending_sound", "device", device.ID, "error", err)
+	if device.Info.ProtocolType != data.ProtocolWS {
+		if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_sound", payload); err != nil {
+			slog.Error("Failed to set pending_sound", "device", device.ID, "error", err)
+		}
 	}
 
 	// 3. Broadcast to connected WebSocket devices

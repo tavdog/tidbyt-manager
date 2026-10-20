@@ -158,6 +158,8 @@ func (s *Server) handleAdminUploadSound(w http.ResponseWriter, r *http.Request) 
 	defer func() { _ = dst.Close() }()
 
 	if _, err := io.Copy(dst, file); err != nil {
+		_ = dst.Close()
+		_ = os.Remove(targetPath)
 		slog.Error("Failed to write sound file", "path", targetPath, "error", err)
 		s.flashAndRedirect(w, r, "Failed to save file content", "/settings/admin#section-sounds", http.StatusSeeOther)
 		return

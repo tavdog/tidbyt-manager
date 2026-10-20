@@ -709,10 +709,10 @@ func TestTriggerDeviceSoundMuted(t *testing.T) {
 
 func TestDeviceVolume(t *testing.T) {
 	var emptyDev data.Device
-	assert.Equal(t, 100, emptyDev.GetVolume())
+	assert.Equal(t, 0, emptyDev.GetVolume())
 
 	devZero := &data.Device{Volume: 0}
-	assert.Equal(t, 100, devZero.GetVolume())
+	assert.Equal(t, 0, devZero.GetVolume())
 
 	devCustom := &data.Device{Volume: 65}
 	assert.Equal(t, 65, devCustom.GetVolume())

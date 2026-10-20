@@ -417,8 +417,15 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 	if version == "" {
 		return nil, errors.New("empty version")
 	}
+	cleanVersion := filepath.Base(version)
+	if cleanVersion == "" || cleanVersion == "." || cleanVersion != version || strings.Contains(version, "/") || strings.Contains(version, "\\") {
+		return nil, errors.New("invalid version")
+	}
 
-	versionDir := filepath.Join(s.DataDir, "firmware", "releases", version)
+	versionDir, err := securejoin.SecureJoin(filepath.Join(s.DataDir, "firmware", "releases"), cleanVersion)
+	if err != nil {
+		return nil, err
+	}
 	releasePath := filepath.Join(versionDir, "release.json")
 
 	// 1. Check local release.json
@@ -434,7 +441,7 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 	owner, repo := parseOwnerRepo(firmwareRepo, "tronbyt", "firmware-esp32")
 
 	fetchRelease := func(o, r string) *FirmwareReleaseInfo {
-		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases/tags/%s", s.githubAPIBaseURL(), o, r, version)
+		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases/tags/%s", s.githubAPIBaseURL(), o, r, url.PathEscape(cleanVersion))
 		req, err := http.NewRequest(http.MethodGet, apiURL, nil)
 		if err != nil {
 			return nil
@@ -491,13 +498,17 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 	}, nil
 }
 
-// GetAllAvailableFirmwareReleaseNotes retrieves release notes for all currently available firmware versions.
+// GetAllAvailableFirmwareReleaseNotes retrieves cached release notes for all currently available firmware versions.
 func (s *Server) GetAllAvailableFirmwareReleaseNotes() map[string]FirmwareReleaseInfo {
 	versions := s.GetAvailableFirmwareVersions()
 	notes := make(map[string]FirmwareReleaseInfo)
 	for _, v := range versions {
-		if info, err := s.GetFirmwareReleaseInfo(v); err == nil && info != nil {
-			notes[v] = *info
+		releasePath := filepath.Join(s.DataDir, "firmware", "releases", v, "release.json")
+		if data, err := os.ReadFile(releasePath); err == nil {
+			var info FirmwareReleaseInfo
+			if err := json.Unmarshal(data, &info); err == nil && (info.Body != "" || info.TagName != "") {
+				notes[v] = info
+			}
 		}
 	}
 	return notes
@@ -509,8 +520,13 @@ func (s *Server) handleFirmwareReleaseNotes(w http.ResponseWriter, r *http.Reque
 		http.Error(w, "version parameter required", http.StatusBadRequest)
 		return
 	}
+	cleanVersion := filepath.Base(version)
+	if cleanVersion == "" || cleanVersion == "." || cleanVersion != version || strings.Contains(version, "/") || strings.Contains(version, "\\") {
+		http.Error(w, "invalid version parameter", http.StatusBadRequest)
+		return
+	}
 
-	info, err := s.GetFirmwareReleaseInfo(version)
+	info, err := s.GetFirmwareReleaseInfo(cleanVersion)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

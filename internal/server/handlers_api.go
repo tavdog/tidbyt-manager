@@ -369,10 +369,7 @@ func (s *Server) handlePushApp(w http.ResponseWriter, r *http.Request) {
 			}
 			if dataReq.Sound != "" {
 				baseURL := s.GetDeviceBaseURL(device)
-				soundID := dataReq.Sound
-				if dataReq.AppID != "" && !strings.Contains(soundID, ":") && !strings.HasPrefix(soundID, "http://") && !strings.HasPrefix(soundID, "https://") {
-					soundID = fmt.Sprintf("app:%s:%s", dataReq.AppID, soundID)
-				}
+				soundID := qualifyAppSound(dataReq.AppID, dataReq.Sound)
 				if err := s.TriggerDeviceSound(r.Context(), device, soundID, baseURL); err != nil {
 					slog.Error("Failed to trigger device sound on push_app cached", "device", device.ID, "error", err)
 				}
@@ -454,10 +451,7 @@ func (s *Server) handlePushApp(w http.ResponseWriter, r *http.Request) {
 
 	if dataReq.Sound != "" {
 		baseURL := s.GetDeviceBaseURL(device)
-		soundID := dataReq.Sound
-		if dataReq.AppID != "" && !strings.Contains(soundID, ":") && !strings.HasPrefix(soundID, "http://") && !strings.HasPrefix(soundID, "https://") {
-			soundID = fmt.Sprintf("app:%s:%s", dataReq.AppID, soundID)
-		}
+		soundID := qualifyAppSound(dataReq.AppID, dataReq.Sound)
 		if err := s.TriggerDeviceSound(r.Context(), device, soundID, baseURL); err != nil {
 			slog.Error("Failed to trigger device sound on push_app", "device", device.ID, "error", err)
 		}
@@ -1344,6 +1338,19 @@ func (s *Server) handleUpdateFirmwareSettingsAPI(w http.ResponseWriter, r *http.
 	}
 }
 
+func qualifyAppSound(appID, soundID string) string {
+	if appID == "" || soundID == "" || strings.Contains(soundID, ":") ||
+		strings.HasPrefix(soundID, "http://") || strings.HasPrefix(soundID, "https://") {
+		return soundID
+	}
+	for _, def := range DefaultNotificationSounds {
+		if strings.EqualFold(soundID, def.Name) || soundID == strings.TrimPrefix(def.ID, "default:") {
+			return soundID
+		}
+	}
+	return fmt.Sprintf("app:%s:%s", appID, soundID)
+}
+
 func (s *Server) handleTriggerSoundAPI(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -1370,9 +1377,7 @@ func (s *Server) handleTriggerSoundAPI(w http.ResponseWriter, r *http.Request) {
 	if appID == "" {
 		appID = payload.App
 	}
-	if appID != "" && target != "" && !strings.Contains(target, ":") && !strings.HasPrefix(target, "http://") && !strings.HasPrefix(target, "https://") {
-		target = fmt.Sprintf("app:%s:%s", appID, target)
-	}
+	target = qualifyAppSound(appID, target)
 
 	if target == "" {
 		http.Error(w, "sound or url is required", http.StatusBadRequest)

@@ -139,9 +139,9 @@ func TestGetBaseURLAndGetDeviceBaseURL(t *testing.T) {
 		},
 	}
 
-	// 1. Request with Host containing no port falls back to Config.Port when not behind proxy
+	// 1. Request with Host containing no port preserves Host without appending internal port
 	reqDirect := &http.Request{Host: "192.168.1.15"}
-	assert.Equal(t, "http://192.168.1.15:7000", s.GetBaseURL(reqDirect))
+	assert.Equal(t, "http://192.168.1.15", s.GetBaseURL(reqDirect))
 
 	// 2. Request with explicit port preserves it
 	reqWithPort := &http.Request{Host: "192.168.1.15:7000"}
@@ -180,6 +180,16 @@ func TestGetBaseURLAndGetDeviceBaseURL(t *testing.T) {
 func TestRenderTemplatePopulatesVersionAndCommitURL(t *testing.T) {
 	s := newTestServerAPI(t)
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
+
+	version.EnsureGitInfo()
+	origCommit, origBranch, origURL, origTag := version.Commit, version.Branch, version.CommitURL, version.ShowBranchTag
+	t.Cleanup(func() {
+		version.Commit, version.Branch, version.CommitURL, version.ShowBranchTag = origCommit, origBranch, origURL, origTag
+	})
+	version.Commit = "abcdef1234567890abcdef1234567890abcdef12"
+	version.Branch = "feat/test"
+	version.CommitURL = "https://github.com/tronbyt/server/tree/" + version.Commit
+	version.ShowBranchTag = true
 
 	// Case 1: When ShowBranchTag is true (default in this test environment on custom branch)
 	rr := httptest.NewRecorder()

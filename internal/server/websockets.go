@@ -400,8 +400,6 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 									}); err != nil {
 										slog.Error("Failed to write sound WS message on display", "error", err)
 									}
-									device.PendingSound = payload
-									_, _ = gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_sound", payload)
 								}
 							}
 						}

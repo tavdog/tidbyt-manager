@@ -1,6 +1,7 @@
 package version
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,6 +47,12 @@ func TestNormalizeGitURL(t *testing.T) {
 }
 
 func TestInitGitInfo(t *testing.T) {
+	if _, err := os.Stat("../../.git"); os.IsNotExist(err) {
+		t.Setenv("TRONBYT_COMMIT", "abcdef1234567890")
+		t.Setenv("TRONBYT_BRANCH", "main")
+		t.Setenv("TRONBYT_REPO_URL", "https://github.com/tronbyt/server")
+		ResetGitInfo()
+	}
 	EnsureGitInfo()
 
 	assert.NotEmpty(t, Commit)

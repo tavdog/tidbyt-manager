@@ -1265,18 +1265,9 @@ func clampVolume(v int) int {
 	return v
 }
 
-// GetVolume returns the device sound volume (0-100), defaulting to 100 if unset (0).
+// GetVolume returns the device sound volume (0-100).
 func (d Device) GetVolume() int {
-	if d.Volume < 0 {
-		return 0
-	}
-	if d.Volume > 100 {
-		return 100
-	}
-	if d.Volume == 0 {
-		return 100
-	}
-	return d.Volume
+	return clampVolume(d.Volume)
 }
 
 // GetEffectiveVolume returns the device sound volume (0-100), taking active Night Mode or Dim Mode into account.
