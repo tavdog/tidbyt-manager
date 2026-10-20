@@ -742,6 +742,9 @@ func TestHandlePatchDevice(t *testing.T) {
 	originalBrightness := device.Brightness
 
 	// Patch brightness
+	ch := s.Broadcaster.Subscribe(deviceID)
+	defer s.Broadcaster.Unsubscribe(deviceID, ch)
+
 	newBrightness := 50
 	update := DeviceUpdate{Brightness: &newBrightness}
 	body, _ := json.Marshal(update)
@@ -752,6 +755,13 @@ func TestHandlePatchDevice(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v: %s",
 			rr.Code, http.StatusOK, rr.Body.String())
+	}
+
+	select {
+	case msg := <-ch:
+		assert.Nil(t, msg)
+	case <-time.After(time.Second):
+		t.Fatal("expected broadcaster notify on patch device")
 	}
 
 	// Verify updated device state

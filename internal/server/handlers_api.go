@@ -848,6 +848,9 @@ func (s *Server) handlePatchDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Notify Device (Websocket)
+	s.Broadcaster.Notify(device.ID, nil)
+
 	// Notify Dashboard
 	user := GetUser(r)
 	s.invalidateDeviceAppRendersIfModeChanged(r.Context(), device, modeSnapshotBefore)

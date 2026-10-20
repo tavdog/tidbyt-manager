@@ -604,6 +604,34 @@ func TestHandleUpdateFirmwareSettings_StartupSound(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateFirmwareSettings_StartupSound_DBError(t *testing.T) {
+	s := newTestServer(t)
+	ctx := context.Background()
+
+	user := data.User{Username: "testuser"}
+	require.NoError(t, gorm.G[data.User](s.DB).Create(ctx, &user))
+	device := data.Device{
+		ID:       "testdevice-dberr",
+		Username: "testuser",
+		Name:     "Test Device",
+	}
+	require.NoError(t, gorm.G[data.Device](s.DB).Create(ctx, &device))
+
+	sqlDB, err := s.DB.DB()
+	require.NoError(t, err)
+	require.NoError(t, sqlDB.Close())
+
+	form := strings.NewReader("startup_sound=true")
+	req := httptest.NewRequest(http.MethodPost, "/devices/testdevice-dberr/update_firmware_settings", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &user))
+	req = req.WithContext(context.WithValue(req.Context(), deviceContextKey, &device))
+	rr := httptest.NewRecorder()
+
+	s.handleUpdateFirmwareSettings(rr, req)
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+}
+
 func TestHandleUpdateDeviceGet_StartupSoundVisibility(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
@@ -705,6 +733,9 @@ func TestHandleSetMute(t *testing.T) {
 	require.NoError(t, gorm.G[data.Device](s.DB).Create(ctx, &device))
 
 	// Test mute = true
+	ch := s.Broadcaster.Subscribe(device.ID)
+	defer s.Broadcaster.Unsubscribe(device.ID, ch)
+
 	form := strings.NewReader("muted=true")
 	req := httptest.NewRequest(http.MethodPost, "/devices/dev-mute-test/set_mute", form)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -714,6 +745,13 @@ func TestHandleSetMute(t *testing.T) {
 
 	s.handleSetMute(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
+
+	select {
+	case msg := <-ch:
+		assert.Nil(t, msg)
+	case <-time.After(time.Second):
+		t.Fatal("expected broadcaster notify on mute update")
+	}
 
 	var resp map[string]any
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))

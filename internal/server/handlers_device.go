@@ -1034,6 +1034,9 @@ func (s *Server) handleSetMute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Notify Device (Websocket)
+	s.Broadcaster.Notify(device.ID, nil)
+
 	user := GetUser(r)
 	s.notifyDashboard(user.Username, WSEvent{
 		Type:     "device_updated",
@@ -1360,6 +1363,8 @@ func (s *Server) handleUpdateFirmwareSettings(w http.ResponseWriter, r *http.Req
 		device.Info.StartupSound = &b
 		if err := s.DB.Model(&data.Device{ID: device.ID}).Update("info", device.Info).Error; err != nil {
 			slog.Error("Failed to update device info in DB", "error", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
 		}
 	}
 
