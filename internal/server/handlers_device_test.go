@@ -645,6 +645,50 @@ func TestHandleUpdateDeviceGet_StartupSoundVisibility(t *testing.T) {
 	}
 }
 
+func TestHandleUpdateDevice_AudioCapabilityVisibility(t *testing.T) {
+	s := newTestServer(t)
+	ctx := context.Background()
+
+	user := data.User{Username: "testuser"}
+	require.NoError(t, gorm.G[data.User](s.DB).Create(ctx, &user))
+
+	for _, tc := range []struct {
+		name       string
+		deviceType data.DeviceType
+		wantShown  bool
+	}{
+		{"gen1 hidden", data.DeviceTidbytGen1, false},
+		{"pixoticker hidden", data.DevicePixoticker, false},
+		{"gen2 shown", data.DeviceTidbytGen2, true},
+		{"s3 shown", data.DeviceTronbytS3, true},
+		{"tronberry shown", data.DeviceRaspberryPi, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			device := data.Device{
+				ID:       "test-dev-" + strings.ReplaceAll(tc.name, " ", "-"),
+				Username: "testuser",
+				Name:     "Test Device",
+				Type:     tc.deviceType,
+				APIKey:   "key-" + strings.ReplaceAll(tc.name, " ", "-"),
+			}
+			require.NoError(t, gorm.G[data.Device](s.DB).Create(ctx, &device))
+
+			req, _ := http.NewRequest(http.MethodGet, "/devices/"+device.ID+"/update", nil)
+			reqCtx := context.WithValue(req.Context(), userContextKey, &user)
+			reqCtx = context.WithValue(reqCtx, deviceContextKey, &device)
+			req = req.WithContext(reqCtx)
+
+			rr := httptest.NewRecorder()
+			http.HandlerFunc(s.handleUpdateDeviceGet).ServeHTTP(rr, req)
+			require.Equal(t, http.StatusOK, rr.Code)
+
+			body := rr.Body.String()
+			shown := strings.Contains(body, `id="audio_capability"`)
+			assert.Equal(t, tc.wantShown, shown)
+		})
+	}
+}
+
 func TestHandleSetMute(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()

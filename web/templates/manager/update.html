@@ -140,6 +140,7 @@
                         </select>
                     </div>
                 </div>
+                {{ if .Device.SupportsAudio }}
                 <div class="settings-field-row">
                     <div class="settings-field-label">
                         <label for="audio_capability">{{ t .Localizer "Audio Capability" }}</label>
@@ -166,6 +167,7 @@
                         </p>
                     </div>
                 </div>
+                {{ end }}
                 {{ if .Device.HasSpeaker }}
                 <div class="settings-field-row" id="volume_control_row">
                     <div class="settings-field-label">

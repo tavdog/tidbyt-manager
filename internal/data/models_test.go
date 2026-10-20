@@ -261,3 +261,34 @@ func TestRaspberryPiSupportsOTAAndNamesTronberry(t *testing.T) {
 		assert.False(t, dNoVer.OTACapable(), "%s with empty version should not be OTA capable", dt.Slug())
 	}
 }
+
+func TestDeviceType_SupportsAudio(t *testing.T) {
+	assert.False(t, DeviceTidbytGen1.SupportsAudio())
+	assert.False(t, DevicePixoticker.SupportsAudio())
+	assert.True(t, DeviceTidbytGen2.SupportsAudio())
+	assert.True(t, DeviceRaspberryPi.SupportsAudio())
+	assert.True(t, DeviceRaspberryPiWide.SupportsAudio())
+	assert.True(t, DeviceRaspberryPiSquare.SupportsAudio())
+	assert.True(t, DeviceTronbytS3.SupportsAudio())
+	assert.True(t, DeviceTronbytS3Wide.SupportsAudio())
+	assert.True(t, DeviceMatrixPortal.SupportsAudio())
+	assert.True(t, DeviceMatrixPortalWS.SupportsAudio())
+	assert.True(t, DeviceMatrixPortalSquare.SupportsAudio())
+	assert.True(t, DeviceMatrixPortalWide.SupportsAudio())
+	assert.True(t, DeviceWaveshareS3.SupportsAudio())
+	assert.True(t, DeviceOther.SupportsAudio())
+
+	gen1Dev := &Device{
+		Type: DeviceTidbytGen1,
+	}
+	assert.False(t, gen1Dev.SupportsAudio())
+	assert.Equal(t, AudioCapNone, gen1Dev.GetAudioCapability())
+	assert.False(t, gen1Dev.HasSpeaker())
+
+	gen2Dev := &Device{
+		Type: DeviceTidbytGen2,
+	}
+	assert.True(t, gen2Dev.SupportsAudio())
+	assert.Equal(t, AudioCapPiezo, gen2Dev.GetAudioCapability())
+	assert.True(t, gen2Dev.HasSpeaker())
+}

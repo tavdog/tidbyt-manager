@@ -176,6 +176,18 @@ func (dt DeviceType) HasSpeaker() bool {
 	return dt.DefaultAudioCapability() != AudioCapNone
 }
 
+// SupportsAudio reports whether the device type can support audio capabilities
+// (either built-in hardware or user-configured hardware on DIY boards).
+// Closed commercial hardware lacking audio components (such as Tidbyt Gen 1 and Pixoticker) returns false.
+func (dt DeviceType) SupportsAudio() bool {
+	switch dt {
+	case DeviceTidbytGen1, DevicePixoticker:
+		return false
+	default:
+		return true
+	}
+}
+
 // IsRaspberryPi reports whether the device type is a Raspberry Pi variant running Tronberry.
 func (dt DeviceType) IsRaspberryPi() bool {
 	switch dt {
@@ -1227,6 +1239,11 @@ func (d Device) BrightnessScaleMap() map[int]int {
 // BrightnessUIScale returns the current brightness level (0-5) for the UI.
 func (d Device) BrightnessUIScale() int {
 	return d.Brightness.UIScale(d.BrightnessScaleMap())
+}
+
+// SupportsAudio reports whether the device type can support audio capabilities.
+func (d Device) SupportsAudio() bool {
+	return d.Type.SupportsAudio()
 }
 
 // GetAudioCapability returns the effective audio capability for the device:
