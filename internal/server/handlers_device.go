@@ -79,6 +79,7 @@ func (s *Server) handleCreateDeviceGet(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleCreateDevicePost creates a new device registered to the authenticated user.
 func (s *Server) handleCreateDevicePost(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 
@@ -317,6 +318,7 @@ func (s *Server) handleDeviceTV(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleUpdateDeviceGet renders the device settings and configuration page.
 func (s *Server) handleUpdateDeviceGet(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 	device := GetDevice(r)
@@ -401,6 +403,7 @@ func (s *Server) handleUpdateDeviceGet(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleUpdateDevicePost saves updated device settings including brightness, volume, and intervals.
 func (s *Server) handleUpdateDevicePost(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -889,6 +892,7 @@ func (s *Server) handleImportDeviceConfig(w http.ResponseWriter, r *http.Request
 	s.flashAndRedirect(w, r, "Device configuration imported successfully", fmt.Sprintf("/devices/%s/update", device.ID), http.StatusSeeOther)
 }
 
+// handleUpdateBrightness updates the interactive brightness setting for a device.
 func (s *Server) handleUpdateBrightness(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -943,6 +947,7 @@ func (s *Server) handleUpdateBrightness(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 }
 
+// handleUpdateVolume handles volume adjustments from the device card and management UI.
 func (s *Server) handleUpdateVolume(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -976,6 +981,7 @@ func (s *Server) handleUpdateVolume(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// handleUpdateInterval updates the app rotation display interval for a device.
 func (s *Server) handleUpdateInterval(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -1006,6 +1012,7 @@ func (s *Server) handleUpdateInterval(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// handleSetMute toggles mute state for a device.
 func (s *Server) handleSetMute(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -1040,6 +1047,7 @@ func (s *Server) handleSetMute(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleTestSoundDevice triggers an immediate test sound playback on the device.
 func (s *Server) handleTestSoundDevice(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -1331,6 +1339,7 @@ func normalizeColorOrder(v string) (string, bool) {
 	return "", false
 }
 
+// handleUpdateFirmwareSettings updates device firmware configuration settings.
 func (s *Server) handleUpdateFirmwareSettings(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 	payload := make(map[string]any)

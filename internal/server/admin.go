@@ -103,6 +103,7 @@ func boolToString(b bool) string {
 	return "false"
 }
 
+// handleAdminUploadSound processes administrator audio file uploads for notification sounds.
 func (s *Server) handleAdminUploadSound(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 	if user == nil || !user.IsAdmin {
@@ -168,6 +169,7 @@ func (s *Server) handleAdminUploadSound(w http.ResponseWriter, r *http.Request) 
 	s.flashAndRedirect(w, r, fmt.Sprintf("Sound '%s' uploaded successfully.", cleanFilename), "/settings/admin#section-sounds", http.StatusSeeOther)
 }
 
+// handleAdminDeleteSound removes a custom notification sound file from the sounds directory.
 func (s *Server) handleAdminDeleteSound(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 	if user == nil || !user.IsAdmin {

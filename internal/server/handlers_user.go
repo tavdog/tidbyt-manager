@@ -62,6 +62,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	s.renderTemplate(w, r, "index", tmplData)
 }
 
+// handleAdminIndex renders the primary server administration dashboard.
 func (s *Server) handleAdminIndex(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 	if !user.IsAdmin {

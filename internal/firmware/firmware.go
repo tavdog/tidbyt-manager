@@ -44,6 +44,7 @@ func LooksLikeFirmware(data []byte) bool {
 	return false
 }
 
+// isELF reports whether data starts with the standard 4-byte ELF magic header (\x7fELF).
 func isELF(data []byte) bool {
 	return len(data) >= 4 && data[0] == 0x7f && data[1] == 'E' && data[2] == 'L' && data[3] == 'F'
 }

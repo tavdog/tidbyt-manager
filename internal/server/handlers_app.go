@@ -346,6 +346,7 @@ func (s *Server) handleAppThumbnail(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path)
 }
 
+// handleConfigAppGet renders the app configuration page, injecting the schema and available sounds.
 func (s *Server) handleConfigAppGet(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 	device := GetDevice(r)
@@ -410,6 +411,7 @@ func (s *Server) handleConfigAppGet(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// extractAppSounds extracts sound metadata declared in Pixlet app schema definitions.
 func extractAppSounds(schemaBytes []byte, appID string) []SoundItem {
 	if len(schemaBytes) == 0 || string(schemaBytes) == "{}" {
 		return nil
@@ -542,6 +544,7 @@ func (s *Server) handleAppSchemaGet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleConfigAppPost processes app configuration updates including scheduling, display time, and notification sounds.
 func (s *Server) handleConfigAppPost(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 	device := GetDevice(r)

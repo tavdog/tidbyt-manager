@@ -96,6 +96,7 @@ func (s *Server) RenderApp(ctx context.Context, device *data.Device, app *data.A
 	)
 }
 
+// possiblyRender executes background rendering for an app if its interval has elapsed or content has changed.
 func (s *Server) possiblyRender(ctx context.Context, app *data.App, device *data.Device, user *data.User) bool {
 	// 1. Pushed App (Pre-rendered)
 	if app.Pushed {

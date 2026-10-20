@@ -245,6 +245,7 @@ type AppPayload struct {
 	NotificationSoundTrigger string            `json:"notificationSoundTrigger,omitempty"`
 }
 
+// toAppPayload transforms a device's App model into the public API AppPayload representation.
 func (s *Server) toAppPayload(device *data.Device, app *data.App) AppPayload {
 	pinned := device.PinnedApp != nil && *device.PinnedApp == app.Iname
 	return AppPayload{
@@ -312,6 +313,7 @@ func (s *Server) handleListDevices(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handlePushApp renders and pushes a Pixlet Starlark app to a device via the API.
 func (s *Server) handlePushApp(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 	device := GetDevice(r)
@@ -524,6 +526,7 @@ type PushData struct {
 	Sound             string `json:"sound,omitempty"`
 }
 
+// handlePushImage pushes a pre-rendered image binary or animation to a device via the API.
 func (s *Server) handlePushImage(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -711,6 +714,7 @@ func (s *Server) ensurePushedApp(ctx context.Context, deviceID, installID string
 	return gorm.G[data.App](s.DB).Create(ctx, &newApp)
 }
 
+// handlePatchDevice updates device settings (brightness, volume, night/dim mode, pinned app) via the API.
 func (s *Server) handlePatchDevice(w http.ResponseWriter, r *http.Request) {
 	// Auth handled by middleware, get device
 	device := GetDevice(r)
@@ -889,6 +893,7 @@ type InstallationUpdate struct {
 	Config *map[string]any `json:"config"`
 }
 
+// handlePatchInstallation updates app installation settings (enabled, sound, timing) via the API.
 func (s *Server) handlePatchInstallation(w http.ResponseWriter, r *http.Request) {
 	iname := r.PathValue("iname")
 
@@ -1258,6 +1263,7 @@ type FirmwareSettingsUpdate struct {
 	SyslogAddr         *string `json:"syslogAddr"`
 }
 
+// handleUpdateFirmwareSettingsAPI updates network and logging firmware settings via the API.
 func (s *Server) handleUpdateFirmwareSettingsAPI(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -1338,6 +1344,7 @@ func (s *Server) handleUpdateFirmwareSettingsAPI(w http.ResponseWriter, r *http.
 	}
 }
 
+// qualifyAppSound resolves sound identifiers, adding app prefixes only for non-default, non-URL sounds.
 func qualifyAppSound(appID, soundID string) string {
 	if appID == "" || soundID == "" || strings.Contains(soundID, ":") ||
 		strings.HasPrefix(soundID, "http://") || strings.HasPrefix(soundID, "https://") {
@@ -1351,6 +1358,7 @@ func qualifyAppSound(appID, soundID string) string {
 	return fmt.Sprintf("app:%s:%s", appID, soundID)
 }
 
+// handleTriggerSoundAPI handles programmatic sound playback requests via the /v0/devices/{id}/sound API.
 func (s *Server) handleTriggerSoundAPI(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -1408,6 +1416,7 @@ func (s *Server) handleTriggerSoundAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// SetupAPIRoutes registers all v0 REST API endpoints on the server router.
 func (s *Server) SetupAPIRoutes() {
 	// API v0 Group - authenticated with Middleware
 	s.Router.Handle("GET /v0/devices", s.APIAuthMiddleware(http.HandlerFunc(s.handleListDevices)))

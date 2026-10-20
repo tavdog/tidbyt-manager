@@ -65,6 +65,7 @@ func parseOwnerRepo(repoURL string, defaultOwner, defaultRepo string) (string, s
 	return defaultOwner, defaultRepo
 }
 
+// downloadReleasesFromRepo downloads assets for the most recent releases from a specified GitHub repository.
 func (s *Server) downloadReleasesFromRepo(repoURL string, defaultOwner, defaultRepo string, etagKey string, mapping map[string]string, maxReleases int) error {
 	owner, repo := parseOwnerRepo(repoURL, defaultOwner, defaultRepo)
 
@@ -514,6 +515,7 @@ func (s *Server) GetAllAvailableFirmwareReleaseNotes() map[string]FirmwareReleas
 	return notes
 }
 
+// handleFirmwareReleaseNotes serves JSON release notes for a specified firmware version.
 func (s *Server) handleFirmwareReleaseNotes(w http.ResponseWriter, r *http.Request) {
 	version := r.URL.Query().Get("version")
 	if version == "" {
@@ -536,6 +538,7 @@ func (s *Server) handleFirmwareReleaseNotes(w http.ResponseWriter, r *http.Reque
 	_ = json.NewEncoder(w).Encode(info)
 }
 
+// handleFirmwareGenerateGet renders the firmware generation and flashing view for a device.
 func (s *Server) handleFirmwareGenerateGet(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
 	device := GetDevice(r)
@@ -583,6 +586,7 @@ func (s *Server) handleFirmwareGenerateGet(w http.ResponseWriter, r *http.Reques
 	})
 }
 
+// handleFirmwareGeneratePost handles building and downloading customized firmware binaries.
 func (s *Server) handleFirmwareGeneratePost(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 
@@ -649,6 +653,7 @@ func (s *Server) handleFirmwareGeneratePost(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// handleTriggerOTA stages an over-the-air update for a device and triggers an immediate reboot/poll.
 func (s *Server) handleTriggerOTA(w http.ResponseWriter, r *http.Request) {
 	device := GetDevice(r)
 

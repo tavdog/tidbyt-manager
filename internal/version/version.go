@@ -37,6 +37,7 @@ func EnsureGitInfo() {
 	gitInfoOnce.Do(initGitInfo)
 }
 
+// initGitInfo populates git metadata from build info, environment variables, or the local git repository.
 func initGitInfo() {
 	// 1. Read environment variables if not already baked in via ldflags
 	if Commit == "" || Commit == "unknown" {
@@ -153,6 +154,7 @@ func initGitInfo() {
 	ShowBranchTag = ShouldShowBranchTag(RepoURL, Branch)
 }
 
+// fetchGitHubCommitSHA queries the GitHub API to resolve the latest commit SHA for a repository branch.
 func fetchGitHubCommitSHA(repoURL, branch string) string {
 	u, err := url.Parse(repoURL)
 	if err != nil || !strings.Contains(u.Host, "github.com") {

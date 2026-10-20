@@ -63,6 +63,7 @@ type DeviceCommandMessage struct {
 	Payload []byte
 }
 
+// handleWS upgrades HTTP connections to WebSockets for live image streaming, notifications, and device commands.
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.PathValue("id")
 

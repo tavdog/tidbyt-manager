@@ -271,6 +271,7 @@ func NewServer(db *gorm.DB, cfg *config.Settings) *Server {
 	return s
 }
 
+// routes registers all HTTP endpoints, static assets, and websocket handlers.
 func (s *Server) routes() {
 	// Conflict Resolution Handlers (Must be registered before conflicting wildcards?)
 	// Actually order of registration doesn't matter in Go 1.22 for correctness, but presence matters.

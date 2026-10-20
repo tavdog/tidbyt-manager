@@ -783,6 +783,7 @@ func (dt DeviceType) SupportsFirmware() bool {
 	}
 }
 
+// SupportsOTA reports whether the device type supports over-the-air firmware updates.
 func (dt DeviceType) SupportsOTA() bool {
 	switch dt {
 	// DevicePixoticker is intentionally omitted (not enough flash memory)
@@ -793,6 +794,7 @@ func (dt DeviceType) SupportsOTA() bool {
 	}
 }
 
+// FirmwareFilename returns the standard binary filename for the device type.
 func (dt DeviceType) FirmwareFilename(swapColors bool) string {
 	switch dt {
 	case DeviceTidbytGen1:
@@ -1120,6 +1122,7 @@ func (d *Device) GetEffectiveBrightness() int {
 	return brightness
 }
 
+// OTACapable reports whether the device instance supports over-the-air firmware updates.
 func (d *Device) OTACapable() bool {
 	if !d.Type.SupportsOTA() {
 		return false
@@ -1255,6 +1258,7 @@ func (d Device) IsMuted() bool {
 	return false
 }
 
+// clampVolume clamps a volume level to the valid range [0, 100].
 func clampVolume(v int) int {
 	if v < 0 {
 		return 0
