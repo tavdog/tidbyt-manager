@@ -119,6 +119,42 @@
   align-items: center;
 }
 
+.settings-repo-url-row {
+  flex-wrap: nowrap;
+}
+
+.settings-repo-url-row .settings-repo-url-input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+}
+
+.settings-repo-url-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.settings-repo-url-actions form {
+  display: flex;
+  margin: 0;
+}
+
+.settings-repo-url-actions .w3-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.settings-icon-button {
+  min-width: 2.5rem;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
 .settings-actions {
   padding-top: 4px;
 }

@@ -464,6 +464,18 @@
   "Refresh": {
     "other": "Refresh"
   },
+  "Delete downloaded repo": {
+    "other": "Delete downloaded repo"
+  },
+  "Deleting...": {
+    "other": "Deleting..."
+  },
+  "Delete the downloaded repo from disk? Use Refresh to download it again.": {
+    "other": "Delete the downloaded repo from disk? Use Refresh to download it again."
+  },
+  "Repository not downloaded locally. Use Refresh to download it again.": {
+    "other": "Repository not downloaded locally. Use Refresh to download it again."
+  },
   "Change Repository": {
     "other": "Change Repository"
   },
