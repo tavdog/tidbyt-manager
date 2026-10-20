@@ -181,7 +181,6 @@ func (s *Server) renderTemplate(w http.ResponseWriter, r *http.Request, name str
 	}
 
 	// Set version
-	version.EnsureGitInfo()
 	tmplData.ServerVersion = version.Version
 	tmplData.CommitHash = version.Commit
 	tmplData.CommitURL = version.CommitURL

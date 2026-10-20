@@ -1393,9 +1393,17 @@ func (s *Server) handleTriggerSoundAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	baseURL := s.GetDeviceBaseURL(device)
+	if device.IsMuted() {
+		http.Error(w, "Device is muted", http.StatusConflict)
+		return
+	}
 	resolvedPayload := s.ResolveSoundPayload(device, baseURL, target)
-	if resolvedPayload == "" && device.GetAudioCapability() == data.AudioCapNone {
-		http.Error(w, "Device audio capability is disabled or none", http.StatusBadRequest)
+	if resolvedPayload == "" {
+		if device.GetAudioCapability() == data.AudioCapNone {
+			http.Error(w, "Device audio capability is disabled or none", http.StatusBadRequest)
+		} else {
+			http.Error(w, "Sound not found or not playable on this device", http.StatusBadRequest)
+		}
 		return
 	}
 

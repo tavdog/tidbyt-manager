@@ -298,3 +298,63 @@ func TestUpdateFirmwareBinariesDownloadsTronberry(t *testing.T) {
 	piDev := &data.Device{Type: data.DeviceRaspberryPi}
 	assert.Equal(t, []string{"v0.2.0"}, s.GetAvailableFirmwareVersionsForDevice(piDev))
 }
+
+func TestGetFirmwareReleaseInfo_DeviceSpecificIsolation(t *testing.T) {
+	s := newTestServerAPI(t)
+
+	verDir := filepath.Join(s.DataDir, "firmware", "releases", "v3.0.0")
+	require.NoError(t, os.MkdirAll(verDir, 0755))
+
+	espJSON := `{"tag_name":"v3.0.0","name":"ESP32 v3.0.0","body":"ESP32 notes","html_url":"https://github.com/tronbyt/firmware-esp32/releases/tag/v3.0.0"}`
+	tbJSON := `{"tag_name":"v3.0.0","name":"Tronberry v3.0.0","body":"Tronberry notes","html_url":"https://github.com/tronbyt/tronberry/releases/tag/v3.0.0"}`
+
+	require.NoError(t, os.WriteFile(filepath.Join(verDir, "release-firmware-esp32.json"), []byte(espJSON), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(verDir, "release-tronberry.json"), []byte(tbJSON), 0644))
+
+	espDev := &data.Device{Type: data.DeviceTidbytGen1}
+	tbDev := &data.Device{Type: data.DeviceRaspberryPi}
+
+	// 1. ESP32 device gets ESP32 release notes
+	espInfo, err := s.GetFirmwareReleaseInfoForDevice(espDev, "v3.0.0")
+	require.NoError(t, err)
+	assert.Equal(t, "ESP32 v3.0.0", espInfo.Name)
+	assert.Equal(t, "ESP32 notes", espInfo.Body)
+	assert.Contains(t, espInfo.HTMLURL, "firmware-esp32")
+
+	// 2. Tronberry device gets Tronberry release notes
+	tbInfo, err := s.GetFirmwareReleaseInfoForDevice(tbDev, "v3.0.0")
+	require.NoError(t, err)
+	assert.Equal(t, "Tronberry v3.0.0", tbInfo.Name)
+	assert.Equal(t, "Tronberry notes", tbInfo.Body)
+	assert.Contains(t, tbInfo.HTMLURL, "tronberry")
+
+	// 3. GetAllAvailableFirmwareReleaseNotesForDevice isolates by device
+	espAll := s.GetAllAvailableFirmwareReleaseNotesForDevice(espDev)
+	assert.Equal(t, "ESP32 notes", espAll["v3.0.0"].Body)
+
+	tbAll := s.GetAllAvailableFirmwareReleaseNotesForDevice(tbDev)
+	assert.Equal(t, "Tronberry notes", tbAll["v3.0.0"].Body)
+}
+
+func TestFallbackOwnerRepoDetection(t *testing.T) {
+	s := newTestServerAPI(t)
+
+	// Case A: Only Tronberry binary exists -> selects Tronberry repo for fallback HTMLURL
+	tbVerDir := filepath.Join(s.DataDir, "firmware", "releases", "v4.0.0")
+	require.NoError(t, os.MkdirAll(tbVerDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(tbVerDir, "tronberry"), []byte("bin"), 0644))
+
+	infoA, err := s.GetFirmwareReleaseInfo("v4.0.0")
+	require.NoError(t, err)
+	assert.Contains(t, infoA.HTMLURL, "tronberry")
+
+	// Case B: Both Tronberry and ESP32 exist -> preserves ESP32 repo fallback
+	bothVerDir := filepath.Join(s.DataDir, "firmware", "releases", "v5.0.0")
+	require.NoError(t, os.MkdirAll(bothVerDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(bothVerDir, "tronberry"), []byte("bin"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(bothVerDir, "tidbyt-gen1.bin"), []byte("bin"), 0644))
+
+	infoB, err := s.GetFirmwareReleaseInfo("v5.0.0")
+	require.NoError(t, err)
+	assert.Contains(t, infoB.HTMLURL, "firmware-esp32")
+}

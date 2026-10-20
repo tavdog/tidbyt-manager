@@ -43,7 +43,8 @@ func (b *Broadcaster) Unsubscribe(topic string, ch chan any) {
 	close(ch)
 }
 
-// Notify broadcasts an event payload to all subscribers registered to the topic.
+// Notify attempts to deliver an event payload to each subscriber registered to
+// the topic without blocking. Events are dropped for full subscriber buffers.
 func (b *Broadcaster) Notify(topic string, data any) bool {
 	b.lock.RLock()
 	defer b.lock.RUnlock()

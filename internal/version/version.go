@@ -24,6 +24,9 @@ var (
 	CommitURL     = ""
 	ShowBranchTag = false
 
+	// AllowRemoteLookup permits an outbound GitHub API call to resolve a missing commit SHA.
+	AllowRemoteLookup = true
+
 	gitInfoOnce sync.Once
 )
 
@@ -134,7 +137,7 @@ func initGitInfo() {
 	}
 
 	// 4. If Branch and RepoURL are known, but Commit is still missing, query GitHub API
-	if (Commit == "" || Commit == "unknown") && Branch != "" && Branch != "HEAD" {
+	if AllowRemoteLookup && (Commit == "" || Commit == "unknown") && Branch != "" && Branch != "HEAD" {
 		if sha := fetchGitHubCommitSHA(RepoURL, Branch); sha != "" {
 			Commit = sha
 		}

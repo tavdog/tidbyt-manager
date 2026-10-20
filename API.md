@@ -228,6 +228,8 @@ Based on the device's audio capability (`piezo` or `full`):
 - `piezo` devices receive the frequency:duration tone string. Default sounds and app sounds with matching keywords (`ding`, `chime`, `bell`, `pop`, `alert`, `tron`, `bit`) map to tuned buzzer tones, with a pleasant 2-tone chime fallback for other app sounds.
 - `full` devices receive the full audio stream URL (resolved against `/sounds/{appId}/{filename}` or external URL).
 - `none` devices reject sound playback (returns `400 Bad Request` with "Device audio capability is disabled or none").
+- Muted devices reject sound playback (returns `409 Conflict` with "Device is muted").
+- If the requested sound cannot be resolved or is not playable on the device, returns `400 Bad Request` with "Sound not found or not playable on this device".
 
 **Response:** `200 OK` — `{"status":"ok","device":"...","sound":"...","payload":"..."}`
 

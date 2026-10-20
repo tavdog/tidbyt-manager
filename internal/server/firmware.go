@@ -166,6 +166,7 @@ func (s *Server) downloadReleasesFromRepo(repoURL string, defaultOwner, defaultR
 		}
 		if metaBytes, err := json.Marshal(info); err == nil {
 			_ = os.WriteFile(filepath.Join(versionDir, "release.json"), metaBytes, 0644)
+			_ = os.WriteFile(filepath.Join(versionDir, fmt.Sprintf("release-%s.json", defaultRepo)), metaBytes, 0644)
 		}
 
 		for _, asset := range release.Assets {
@@ -412,9 +413,24 @@ func (s *Server) GetLatestFirmwareVersionForDevice(device *data.Device) string {
 	return ""
 }
 
+func isTronberryDevice(device *data.Device) bool {
+	if device == nil {
+		return false
+	}
+	return device.Type == data.DeviceRaspberryPi ||
+		device.Type == data.DeviceRaspberryPiWide ||
+		device.Type == data.DeviceRaspberryPiSquare ||
+		strings.EqualFold(device.Info.FirmwareType, "Tronberry")
+}
+
 // GetFirmwareReleaseInfo returns metadata and release notes for a firmware release version.
 // It checks local cache (release.json) first, then queries the GitHub API if needed.
 func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, error) {
+	return s.GetFirmwareReleaseInfoForDevice(nil, version)
+}
+
+// GetFirmwareReleaseInfoForDevice returns device-aware metadata and release notes for a firmware release version.
+func (s *Server) GetFirmwareReleaseInfoForDevice(device *data.Device, version string) (*FirmwareReleaseInfo, error) {
 	if version == "" {
 		return nil, errors.New("empty version")
 	}
@@ -427,9 +443,23 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 	if err != nil {
 		return nil, err
 	}
-	releasePath := filepath.Join(versionDir, "release.json")
 
-	// 1. Check local release.json
+	isTronberry := isTronberryDevice(device)
+	targetRepo := "firmware-esp32"
+	if isTronberry {
+		targetRepo = "tronberry"
+	}
+
+	// 1. Check local repo-specific release file, then fallback to release.json
+	repoSpecificPath := filepath.Join(versionDir, fmt.Sprintf("release-%s.json", targetRepo))
+	if data, err := os.ReadFile(repoSpecificPath); err == nil {
+		var info FirmwareReleaseInfo
+		if err := json.Unmarshal(data, &info); err == nil && (info.Body != "" || info.TagName != "") {
+			return &info, nil
+		}
+	}
+
+	releasePath := filepath.Join(versionDir, "release.json")
 	if data, err := os.ReadFile(releasePath); err == nil {
 		var info FirmwareReleaseInfo
 		if err := json.Unmarshal(data, &info); err == nil && (info.Body != "" || info.TagName != "") {
@@ -437,9 +467,12 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 		}
 	}
 
-	// 2. Fetch from GitHub API (try ESP32 repo, then Tronberry repo)
+	// 2. Fetch from GitHub API (try device-specific repo first)
 	firmwareRepo := os.Getenv("FIRMWARE_REPO")
 	owner, repo := parseOwnerRepo(firmwareRepo, "tronbyt", "firmware-esp32")
+
+	tronberryRepo := os.Getenv("TRONBERRY_REPO")
+	tbOwner, tbRepo := parseOwnerRepo(tronberryRepo, "tronbyt", "tronberry")
 
 	fetchRelease := func(o, r string) *FirmwareReleaseInfo {
 		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases/tags/%s", s.githubAPIBaseURL(), o, r, url.PathEscape(cleanVersion))
@@ -466,6 +499,7 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 			if err := json.NewDecoder(resp.Body).Decode(&info); err == nil {
 				if err := os.MkdirAll(versionDir, 0755); err == nil {
 					if metaBytes, err := json.Marshal(info); err == nil {
+						_ = os.WriteFile(filepath.Join(versionDir, fmt.Sprintf("release-%s.json", r)), metaBytes, 0644)
 						_ = os.WriteFile(releasePath, metaBytes, 0644)
 					}
 				}
@@ -475,21 +509,31 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 		return nil
 	}
 
-	if info := fetchRelease(owner, repo); info != nil {
-		return info, nil
-	}
-
-	tronberryRepo := os.Getenv("TRONBERRY_REPO")
-	tbOwner, tbRepo := parseOwnerRepo(tronberryRepo, "tronbyt", "tronberry")
-	if info := fetchRelease(tbOwner, tbRepo); info != nil {
-		return info, nil
+	if isTronberry {
+		if info := fetchRelease(tbOwner, tbRepo); info != nil {
+			return info, nil
+		}
+		if info := fetchRelease(owner, repo); info != nil {
+			return info, nil
+		}
+	} else {
+		if info := fetchRelease(owner, repo); info != nil {
+			return info, nil
+		}
+		if info := fetchRelease(tbOwner, tbRepo); info != nil {
+			return info, nil
+		}
 	}
 
 	fallbackOwner, fallbackRepo := owner, repo
-	relDir := filepath.Join(s.DataDir, "firmware", "releases", version)
-	if _, err := os.Stat(filepath.Join(relDir, "tronberry")); err == nil {
-		if _, espErr := os.Stat(filepath.Join(relDir, "tronbyt-gen1")); os.IsNotExist(espErr) {
-			fallbackOwner, fallbackRepo = tbOwner, tbRepo
+	if isTronberry {
+		fallbackOwner, fallbackRepo = tbOwner, tbRepo
+	} else {
+		relDir := filepath.Join(s.DataDir, "firmware", "releases", version)
+		if _, err := os.Stat(filepath.Join(relDir, data.DeviceRaspberryPi.FirmwareFilename(false))); err == nil {
+			if _, espErr := os.Stat(filepath.Join(relDir, data.DeviceTidbytGen1.FirmwareFilename(false))); os.IsNotExist(espErr) {
+				fallbackOwner, fallbackRepo = tbOwner, tbRepo
+			}
 		}
 	}
 
@@ -499,11 +543,24 @@ func (s *Server) GetFirmwareReleaseInfo(version string) (*FirmwareReleaseInfo, e
 	}, nil
 }
 
-// GetAllAvailableFirmwareReleaseNotes retrieves cached release notes for all currently available firmware versions.
-func (s *Server) GetAllAvailableFirmwareReleaseNotes() map[string]FirmwareReleaseInfo {
+// GetAllAvailableFirmwareReleaseNotesForDevice retrieves cached release notes for all currently available firmware versions for a specific device.
+func (s *Server) GetAllAvailableFirmwareReleaseNotesForDevice(device *data.Device) map[string]FirmwareReleaseInfo {
 	versions := s.GetAvailableFirmwareVersions()
 	notes := make(map[string]FirmwareReleaseInfo)
+	targetRepo := "firmware-esp32"
+	if isTronberryDevice(device) {
+		targetRepo = "tronberry"
+	}
+
 	for _, v := range versions {
+		repoPath := filepath.Join(s.DataDir, "firmware", "releases", v, fmt.Sprintf("release-%s.json", targetRepo))
+		if data, err := os.ReadFile(repoPath); err == nil {
+			var info FirmwareReleaseInfo
+			if err := json.Unmarshal(data, &info); err == nil && (info.Body != "" || info.TagName != "") {
+				notes[v] = info
+				continue
+			}
+		}
 		releasePath := filepath.Join(s.DataDir, "firmware", "releases", v, "release.json")
 		if data, err := os.ReadFile(releasePath); err == nil {
 			var info FirmwareReleaseInfo
@@ -513,6 +570,11 @@ func (s *Server) GetAllAvailableFirmwareReleaseNotes() map[string]FirmwareReleas
 		}
 	}
 	return notes
+}
+
+// GetAllAvailableFirmwareReleaseNotes retrieves cached release notes for all currently available firmware versions.
+func (s *Server) GetAllAvailableFirmwareReleaseNotes() map[string]FirmwareReleaseInfo {
+	return s.GetAllAvailableFirmwareReleaseNotesForDevice(nil)
 }
 
 // handleFirmwareReleaseNotes serves JSON release notes for a specified firmware version.
@@ -528,7 +590,8 @@ func (s *Server) handleFirmwareReleaseNotes(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	info, err := s.GetFirmwareReleaseInfo(cleanVersion)
+	device := GetDevice(r)
+	info, err := s.GetFirmwareReleaseInfoForDevice(device, cleanVersion)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -579,7 +642,7 @@ func (s *Server) handleFirmwareGenerateGet(w http.ResponseWriter, r *http.Reques
 		FirmwareVersion:           version,
 		FirmwareReleasesURL:       releasesURL,
 		AvailableFirmwareVersions: s.GetAvailableFirmwareVersionsForDevice(device),
-		FirmwareReleases:          s.GetAllAvailableFirmwareReleaseNotes(),
+		FirmwareReleases:          s.GetAllAvailableFirmwareReleaseNotesForDevice(device),
 		DeviceTypeChoices:         s.getDeviceTypeChoices(localizer),
 		Localizer:                 localizer,
 		URLWarning:                urlWarning,

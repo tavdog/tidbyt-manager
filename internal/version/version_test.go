@@ -111,6 +111,17 @@ func TestBranchFallbackWhenCommitUnknown(t *testing.T) {
 	assert.Equal(t, "https://github.com/myfork/tronbyt-server/tree/nonexistent-branch-xyz", CommitURL)
 }
 
+func TestAllowRemoteLookupDisabled(t *testing.T) {
+	origAllow := AllowRemoteLookup
+	defer func() {
+		AllowRemoteLookup = origAllow
+	}()
+
+	assert.True(t, AllowRemoteLookup)
+	AllowRemoteLookup = false
+	assert.False(t, AllowRemoteLookup)
+}
+
 func TestIsUpstreamRepo(t *testing.T) {
 	assert.True(t, IsUpstreamRepo(""))
 	assert.True(t, IsUpstreamRepo("https://github.com/tronbyt/server"))

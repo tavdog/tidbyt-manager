@@ -24,6 +24,7 @@ import (
 	"tronbyt-server/internal/apps"
 	"tronbyt-server/internal/config"
 	syncer "tronbyt-server/internal/sync"
+	"tronbyt-server/internal/version"
 	"tronbyt-server/web"
 
 	securejoin "github.com/cyphar/filepath-securejoin"
@@ -103,6 +104,9 @@ var templateFiles = map[string]string{
 }
 
 func NewServer(db *gorm.DB, cfg *config.Settings) *Server {
+	version.AllowRemoteLookup = cfg.EnableUpdateChecks
+	version.EnsureGitInfo()
+
 	s := &Server{
 		DB:          db,
 		Router:      http.NewServeMux(),

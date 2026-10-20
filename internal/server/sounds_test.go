@@ -659,6 +659,48 @@ func TestPushAppWithSound(t *testing.T) {
 	assert.Contains(t, dev.PendingSound, "/sounds/nfl/touchdown.mp3")
 }
 
+func TestTriggerSoundAPI_MutedAndUnplayable(t *testing.T) {
+	s := newTestServerAPI(t)
+	apiKey := "device_api_key"
+	deviceID := "testdevice"
+
+	// 1. Muted device returns 409 Conflict
+	_, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).Updates(context.Background(), data.Device{
+		Muted:           true,
+		AudioCapability: func(c data.AudioCapability) *data.AudioCapability { return &c }(data.AudioCapFull),
+	})
+	require.NoError(t, err)
+
+	body := `{"sound":"default:chime"}`
+	req := newAPIRequest(http.MethodPost, fmt.Sprintf("/v0/devices/%s/sound", deviceID), apiKey, []byte(body))
+	rr := httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusConflict, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Device is muted")
+
+	// 2. Unmute, but set audio capability to none -> returns 400 Bad Request
+	require.NoError(t, s.DB.Model(&data.Device{ID: deviceID}).Update("muted", false).Error)
+	noneCap := data.AudioCapNone
+	require.NoError(t, s.DB.Model(&data.Device{ID: deviceID}).Update("audio_capability", &noneCap).Error)
+
+	req = newAPIRequest(http.MethodPost, fmt.Sprintf("/v0/devices/%s/sound", deviceID), apiKey, []byte(body))
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Device audio capability is disabled or none")
+
+	// 3. Audio capability piezo, but sound is an external audio URL that cannot play on piezo -> returns 400 Bad Request
+	piezoCap := data.AudioCapPiezo
+	require.NoError(t, s.DB.Model(&data.Device{ID: deviceID}).Update("audio_capability", &piezoCap).Error)
+
+	urlBody := `{"sound":"https://example.com/audio.mp3"}`
+	req = newAPIRequest(http.MethodPost, fmt.Sprintf("/v0/devices/%s/sound", deviceID), apiKey, []byte(urlBody))
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Sound not found or not playable on this device")
+}
+
 func TestDeviceIsMuted(t *testing.T) {
 	var emptyDev data.Device
 	assert.False(t, emptyDev.IsMuted())

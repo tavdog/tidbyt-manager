@@ -397,7 +397,7 @@ func (s *Server) handleUpdateDeviceGet(w http.ResponseWriter, r *http.Request) {
 		FirmwareAvailable:         firmwareAvailable,
 		FirmwareVersion:           firmwareVersion,
 		AvailableFirmwareVersions: availableVersions,
-		FirmwareReleases:          s.GetAllAvailableFirmwareReleaseNotes(),
+		FirmwareReleases:          s.GetAllAvailableFirmwareReleaseNotesForDevice(device),
 		Localizer:                 localizer,
 		URLWarning:                urlWarning,
 	})
