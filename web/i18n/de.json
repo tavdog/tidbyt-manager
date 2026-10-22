@@ -2228,11 +2228,26 @@
   "Contribute to community app stats": {
     "other": "Zu Community-App-Statistiken beitragen"
   },
-  "Help other Tidbyt owners discover great apps. Your Tronbyt shares which library apps you use and a rough device count only when they change, plus a tiny weekly check-in. Your name, devices, settings, and custom apps are never included.": {
-    "other": "Helfen Sie anderen Tidbyt-Besitzern, großartige Apps zu entdecken. Ihr Tronbyt teilt nur bei Änderungen mit, welche Bibliotheks-Apps Sie verwenden, und eine ungefähre Geräteanzahl, dazu ein kurzes wöchentliches Lebenszeichen. Ihr Name, Ihre Geräte, Einstellungen und eigenen Apps sind nie enthalten."
+  "Help other Tronbyt/Niblet users discover great apps. Your Tronbyt shares which library apps you use and a rough device count only when they change, plus a tiny weekly check-in. Your name, devices, settings, and custom apps are never included.": {
+    "other": "Helfen Sie anderen Tronbyt-/Niblet-Nutzern, großartige Apps zu entdecken. Ihr Tronbyt teilt nur bei Änderungen mit, welche Bibliotheks-Apps Sie verwenden, und eine ungefähre Geräteanzahl, dazu ein kurzes wöchentliches Lebenszeichen. Ihr Name, Ihre Geräte, Einstellungen und eigenen Apps sind nie enthalten."
   },
   "Niblet manages the community stats. Your IP address is used only to block spam and isn't saved with your stats, which are removed 30 days after your Tronbyt stops checking in.": {
     "other": "Niblet verwaltet die Community-Statistiken. Ihre IP-Adresse wird nur zur Spam-Abwehr verwendet und nicht mit Ihren Statistiken gespeichert, die 30 Tage nach dem letzten Lebenszeichen Ihres Tronbyt entfernt werden."
+  },
+  "Niblet Cloud": {
+    "other": "Niblet Cloud"
+  },
+  "Allow Niblet Cloud connectivity": {
+    "other": "Niblet-Cloud-Verbindung erlauben"
+  },
+  "Niblet Cloud connectivity description": {
+    "other": "Wenn aktiviert, darf dieser Server Niblet Cloud für öffentliche Installationszahlen bei System-Apps und, sofern Sie unten zustimmen, für Community-App-Statistiken kontaktieren. Deaktivieren Sie dies, um die gesamte Niblet-Datenerfassung zu stoppen, ohne NIBLET_CLOUD_URL zu ändern."
+  },
+  "Niblet Cloud hard disabled description": {
+    "other": "Niblet Cloud ist vollständig deaktiviert, weil NIBLET_CLOUD_URL in Ihrer Umgebung auf einen leeren String gesetzt ist. Dieser Server kontaktiert Niblet nicht für Installationszahlen oder Community-App-Statistiken. Zum Aktivieren entfernen Sie NIBLET_CLOUD_URL aus Ihrer .env und starten den Server neu."
+  },
+  "Paused · Niblet Cloud is turned off in System Settings": {
+    "other": "Pausiert · Niblet Cloud ist in den Systemeinstellungen deaktiviert"
   },
   "Community app stats": {
     "other": "Community-App-Statistiken"
