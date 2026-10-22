@@ -22,11 +22,21 @@ func (s *Server) isNibletCloudEnabled() bool {
 }
 
 func (s *Server) loadNibletCloudEnabled() {
-	enabled := s.isNibletCloudConfigured()
-	if val, err := s.getSetting(settingNibletCloudEnabled); err == nil && val != "" {
-		enabled = val == "true"
+	if !s.isNibletCloudConfigured() {
+		s.nibletCloudEnabled.Store(false)
+		return
 	}
-	s.nibletCloudEnabled.Store(enabled && s.isNibletCloudConfigured())
+	val, err := s.getSetting(settingNibletCloudEnabled)
+	if err != nil {
+		slog.Warn("Failed to load Niblet Cloud preference", "error", err)
+		s.nibletCloudEnabled.Store(false)
+		return
+	}
+	if val == "" {
+		s.nibletCloudEnabled.Store(true)
+		return
+	}
+	s.nibletCloudEnabled.Store(val == "true")
 }
 
 // setNibletCloudEnabled saves an admin's choice and stops or resumes Niblet traffic.
@@ -35,22 +45,17 @@ func (s *Server) setNibletCloudEnabled(enabled bool) error {
 		return errors.New("niblet cloud is not configured")
 	}
 	s.nibletCloudPreferenceMutex.Lock()
-	defer s.nibletCloudPreferenceMutex.Unlock()
-
 	wasEnabled := s.nibletCloudEnabled.Load()
+	s.nibletCloudPreferenceMutex.Unlock()
+
 	if wasEnabled && !enabled {
-		consent, _ := s.getSetting(settingUsageSharing)
-		token, _ := s.getSetting(settingUsageToken)
-		if consent == "true" || token != "" {
-			if err := s.setSetting(settingUsageSharing, "false"); err != nil {
-				return err
-			}
-			s.usageForce.Store(true)
-			if err := s.syncUsage(context.Background()); err != nil {
-				slog.Warn("App usage sharing deferred", "error", err)
-			}
+		if err := s.finishUsageWithdrawal(context.Background()); err != nil {
+			return err
 		}
 	}
+
+	s.nibletCloudPreferenceMutex.Lock()
+	defer s.nibletCloudPreferenceMutex.Unlock()
 
 	if err := s.setSetting(settingNibletCloudEnabled, strconv.FormatBool(enabled)); err != nil {
 		return err

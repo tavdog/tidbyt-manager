@@ -151,6 +151,33 @@ func TestUsageSharingWaitsForADevice(t *testing.T) {
 	assert.Equal(t, []string{"POST /v1/tronbyt/reporters", "POST /v1/tronbyt/reports"}, cloud.requests)
 }
 
+func TestDisableNibletCloudWaitsForRunningSyncToWithdraw(t *testing.T) {
+	s, cloud := newUsageTest(t)
+	require.NoError(t, s.setSetting(settingUsageSharing, "true"))
+	reporting := make(chan struct{})
+	release := make(chan struct{})
+	cloud.onReport = func() {
+		close(reporting)
+		<-release
+	}
+	go func() {
+		_ = s.syncUsage(context.Background())
+	}()
+	<-reporting
+	disableDone := make(chan error, 1)
+	go func() { disableDone <- s.setNibletCloudEnabled(false) }()
+	select {
+	case err := <-disableDone:
+		t.Fatalf("expected disable to wait for sync, got err=%v", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(release)
+	require.NoError(t, <-disableDone)
+	assert.Contains(t, cloud.requests, "DELETE /v1/tronbyt/reporters/self")
+	assert.Empty(t, setting(t, s, settingUsageToken))
+	assert.False(t, s.isNibletCloudEnabled())
+}
+
 func TestUsageConsentDuringSyncDoesNotWaitAndIsApplied(t *testing.T) {
 	s, cloud := newUsageTest(t)
 	require.NoError(t, s.setSetting(settingUsageSharing, "true"))

@@ -107,6 +107,55 @@ func usageTimestamp(t time.Time) string {
 	return t.UTC().Format(time.RFC3339)
 }
 
+// waitUsageSyncIdle blocks until no community app stats sync holds usageRunning.
+func (s *Server) waitUsageSyncIdle(ctx context.Context) {
+	for s.usageRunning.Load() {
+		if err := ctx.Err(); err != nil {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+// finishUsageWithdrawal turns sharing off and deletes the reporter while Niblet
+// Cloud connectivity is still allowed. Call before closing the Cloud gate.
+func (s *Server) finishUsageWithdrawal(ctx context.Context) error {
+	consent, err := s.getSetting(settingUsageSharing)
+	if err != nil {
+		return err
+	}
+	token, err := s.getSetting(settingUsageToken)
+	if err != nil {
+		return err
+	}
+	if consent != "true" && token == "" {
+		return nil
+	}
+	if err := s.setSetting(settingUsageSharing, "false"); err != nil {
+		return err
+	}
+	for {
+		s.waitUsageSyncIdle(ctx)
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		s.usageForce.Store(true)
+		if err := s.syncUsage(ctx); err != nil {
+			return err
+		}
+		token, err = s.getSetting(settingUsageToken)
+		if err != nil {
+			return err
+		}
+		if token == "" {
+			return nil
+		}
+		if err := s.setSetting(settingUsageNext, ""); err != nil {
+			return err
+		}
+	}
+}
+
 // syncUsage runs one sync unless another is in progress. No lock is held while
 // talking to Cloud, so saving consent never waits on the network. A consent
 // change made during a sync is picked up by a forced rerun when it finishes.

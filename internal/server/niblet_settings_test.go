@@ -49,6 +49,13 @@ func TestCommunityStatsSettingsHandlerRequiresAdmin(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, response.Code)
 }
 
+func TestNibletCloudDefaultsEnabledWhenConfigured(t *testing.T) {
+	s := newTestServer(t)
+	s.Config.NibletCloudURL = "https://cloud.example.com"
+	s.loadNibletCloudEnabled()
+	require.True(t, s.isNibletCloudEnabled())
+}
+
 func TestNibletCloudEnabledPersistsAcrossRestart(t *testing.T) {
 	s := newTestServer(t)
 	s.Config.NibletCloudURL = "https://cloud.example.com"
