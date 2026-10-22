@@ -56,7 +56,9 @@ func (s *Server) setNibletCloudEnabled(enabled bool) error {
 		return err
 	}
 	s.nibletCloudEnabled.Store(enabled)
-	s.setNibletCounts(map[string]int64{})
+	if wasEnabled && !enabled {
+		s.setNibletCounts(map[string]int64{})
+	}
 
 	if !wasEnabled && enabled {
 		s.usageSyncs.Go(func() {
