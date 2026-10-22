@@ -128,6 +128,9 @@ func (s *Server) syncUsage(ctx context.Context) error {
 // sent together. The retry time is persisted before networking so restarts
 // cannot flood Cloud; force (a consent change) skips the wait.
 func (s *Server) syncUsageOnce(ctx context.Context, force bool) (err error) {
+	if !s.isNibletCloudEnabled() {
+		return nil
+	}
 	settings := make(map[string]string)
 	for _, key := range []string{settingUsageSharing, settingUsageToken, settingUsageNext, settingUsageCheckIn, settingUsageSent, settingUsageFailures} {
 		if settings[key], err = s.getSetting(key); err != nil {
@@ -361,7 +364,7 @@ func (s *Server) saveUsageConsent(r *http.Request, enabled bool) error {
 		return err
 	}
 	s.usageForce.Store(true) // act now rather than after a retry delay
-	if s.Config.NibletCloudURL != "" {
+	if s.isNibletCloudEnabled() {
 		s.usageSyncs.Go(func() {
 			if err := s.syncUsage(context.Background()); err != nil {
 				slog.Warn("App usage sharing deferred", "error", err)
@@ -374,7 +377,7 @@ func (s *Server) saveUsageConsent(r *http.Request, enabled bool) error {
 // shouldPromptUsage asks an admin once per server, after an update, whether
 // to share. New servers answer during setup instead.
 func (s *Server) shouldPromptUsage(user *data.User) bool {
-	if user == nil || !user.IsAdmin || s.Config.NibletCloudURL == "" {
+	if user == nil || !user.IsAdmin || !s.isNibletCloudEnabled() {
 		return false
 	}
 	prompted, err := s.getSetting(settingUsagePrompted)
@@ -397,9 +400,23 @@ func (s *Server) handleUsageSharingConsent(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Invalid form", http.StatusBadRequest)
 		return
 	}
-	if err := s.saveUsageConsent(r, r.PostForm.Get("consent") == "true"); err != nil {
-		http.Error(w, "Could not save app usage sharing", http.StatusInternalServerError)
+	if r.PostForm.Get("community_stats_settings") == "1" && !s.isNibletCloudConfigured() {
+		http.Error(w, "Niblet Cloud is disabled", http.StatusBadRequest)
 		return
+	}
+	nibletEnabled := s.isNibletCloudEnabled()
+	if r.PostForm.Get("community_stats_settings") == "1" && s.isNibletCloudConfigured() {
+		nibletEnabled = r.PostForm.Get("enabled") == "true"
+		if err := s.setNibletCloudEnabled(nibletEnabled); err != nil {
+			http.Error(w, "Could not save Niblet Cloud preference", http.StatusInternalServerError)
+			return
+		}
+	}
+	if nibletEnabled {
+		if err := s.saveUsageConsent(r, r.PostForm.Get("consent") == "true"); err != nil {
+			http.Error(w, "Could not save app usage sharing", http.StatusInternalServerError)
+			return
+		}
 	}
 	http.Redirect(w, r, localReturnPath(r.PostForm.Get("return_to")), http.StatusSeeOther)
 }
@@ -417,13 +434,19 @@ func (s *Server) usageSharingStatus() UsageSharingStatus {
 	last, _ := s.getSetting(settingUsageLast)
 	failure, _ := s.getSetting(settingUsageError)
 	hostname, _ := s.getSetting(settingUsageHostname)
-	status := UsageSharingStatus{Enabled: consent == "true", Hostname: hostname, Offline: s.Config.NibletCloudURL == ""}
+	status := UsageSharingStatus{
+		Enabled:  consent == "true",
+		Hostname: hostname,
+		Offline:  !s.isNibletCloudConfigured(),
+	}
 	lastReport, _ := time.Parse(time.RFC3339, last)
 	switch {
 	case !status.Enabled && token != "":
 		status.Status = "Off · removing your stats"
 	case !status.Enabled:
 		status.Status = "Off"
+	case !s.isNibletCloudEnabled():
+		status.Status = "Paused · Niblet Cloud is turned off in System Settings"
 	case status.Offline:
 		status.Status = "Paused · NIBLET_CLOUD_URL is empty"
 	case token == "" && !s.hasDevices():

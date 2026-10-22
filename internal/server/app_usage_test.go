@@ -77,6 +77,7 @@ func newUsageTest(t *testing.T) (*Server, *fakeUsageCloud) {
 	server := httptest.NewServer(cloud)
 	t.Cleanup(server.Close)
 	s.Config.NibletCloudURL = server.URL
+	s.nibletCloudEnabled.Store(true)
 	require.NoError(t, s.DB.Create(&data.Device{ID: "dev1", Username: "admin", APIKey: "key-dev1"}).Error)
 	return s, cloud
 }
@@ -231,6 +232,7 @@ func TestUsageSharingRegistrationFailureIsShown(t *testing.T) {
 	}))
 	defer cloud.Close()
 	s.Config.NibletCloudURL = cloud.URL
+	s.nibletCloudEnabled.Store(true)
 	require.NoError(t, s.DB.Create(&data.Device{ID: "dev1", Username: "admin", APIKey: "key-dev1"}).Error)
 	require.NoError(t, s.setSetting(settingUsageSharing, "true"))
 	require.Error(t, s.syncUsage(context.Background()))

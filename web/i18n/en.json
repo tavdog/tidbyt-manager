@@ -2237,6 +2237,21 @@
   "Niblet manages the community stats. Your IP address is used only to block spam and isn't saved with your stats, which are removed 30 days after your Tronbyt stops checking in.": {
     "other": "Niblet manages the community stats. Your IP address is used only to block spam and isn't saved with your stats, which are removed 30 days after your Tronbyt stops checking in."
   },
+  "Niblet Cloud": {
+    "other": "Niblet Cloud"
+  },
+  "Allow Niblet Cloud connectivity": {
+    "other": "Allow Niblet Cloud connectivity"
+  },
+  "Niblet Cloud connectivity description": {
+    "other": "When enabled, this server may contact Niblet Cloud for public install counts on system apps and, if you opt in below, community app stats. Turn this off to stop all Niblet data gathering without changing NIBLET_CLOUD_URL."
+  },
+  "Niblet Cloud hard disabled description": {
+    "other": "Niblet Cloud is completely disabled because NIBLET_CLOUD_URL is set to an empty string in your environment. This server will not contact Niblet for install counts or community app stats. To enable it, remove NIBLET_CLOUD_URL from your .env and restart the server."
+  },
+  "Paused · Niblet Cloud is turned off in System Settings": {
+    "other": "Paused · Niblet Cloud is turned off in System Settings"
+  },
   "Community app stats": {
     "other": "Community app stats"
   },
