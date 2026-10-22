@@ -1,14 +1,10 @@
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:1.10.0 AS xx
 
 # hadolint global ignore=DL3018
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27.3-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies
-# build-base for CGo
-# ca-certificates for HTTPS/GitHub API calls
-# libwebp-dev for headers (needed at build time)
-# libwebp-static for static linking
 # git for go mod download
 RUN apk add --no-cache git clang
 
