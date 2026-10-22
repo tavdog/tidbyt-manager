@@ -19,6 +19,7 @@ services:
       - TRONBYT_BRANCH
       - TRONBYT_REPO_URL
       - TRONBYT_COMMIT
+      - NIBLET_CLOUD_URL
 
     healthcheck:
       test: ["CMD", "/app/tronbyt-server", "health"]
