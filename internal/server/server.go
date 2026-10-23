@@ -103,6 +103,7 @@ var templateFiles = map[string]string{
 	"settings":         "admin/settings.html",
 }
 
+// NewServer creates and initializes a new Server instance with the provided database and settings.
 func NewServer(db *gorm.DB, cfg *config.Settings) *Server {
 	version.AllowRemoteLookup = cfg.EnableUpdateChecks
 	version.EnsureGitInfo()

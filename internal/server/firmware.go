@@ -413,6 +413,7 @@ func (s *Server) GetLatestFirmwareVersionForDevice(device *data.Device) string {
 	return ""
 }
 
+// isTronberryDevice reports whether the device is a Raspberry Pi or Tronberry device.
 func isTronberryDevice(device *data.Device) bool {
 	if device == nil {
 		return false
@@ -435,7 +436,7 @@ func (s *Server) GetFirmwareReleaseInfoForDevice(device *data.Device, version st
 		return nil, errors.New("empty version")
 	}
 	cleanVersion := filepath.Base(version)
-	if cleanVersion == "" || cleanVersion == "." || cleanVersion != version || strings.Contains(version, "/") || strings.Contains(version, "\\") {
+	if !semver.IsValid(cleanVersion) || cleanVersion != version || strings.ContainsAny(version, `/\`) {
 		return nil, errors.New("invalid version")
 	}
 
@@ -585,7 +586,7 @@ func (s *Server) handleFirmwareReleaseNotes(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	cleanVersion := filepath.Base(version)
-	if cleanVersion == "" || cleanVersion == "." || cleanVersion != version || strings.Contains(version, "/") || strings.Contains(version, "\\") {
+	if !semver.IsValid(cleanVersion) || cleanVersion != version || strings.ContainsAny(version, `/\`) {
 		http.Error(w, "invalid version parameter", http.StatusBadRequest)
 		return
 	}

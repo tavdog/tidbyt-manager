@@ -106,6 +106,7 @@ func TestHandleFirmwareGeneratePost(t *testing.T) {
 	}
 }
 
+// TestUpdateFirmwareBinariesRejectsHTMLAndRetriesAPI verifies the expected behavior under test.
 func TestUpdateFirmwareBinariesRejectsHTMLAndRetriesAPI(t *testing.T) {
 	s := newTestServerAPI(t)
 	s.Config.GitHubToken = "test-token"
@@ -162,6 +163,7 @@ func TestUpdateFirmwareBinariesRejectsHTMLAndRetriesAPI(t *testing.T) {
 	assert.FileExists(t, releaseJSONPath)
 }
 
+// TestGetFirmwareReleaseInfo_Cached verifies the expected behavior under test.
 func TestGetFirmwareReleaseInfo_Cached(t *testing.T) {
 	s := newTestServerAPI(t)
 
@@ -180,6 +182,7 @@ func TestGetFirmwareReleaseInfo_Cached(t *testing.T) {
 	assert.Equal(t, "https://github.com/tronbyt/firmware-esp32/releases/tag/v1.2.3", info.HTMLURL)
 }
 
+// TestGetFirmwareReleaseInfo_FetchAndCache verifies the expected behavior under test.
 func TestGetFirmwareReleaseInfo_FetchAndCache(t *testing.T) {
 	s := newTestServerAPI(t)
 
@@ -205,6 +208,7 @@ func TestGetFirmwareReleaseInfo_FetchAndCache(t *testing.T) {
 	assert.FileExists(t, cachedPath)
 }
 
+// TestHandleFirmwareReleaseNotesEndpoint verifies the expected behavior under test.
 func TestHandleFirmwareReleaseNotesEndpoint(t *testing.T) {
 	s := newTestServerAPI(t)
 
@@ -235,6 +239,7 @@ func TestHandleFirmwareReleaseNotesEndpoint(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), "Sound fixes")
 }
 
+// TestGetAvailableFirmwareVersionsForDevice verifies the expected behavior under test.
 func TestGetAvailableFirmwareVersionsForDevice(t *testing.T) {
 	s := newTestServerAPI(t)
 
@@ -263,6 +268,7 @@ func TestGetAvailableFirmwareVersionsForDevice(t *testing.T) {
 	assert.Len(t, allVers, 2)
 }
 
+// TestUpdateFirmwareBinariesDownloadsTronberry verifies the expected behavior under test.
 func TestUpdateFirmwareBinariesDownloadsTronberry(t *testing.T) {
 	s := newTestServerAPI(t)
 	t.Setenv("FIRMWARE_REPO", "none") // Skip ESP32
@@ -299,6 +305,7 @@ func TestUpdateFirmwareBinariesDownloadsTronberry(t *testing.T) {
 	assert.Equal(t, []string{"v0.2.0"}, s.GetAvailableFirmwareVersionsForDevice(piDev))
 }
 
+// TestGetFirmwareReleaseInfo_DeviceSpecificIsolation verifies the expected behavior under test.
 func TestGetFirmwareReleaseInfo_DeviceSpecificIsolation(t *testing.T) {
 	s := newTestServerAPI(t)
 
@@ -336,6 +343,7 @@ func TestGetFirmwareReleaseInfo_DeviceSpecificIsolation(t *testing.T) {
 	assert.Equal(t, "Tronberry notes", tbAll["v3.0.0"].Body)
 }
 
+// TestFallbackOwnerRepoDetection verifies the expected behavior under test.
 func TestFallbackOwnerRepoDetection(t *testing.T) {
 	s := newTestServerAPI(t)
 

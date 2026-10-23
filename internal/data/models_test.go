@@ -228,6 +228,7 @@ func TestEveryFirmwareDeviceTypeNamesABinary(t *testing.T) {
 	}
 }
 
+// TestRaspberryPiSupportsOTAAndNamesTronberry verifies the expected behavior under test.
 func TestRaspberryPiSupportsOTAAndNamesTronberry(t *testing.T) {
 	piTypes := []DeviceType{DeviceRaspberryPi, DeviceRaspberryPiWide, DeviceRaspberryPiSquare}
 	for _, dt := range piTypes {
@@ -262,6 +263,7 @@ func TestRaspberryPiSupportsOTAAndNamesTronberry(t *testing.T) {
 	}
 }
 
+// TestDeviceType_SupportsAudio verifies the expected behavior under test.
 func TestDeviceType_SupportsAudio(t *testing.T) {
 	assert.False(t, DeviceTidbytGen1.SupportsAudio())
 	assert.False(t, DevicePixoticker.SupportsAudio())

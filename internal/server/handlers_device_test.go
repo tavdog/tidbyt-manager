@@ -102,6 +102,7 @@ func TestHandleUpdateDevicePost(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateDevicePost_VolumeModes verifies the expected behavior under test.
 func TestHandleUpdateDevicePost_VolumeModes(t *testing.T) {
 	s := newTestServer(t)
 
@@ -468,6 +469,7 @@ func TestHandleUpdateFirmwareSettings_ColorOrder(t *testing.T) {
 	}
 }
 
+// assertFirmwareBoolBroadcast verifies the expected behavior under test.
 func assertFirmwareBoolBroadcast(t *testing.T, s *Server, user *data.User, device *data.Device, field string, value bool) {
 	t.Helper()
 	ch := s.Broadcaster.Subscribe(device.ID)
@@ -500,6 +502,7 @@ func assertFirmwareBoolBroadcast(t *testing.T, s *Server, user *data.User, devic
 	}
 }
 
+// assertFirmwareCheckboxState verifies the expected behavior under test.
 func assertFirmwareCheckboxState(t *testing.T, s *Server, user *data.User, device data.Device, fieldID string, wantShown bool, wantChecked bool) {
 	t.Helper()
 	ctx := context.Background()
@@ -525,6 +528,7 @@ func assertFirmwareCheckboxState(t *testing.T, s *Server, user *data.User, devic
 	}
 }
 
+// TestHandleUpdateFirmwareSettings_TouchBeep verifies the expected behavior under test.
 func TestHandleUpdateFirmwareSettings_TouchBeep(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
@@ -582,6 +586,7 @@ func TestHandleUpdateDeviceGet_TouchBeepVisibility(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateFirmwareSettings_StartupSound verifies the expected behavior under test.
 func TestHandleUpdateFirmwareSettings_StartupSound(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
@@ -604,6 +609,7 @@ func TestHandleUpdateFirmwareSettings_StartupSound(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateFirmwareSettings_StartupSound_DBError verifies the expected behavior under test.
 func TestHandleUpdateFirmwareSettings_StartupSound_DBError(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
@@ -632,6 +638,7 @@ func TestHandleUpdateFirmwareSettings_StartupSound_DBError(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 }
 
+// TestHandleUpdateDeviceGet_StartupSoundVisibility verifies the expected behavior under test.
 func TestHandleUpdateDeviceGet_StartupSoundVisibility(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
@@ -673,6 +680,7 @@ func TestHandleUpdateDeviceGet_StartupSoundVisibility(t *testing.T) {
 	}
 }
 
+// TestHandleUpdateDevice_AudioCapabilityVisibility verifies the expected behavior under test.
 func TestHandleUpdateDevice_AudioCapabilityVisibility(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
@@ -717,6 +725,7 @@ func TestHandleUpdateDevice_AudioCapabilityVisibility(t *testing.T) {
 	}
 }
 
+// TestHandleSetMute verifies the expected behavior under test.
 func TestHandleSetMute(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
@@ -794,6 +803,7 @@ func TestHandleSetMute(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
 }
 
+// TestHandleTestSoundDevice verifies the expected behavior under test.
 func TestHandleTestSoundDevice(t *testing.T) {
 	s := newTestServer(t)
 
@@ -853,6 +863,7 @@ func TestHandleTestSoundDevice(t *testing.T) {
 	assert.Equal(t, 45, device.Volume)
 }
 
+// TestUpdateVolume verifies the expected behavior under test.
 func TestUpdateVolume(t *testing.T) {
 	s := newTestServer(t)
 

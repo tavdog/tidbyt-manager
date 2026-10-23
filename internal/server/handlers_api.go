@@ -371,7 +371,7 @@ func (s *Server) handlePushApp(w http.ResponseWriter, r *http.Request) {
 			}
 			if dataReq.Sound != "" {
 				baseURL := s.GetDeviceBaseURL(device)
-				soundID := qualifyAppSound(dataReq.AppID, dataReq.Sound)
+				soundID := s.qualifyAppSound(dataReq.AppID, dataReq.Sound)
 				if err := s.TriggerDeviceSound(r.Context(), device, soundID, baseURL); err != nil {
 					slog.Error("Failed to trigger device sound on push_app cached", "device", device.ID, "error", err)
 				}
@@ -453,7 +453,7 @@ func (s *Server) handlePushApp(w http.ResponseWriter, r *http.Request) {
 
 	if dataReq.Sound != "" {
 		baseURL := s.GetDeviceBaseURL(device)
-		soundID := qualifyAppSound(dataReq.AppID, dataReq.Sound)
+		soundID := s.qualifyAppSound(dataReq.AppID, dataReq.Sound)
 		if err := s.TriggerDeviceSound(r.Context(), device, soundID, baseURL); err != nil {
 			slog.Error("Failed to trigger device sound on push_app", "device", device.ID, "error", err)
 		}
@@ -1312,6 +1312,8 @@ func (s *Server) handleUpdateFirmwareSettingsAPI(w http.ResponseWriter, r *http.
 		device.Info.StartupSound = update.StartupSound
 		if err := s.DB.Model(&data.Device{ID: device.ID}).Update("info", device.Info).Error; err != nil {
 			slog.Error("Failed to update device info in DB", "error", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
 		}
 	}
 	if update.WifiPowerSave != nil {
@@ -1347,8 +1349,8 @@ func (s *Server) handleUpdateFirmwareSettingsAPI(w http.ResponseWriter, r *http.
 	}
 }
 
-// qualifyAppSound resolves sound identifiers, adding app prefixes only for non-default, non-URL sounds.
-func qualifyAppSound(appID, soundID string) string {
+// qualifyAppSound resolves sound identifiers, adding app prefixes only for non-default, non-custom, non-URL sounds.
+func (s *Server) qualifyAppSound(appID, soundID string) string {
 	if appID == "" || soundID == "" || strings.Contains(soundID, ":") ||
 		strings.HasPrefix(soundID, "http://") || strings.HasPrefix(soundID, "https://") {
 		return soundID
@@ -1356,6 +1358,13 @@ func qualifyAppSound(appID, soundID string) string {
 	for _, def := range DefaultNotificationSounds {
 		if strings.EqualFold(soundID, def.Name) || soundID == strings.TrimPrefix(def.ID, "default:") {
 			return soundID
+		}
+	}
+	if s != nil {
+		if customPath, err := securejoin.SecureJoin(s.SoundsDir(), soundID); err == nil {
+			if fi, err := os.Stat(customPath); err == nil && !fi.IsDir() {
+				return soundID
+			}
 		}
 	}
 	return fmt.Sprintf("app:%s:%s", appID, soundID)
@@ -1388,7 +1397,7 @@ func (s *Server) handleTriggerSoundAPI(w http.ResponseWriter, r *http.Request) {
 	if appID == "" {
 		appID = payload.App
 	}
-	target = qualifyAppSound(appID, target)
+	target = s.qualifyAppSound(appID, target)
 
 	if target == "" {
 		http.Error(w, "sound or url is required", http.StatusBadRequest)

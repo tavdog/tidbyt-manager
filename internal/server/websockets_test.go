@@ -146,6 +146,7 @@ func TestWebsockets_Client(t *testing.T) {
 	assert.NoError(t, conn.WriteJSON(ackMsg), "Failed to write ACK")
 }
 
+// TestWebsockets_NotificationSoundUpdatedWhileWaitingForACK verifies the expected behavior under test.
 func TestWebsockets_NotificationSoundUpdatedWhileWaitingForACK(t *testing.T) {
 	s := newTestServerAPI(t)
 

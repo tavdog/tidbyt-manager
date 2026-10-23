@@ -132,6 +132,7 @@ func TestDeviceTypeChoicesOfferEveryTypeGroupedByPanelSize(t *testing.T) {
 	}
 }
 
+// TestGetBaseURLAndGetDeviceBaseURL verifies the expected behavior under test.
 func TestGetBaseURLAndGetDeviceBaseURL(t *testing.T) {
 	s := &Server{
 		Config: &config.Settings{
@@ -177,6 +178,7 @@ func TestGetBaseURLAndGetDeviceBaseURL(t *testing.T) {
 	assert.Equal(t, "http://192.168.1.15:7000", s.GetDeviceBaseURL(devHTTP))
 }
 
+// TestRenderTemplatePopulatesVersionAndCommitURL verifies the expected behavior under test.
 func TestRenderTemplatePopulatesVersionAndCommitURL(t *testing.T) {
 	s := newTestServerAPI(t)
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)

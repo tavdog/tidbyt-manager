@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestLooksLikeFirmware verifies the expected behavior under test.
 func TestLooksLikeFirmware(t *testing.T) {
 	ota := bytes.Repeat([]byte{0xFF}, 64)
 	ota[0] = espImageMagic

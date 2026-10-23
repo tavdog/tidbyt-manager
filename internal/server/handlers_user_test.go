@@ -305,6 +305,7 @@ func TestHandleAdminUpdateUserEmail(t *testing.T) {
 	require.Equal(t, "updated@example.com", *updatedUser.Email)
 }
 
+// TestHandleIndexRendersDeviceCard verifies the expected behavior under test.
 func TestHandleIndexRendersDeviceCard(t *testing.T) {
 	s := newTestServer(t)
 

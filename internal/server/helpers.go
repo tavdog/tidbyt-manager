@@ -975,9 +975,13 @@ func (s *Server) sendPendingHTTPDeviceHeaders(w http.ResponseWriter, ctx context
 	}
 
 	if device.PendingSound != "" {
-		slog.Info("Sending sound header", "device", device.ID, "sound", device.PendingSound)
-		w.Header().Set("Tronbyt-Sound", device.PendingSound)
-		w.Header().Set("Tronbyt-Volume", strconv.Itoa(device.GetEffectiveVolume()))
+		if !device.IsMuted() {
+			slog.Info("Sending sound header", "device", device.ID, "sound", device.PendingSound)
+			w.Header().Set("Tronbyt-Sound", device.PendingSound)
+			w.Header().Set("Tronbyt-Volume", strconv.Itoa(device.GetEffectiveVolume()))
+		} else {
+			slog.Debug("Dropping pending sound: device is muted", "device", device.ID)
+		}
 
 		if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_sound", ""); err != nil {
 			slog.Error("Failed to clear pending sound", "error", err)

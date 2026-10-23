@@ -1162,6 +1162,7 @@ func (s *Server) setModeOverride(w http.ResponseWriter, r *http.Request, mode st
 
 	user := GetUser(r)
 	s.invalidateDeviceAppRendersIfModeChanged(r.Context(), device, modeSnapshotBefore)
+	s.Broadcaster.Notify(device.ID, nil)
 	s.notifyDashboard(user.Username, WSEvent{
 		Type:     "device_updated",
 		DeviceID: device.ID,

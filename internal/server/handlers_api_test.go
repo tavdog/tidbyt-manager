@@ -729,6 +729,7 @@ func TestHandleGetInstallation_ByInstallationID(t *testing.T) {
 	}
 }
 
+// TestHandlePatchDevice verifies the expected behavior under test.
 func TestHandlePatchDevice(t *testing.T) {
 	s := newTestServerAPI(t)
 	apiKey := "test_api_key"
@@ -869,6 +870,7 @@ func TestHandlePatchDeviceDimModeActive(t *testing.T) {
 	assert.True(t, *updatedDevice.DimModeOverride)
 }
 
+// TestPatchDevice_Mute verifies the expected behavior under test.
 func TestPatchDevice_Mute(t *testing.T) {
 	s := newTestServerAPI(t)
 	apiKey := "test_api_key"
@@ -899,6 +901,7 @@ func TestPatchDevice_Mute(t *testing.T) {
 	assert.True(t, updatedDevice.NightModeMute)
 }
 
+// TestPatchDevice_VolumeAndModes verifies the expected behavior under test.
 func TestPatchDevice_VolumeAndModes(t *testing.T) {
 	s := newTestServerAPI(t)
 	apiKey := "test_api_key"

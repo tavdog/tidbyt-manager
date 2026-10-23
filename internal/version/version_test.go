@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestNormalizeGitURL verifies the expected behavior under test.
 func TestNormalizeGitURL(t *testing.T) {
 	tests := []struct {
 		input string
@@ -46,6 +47,7 @@ func TestNormalizeGitURL(t *testing.T) {
 	}
 }
 
+// TestInitGitInfo verifies the expected behavior under test.
 func TestInitGitInfo(t *testing.T) {
 	if _, err := os.Stat("../../.git"); os.IsNotExist(err) {
 		t.Setenv("TRONBYT_COMMIT", "abcdef1234567890")
@@ -62,6 +64,7 @@ func TestInitGitInfo(t *testing.T) {
 	assert.Contains(t, CommitURL, RepoURL)
 }
 
+// TestEnvOverrides verifies the expected behavior under test.
 func TestEnvOverrides(t *testing.T) {
 	// Backup original state
 	origCommit, origBranch, origRepo, origURL := Commit, Branch, RepoURL, CommitURL
@@ -88,6 +91,7 @@ func TestEnvOverrides(t *testing.T) {
 	assert.Equal(t, "https://github.com/myfork/tronbyt-server/tree/custom-branch", CommitURL)
 }
 
+// TestBranchFallbackWhenCommitUnknown verifies the expected behavior under test.
 func TestBranchFallbackWhenCommitUnknown(t *testing.T) {
 	origCommit, origBranch, origRepo, origURL := Commit, Branch, RepoURL, CommitURL
 	defer func() {
@@ -111,6 +115,7 @@ func TestBranchFallbackWhenCommitUnknown(t *testing.T) {
 	assert.Equal(t, "https://github.com/myfork/tronbyt-server/tree/nonexistent-branch-xyz", CommitURL)
 }
 
+// TestAllowRemoteLookupDisabled verifies the expected behavior under test.
 func TestAllowRemoteLookupDisabled(t *testing.T) {
 	origAllow := AllowRemoteLookup
 	defer func() {
@@ -122,6 +127,7 @@ func TestAllowRemoteLookupDisabled(t *testing.T) {
 	assert.False(t, AllowRemoteLookup)
 }
 
+// TestIsUpstreamRepo verifies the expected behavior under test.
 func TestIsUpstreamRepo(t *testing.T) {
 	assert.True(t, IsUpstreamRepo(""))
 	assert.True(t, IsUpstreamRepo("https://github.com/tronbyt/server"))
@@ -134,6 +140,7 @@ func TestIsUpstreamRepo(t *testing.T) {
 	assert.False(t, IsUpstreamRepo("https://github.com/otheruser/server"))
 }
 
+// TestShouldShowBranchTag verifies the expected behavior under test.
 func TestShouldShowBranchTag(t *testing.T) {
 	upstream := "https://github.com/tronbyt/server"
 	fork := "https://github.com/brombomb/tronbyt-server"

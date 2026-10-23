@@ -22,6 +22,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// TestResolveSoundPayload verifies the expected behavior under test.
 func TestResolveSoundPayload(t *testing.T) {
 	s := newTestServerAPI(t)
 	baseURL := "http://localhost:8000"
@@ -86,6 +87,7 @@ func TestResolveSoundPayload(t *testing.T) {
 	assert.Empty(t, s.ResolveSoundPayload(devFull, baseURL, "523:120,659:120"))
 }
 
+// TestGetDefaultAndCustomSounds verifies the expected behavior under test.
 func TestGetDefaultAndCustomSounds(t *testing.T) {
 	s := newTestServerAPI(t)
 
@@ -123,6 +125,7 @@ func TestGetDefaultAndCustomSounds(t *testing.T) {
 	assert.NotContains(t, customFilenames, "notes.txt")
 }
 
+// TestAdminSoundUploadAndDelete verifies the expected behavior under test.
 func TestAdminSoundUploadAndDelete(t *testing.T) {
 	s := newTestServerAPI(t)
 	var adminUser data.User
@@ -195,6 +198,7 @@ func TestAdminSoundUploadAndDelete(t *testing.T) {
 	assert.NoFileExists(t, uploadedFile)
 }
 
+// TestStaticCustomSoundsDirectoryBrowsingDisabled verifies the expected behavior under test.
 func TestStaticCustomSoundsDirectoryBrowsingDisabled(t *testing.T) {
 	s := newTestServerAPI(t)
 	require.NoError(t, s.EnsureSoundsDir())
@@ -216,6 +220,7 @@ func TestStaticCustomSoundsDirectoryBrowsingDisabled(t *testing.T) {
 	assert.Equal(t, "sample-wav-bytes", rr.Body.String())
 }
 
+// TestTriggerSoundAPI verifies the expected behavior under test.
 func TestTriggerSoundAPI(t *testing.T) {
 	s := newTestServerAPI(t)
 	apiKey := "device_api_key"
@@ -276,6 +281,7 @@ func TestTriggerSoundAPI(t *testing.T) {
 	assert.Empty(t, dev.PendingSound)
 }
 
+// TestPatchAndGetInstallationNotificationSound verifies the expected behavior under test.
 func TestPatchAndGetInstallationNotificationSound(t *testing.T) {
 	s := newTestServerAPI(t)
 	apiKey := "test_api_key"
@@ -361,6 +367,7 @@ func TestPatchAndGetInstallationNotificationSound(t *testing.T) {
 	assert.Empty(t, cleared.NotificationSoundTrigger)
 }
 
+// TestNotificationSoundOptInAndTriggerLogic verifies the expected behavior under test.
 func TestNotificationSoundOptInAndTriggerLogic(t *testing.T) {
 	s := newTestServerAPI(t)
 	deviceID := "testdevice"
@@ -449,6 +456,7 @@ func TestNotificationSoundOptInAndTriggerLogic(t *testing.T) {
 	assert.False(t, shouldPlayRender, "every_display must not trigger in render loop")
 }
 
+// TestGetNextAppImage_EveryDisplaySoundNotification verifies the expected behavior under test.
 func TestGetNextAppImage_EveryDisplaySoundNotification(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
@@ -498,6 +506,7 @@ func TestGetNextAppImage_EveryDisplaySoundNotification(t *testing.T) {
 	assert.Contains(t, reloaded.PendingSound, "chime")
 }
 
+// TestUnifiedSoundRoute verifies the expected behavior under test.
 func TestUnifiedSoundRoute(t *testing.T) {
 	s := newTestServerAPI(t)
 
@@ -572,6 +581,7 @@ func TestUnifiedSoundRoute(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, rr.Code)
 }
 
+// TestResolveSoundPayload_AppSounds verifies the expected behavior under test.
 func TestResolveSoundPayload_AppSounds(t *testing.T) {
 	s := newTestServerAPI(t)
 	baseURL := "http://localhost:8000"
@@ -601,6 +611,7 @@ func TestResolveSoundPayload_AppSounds(t *testing.T) {
 	assert.Empty(t, s.ResolveSoundPayload(devNone, baseURL, "app:nfl:touchdown.mp3"))
 }
 
+// TestExtractAppSounds verifies the expected behavior under test.
 func TestExtractAppSounds(t *testing.T) {
 	schemaJSON := []byte(`{
 		"version": "1",
@@ -638,6 +649,7 @@ func TestExtractAppSounds(t *testing.T) {
 	assert.Equal(t, "523:120,659:120,784:220", sounds[1].Tone)
 }
 
+// TestPushAppWithSound verifies the expected behavior under test.
 func TestPushAppWithSound(t *testing.T) {
 	s := newTestServerAPI(t)
 	apiKey := "device_api_key"
@@ -659,6 +671,7 @@ func TestPushAppWithSound(t *testing.T) {
 	assert.Contains(t, dev.PendingSound, "/sounds/nfl/touchdown.mp3")
 }
 
+// TestTriggerSoundAPI_MutedAndUnplayable verifies the expected behavior under test.
 func TestTriggerSoundAPI_MutedAndUnplayable(t *testing.T) {
 	s := newTestServerAPI(t)
 	apiKey := "device_api_key"
@@ -701,6 +714,7 @@ func TestTriggerSoundAPI_MutedAndUnplayable(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), "Sound not found or not playable on this device")
 }
 
+// TestDeviceIsMuted verifies the expected behavior under test.
 func TestDeviceIsMuted(t *testing.T) {
 	var emptyDev data.Device
 	assert.False(t, emptyDev.IsMuted())
@@ -726,6 +740,7 @@ func TestDeviceIsMuted(t *testing.T) {
 	assert.True(t, dev.IsMuted())
 }
 
+// TestTriggerDeviceSoundMuted verifies the expected behavior under test.
 func TestTriggerDeviceSoundMuted(t *testing.T) {
 	s := newTestServerAPI(t)
 	deviceID := "testdevice"
@@ -749,6 +764,7 @@ func TestTriggerDeviceSoundMuted(t *testing.T) {
 	assert.Empty(t, reloaded.PendingSound)
 }
 
+// TestDeviceVolume verifies the expected behavior under test.
 func TestDeviceVolume(t *testing.T) {
 	var emptyDev data.Device
 	assert.Equal(t, 0, emptyDev.GetVolume())
@@ -766,6 +782,7 @@ func TestDeviceVolume(t *testing.T) {
 	assert.Equal(t, 100, devHigh.GetVolume())
 }
 
+// TestDeviceEffectiveVolume_NightAndDimModes verifies the expected behavior under test.
 func TestDeviceEffectiveVolume_NightAndDimModes(t *testing.T) {
 	trueVal := true
 	future := time.Now().Add(1 * time.Hour)
@@ -841,6 +858,7 @@ func TestDeviceEffectiveVolume_NightAndDimModes(t *testing.T) {
 	assert.Equal(t, 70, devNilModes.GetDimModeVolume())
 }
 
+// TestSoundDebounceCooldown verifies the expected behavior under test.
 func TestSoundDebounceCooldown(t *testing.T) {
 	sound := "default:chime"
 	app := &data.App{
@@ -868,6 +886,7 @@ func TestSoundDebounceCooldown(t *testing.T) {
 	assert.True(t, shouldPlay, "Sound should play after 30s cooldown has elapsed")
 }
 
+// TestCustomSoundsSecurityAndDirectoryTraversal verifies the expected behavior under test.
 func TestCustomSoundsSecurityAndDirectoryTraversal(t *testing.T) {
 	s := newTestServerAPI(t)
 	require.NoError(t, s.EnsureSoundsDir())
@@ -935,4 +954,30 @@ func TestCustomSoundsSecurityAndDirectoryTraversal(t *testing.T) {
 	rr = httptest.NewRecorder()
 	s.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusNotFound, rr.Code, "Traversal via appId must return 404")
+
+	// 6. Cross-user app isolation: unauthenticated or other-user requests must not read another user's private app sounds
+	victimAppDir := filepath.Join(s.DataDir, "users", "victim", "apps", "private_app")
+	require.NoError(t, os.MkdirAll(victimAppDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(victimAppDir, "secret.wav"), []byte("private-audio"), 0644))
+
+	// Unauthenticated request by unqualified app basename must return 404
+	req = httptest.NewRequest(http.MethodGet, "/sounds/private_app/secret.wav", nil)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusNotFound, rr.Code, "Unauthenticated request to private user app sound must return 404")
+
+	// Authenticated request with a different user's API key must return 404
+	req = httptest.NewRequest(http.MethodGet, "/sounds/private_app/secret.wav?key=test_api_key", nil)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusNotFound, rr.Code, "Different user must not access victim user app sound")
+
+	// Authenticated request by the actual owner succeeds
+	victimUser := data.User{Username: "victim", APIKey: "victim_api_key"}
+	require.NoError(t, s.DB.Create(&victimUser).Error)
+	req = httptest.NewRequest(http.MethodGet, "/sounds/private_app/secret.wav?key=victim_api_key", nil)
+	rr = httptest.NewRecorder()
+	s.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code, "Owner should be able to access their own app sound")
+	assert.Equal(t, "private-audio", rr.Body.String())
 }

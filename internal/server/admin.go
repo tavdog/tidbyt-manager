@@ -103,6 +103,34 @@ func boolToString(b bool) string {
 	return "false"
 }
 
+// isValidAudioContent inspects magic bytes and MIME sniffing to ensure the uploaded file is audio.
+func isValidAudioContent(buf []byte, ext string) bool {
+	if len(buf) < 4 {
+		return false
+	}
+	mimeType := http.DetectContentType(buf)
+	if strings.HasPrefix(mimeType, "audio/") || mimeType == "application/ogg" {
+		return true
+	}
+	// WAV: "RIFF" ... "WAVE"
+	if len(buf) >= 12 && string(buf[0:4]) == "RIFF" && string(buf[8:12]) == "WAVE" {
+		return true
+	}
+	// OGG: "OggS"
+	if string(buf[0:4]) == "OggS" {
+		return true
+	}
+	// MP3: "ID3" or MPEG audio frame sync (0xFF followed by 0xE0..0xFF)
+	if string(buf[0:3]) == "ID3" || (buf[0] == 0xFF && (buf[1]&0xE0) == 0xE0) {
+		return true
+	}
+	// M4A / MP4 audio container: "ftyp" at offset 4
+	if len(buf) >= 8 && string(buf[4:8]) == "ftyp" {
+		return true
+	}
+	return false
+}
+
 // handleAdminUploadSound processes administrator audio file uploads for notification sounds.
 func (s *Server) handleAdminUploadSound(w http.ResponseWriter, r *http.Request) {
 	user := GetUser(r)
@@ -150,13 +178,40 @@ func (s *Server) handleAdminUploadSound(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	dst, err := os.Create(targetPath)
+	if _, err := os.Stat(targetPath); err == nil {
+		s.flashAndRedirect(w, r, fmt.Sprintf("Sound '%s' already exists.", cleanFilename), "/settings/admin#section-sounds", http.StatusSeeOther)
+		return
+	}
+
+	// Sniff the first 512 bytes to verify actual audio content before writing
+	sniffBuf := make([]byte, 512)
+	n, readErr := io.ReadFull(file, sniffBuf)
+	if readErr != nil && readErr != io.EOF && readErr != io.ErrUnexpectedEOF {
+		slog.Error("Failed to read uploaded sound header", "error", readErr)
+		s.flashAndRedirect(w, r, "Failed to read uploaded file", "/settings/admin#section-sounds", http.StatusSeeOther)
+		return
+	}
+	sniffBuf = sniffBuf[:n]
+	if !isValidAudioContent(sniffBuf, ext) {
+		s.flashAndRedirect(w, r, "Uploaded file does not contain valid audio data", "/settings/admin#section-sounds", http.StatusSeeOther)
+		return
+	}
+
+	dst, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
 	if err != nil {
 		slog.Error("Failed to create sound file", "path", targetPath, "error", err)
 		s.flashAndRedirect(w, r, "Failed to save file", "/settings/admin#section-sounds", http.StatusSeeOther)
 		return
 	}
 	defer func() { _ = dst.Close() }()
+
+	if _, err := dst.Write(sniffBuf); err != nil {
+		_ = dst.Close()
+		_ = os.Remove(targetPath)
+		slog.Error("Failed to write sound file header", "path", targetPath, "error", err)
+		s.flashAndRedirect(w, r, "Failed to save file content", "/settings/admin#section-sounds", http.StatusSeeOther)
+		return
+	}
 
 	if _, err := io.Copy(dst, file); err != nil {
 		_ = dst.Close()

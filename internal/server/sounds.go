@@ -170,8 +170,9 @@ func MapSoundToTone(soundName string) string {
 	}
 }
 
-// findAppDir locates the directory containing an app by its ID, package name, or path.
-func (s *Server) findAppDir(appID string) string {
+// findUserAppDir locates an app directory, checking system apps first and then scoping any
+// user-app or database-app lookup to the specified owner username (if non-empty).
+func (s *Server) findUserAppDir(appID string, ownerUsername string) string {
 	if appID == "" {
 		return ""
 	}
@@ -181,11 +182,13 @@ func (s *Server) findAppDir(appID string) string {
 		return ""
 	}
 
-	// 1. Direct path check in DataDir (e.g. "system-apps/apps/nfl_scores")
-	directPath, err := securejoin.SecureJoin(s.DataDir, cleanID)
-	if err == nil {
-		if fi, err := os.Stat(directPath); err == nil && fi.IsDir() {
-			return directPath
+	// 1. Direct path check in system-apps (e.g. "system-apps/apps/nfl_scores")
+	if strings.HasPrefix(cleanID, "system-apps") {
+		directPath, err := securejoin.SecureJoin(s.DataDir, cleanID)
+		if err == nil {
+			if fi, err := os.Stat(directPath); err == nil && fi.IsDir() {
+				return directPath
+			}
 		}
 	}
 
@@ -216,42 +219,84 @@ func (s *Server) findAppDir(appID string) string {
 	}
 	s.systemAppsCacheMutex.RUnlock()
 
-	// 4. Check DB for matching app
-	if s.DB != nil {
-		dbApp, err := gorm.G[data.App](s.DB).Where("iname = ? OR name = ?", cleanID, cleanID).First(context.Background())
-		if err == nil && dbApp.Path != nil && *dbApp.Path != "" {
-			p, err := securejoin.SecureJoin(s.DataDir, *dbApp.Path)
+	// 4. If an owner username is provided, check their user apps and their devices' installed apps
+	if ownerUsername != "" {
+		cleanOwner := filepath.Base(ownerUsername)
+		if cleanOwner != "" && cleanOwner != "." && cleanOwner == ownerUsername {
+			userDir, err := securejoin.SecureJoin(filepath.Join(s.DataDir, "users"), cleanOwner)
 			if err == nil {
-				if fi, err := os.Stat(p); err == nil {
-					if fi.IsDir() {
-						return p
+				candidate1, err1 := securejoin.SecureJoin(userDir, filepath.Join("apps", baseName))
+				if err1 == nil {
+					if fi, err := os.Stat(candidate1); err == nil && fi.IsDir() {
+						return candidate1
 					}
-					return filepath.Dir(p)
+				}
+				candidate2, err2 := securejoin.SecureJoin(userDir, filepath.Join("repo", "apps", baseName))
+				if err2 == nil {
+					if fi, err := os.Stat(candidate2); err == nil && fi.IsDir() {
+						return candidate2
+					}
+				}
+			}
+
+			if s.DB != nil {
+				var dbApp data.App
+				err := s.DB.Joins("JOIN devices ON devices.id = apps.device_id").
+					Where("devices.username = ? AND (apps.iname = ? OR apps.name = ?)", cleanOwner, cleanID, cleanID).
+					First(&dbApp).Error
+				if err == nil && dbApp.Path != nil && *dbApp.Path != "" {
+					p, err := securejoin.SecureJoin(s.DataDir, *dbApp.Path)
+					if err == nil {
+						if fi, err := os.Stat(p); err == nil {
+							if fi.IsDir() {
+								return p
+							}
+							return filepath.Dir(p)
+						}
+					}
 				}
 			}
 		}
 	}
 
-	// 5. Check user directories in DataDir/users/<username>/apps/<baseName> and .../repo/apps/<baseName>
-	usersDir := filepath.Join(s.DataDir, "users")
-	if entries, err := os.ReadDir(usersDir); err == nil {
-		for _, entry := range entries {
-			if !entry.IsDir() {
-				continue
+	return ""
+}
+
+// resolveSoundOwnerUsername determines the authorized owner username for a sound request
+// from the session cookie, Authorization header, or ?key= / ?device_id= query parameters.
+func (s *Server) resolveSoundOwnerUsername(r *http.Request) string {
+	if s.DB == nil {
+		return ""
+	}
+
+	// 1. Check session cookie if available
+	if s.Store != nil {
+		if session, err := s.Store.Get(r, "session-name"); err == nil {
+			if username, ok := session.Values["username"].(string); ok && username != "" {
+				return username
 			}
-			userDir := filepath.Join(usersDir, entry.Name())
-			candidate1, err1 := securejoin.SecureJoin(userDir, filepath.Join("apps", baseName))
-			if err1 == nil {
-				if fi, err := os.Stat(candidate1); err == nil && fi.IsDir() {
-					return candidate1
-				}
-			}
-			candidate2, err2 := securejoin.SecureJoin(userDir, filepath.Join("repo", "apps", baseName))
-			if err2 == nil {
-				if fi, err := os.Stat(candidate2); err == nil && fi.IsDir() {
-					return candidate2
-				}
-			}
+		}
+	}
+
+	// 2. Check Authorization header or ?key= query parameter
+	var apiKey string
+	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && strings.EqualFold(parts[0], "bearer") {
+			apiKey = parts[1]
+		} else {
+			apiKey = authHeader
+		}
+	} else if key := r.URL.Query().Get("key"); key != "" {
+		apiKey = key
+	}
+
+	if apiKey != "" {
+		if user, err := gorm.G[data.User](s.DB).Where("api_key = ?", apiKey).First(r.Context()); err == nil {
+			return user.Username
+		}
+		if dev, err := gorm.G[data.Device](s.DB).Where("api_key = ?", apiKey).First(r.Context()); err == nil {
+			return dev.Username
 		}
 	}
 
@@ -290,12 +335,17 @@ func (s *Server) handleUnifiedSound(w http.ResponseWriter, r *http.Request) {
 
 	// 1. If appId is provided (and not "default" or "custom"), look in the app's directory
 	if appID != "" && appID != "default" && appID != "custom" {
-		appDir := s.findAppDir(appID)
+		ownerUsername := s.resolveSoundOwnerUsername(r)
+		appDir := s.findUserAppDir(appID, ownerUsername)
 		if appDir != "" {
 			filePath, err := securejoin.SecureJoin(appDir, filename)
 			if err == nil {
 				if fi, err := os.Stat(filePath); err == nil && !fi.IsDir() {
-					w.Header().Set("Cache-Control", "public, max-age=3600")
+					if ownerUsername != "" {
+						w.Header().Set("Cache-Control", "private, max-age=3600")
+					} else {
+						w.Header().Set("Cache-Control", "public, max-age=3600")
+					}
 					http.ServeFile(w, r, filePath)
 					return
 				}
@@ -435,11 +485,9 @@ func (s *Server) TriggerDeviceSound(ctx context.Context, device *data.Device, so
 		return nil
 	}
 
-	// 1. Update in-memory struct immediately so currently running HTTP response handlers see it
-	device.PendingSound = payload
-
-	// 2. Update PendingSound in DB for HTTP polling devices
+	// 1. Update in-memory struct and DB for HTTP polling devices
 	if device.Info.ProtocolType != data.ProtocolWS {
+		device.PendingSound = payload
 		if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_sound", payload); err != nil {
 			slog.Error("Failed to set pending_sound", "device", device.ID, "error", err)
 		}
