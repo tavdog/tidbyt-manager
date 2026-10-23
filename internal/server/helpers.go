@@ -67,6 +67,8 @@ type TemplateData struct {
 	ShowUsagePrompt       bool // first-run app usage sharing prompt for admins
 	UsageSharingAvailable bool
 	UsageSharing          UsageSharingStatus
+	NibletCloudConfigured bool // NIBLET_CLOUD_URL is set
+	NibletCloudEnabled    bool // admin allows Niblet Cloud traffic
 	User                  *data.User
 	Users                 []data.User // For admin view
 	Config                *config.TemplateConfig
@@ -211,7 +213,9 @@ func (s *Server) renderTemplate(w http.ResponseWriter, r *http.Request, name str
 		}
 	}
 
-	tmplData.UsageSharingAvailable = s.Config.NibletCloudURL != ""
+	tmplData.NibletCloudConfigured = s.isNibletCloudConfigured()
+	tmplData.NibletCloudEnabled = s.isNibletCloudEnabled()
+	tmplData.UsageSharingAvailable = s.isNibletCloudEnabled()
 	tmplData.ShowUsagePrompt = s.shouldPromptUsage(tmplData.User)
 
 	// Calculate IsAutoLoginActive

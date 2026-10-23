@@ -64,6 +64,8 @@ type Server struct {
 	systemAppsRefreshMutex               sync.Mutex
 	systemAppsAutoRefreshPreferenceMutex sync.Mutex
 	systemAppsAutoRefresh                atomic.Bool
+	nibletCloudPreferenceMutex           sync.Mutex
+	nibletCloudEnabled                   atomic.Bool
 
 	// SchemaCache, when set, allows forcing a one-shot refetch of an app's
 	// cached HTTP responses so dynamic schema data (e.g. dropdown options
@@ -154,6 +156,8 @@ func NewServer(db *gorm.DB, cfg *config.Settings) *Server {
 		cfg.SystemAppsAutoRefresh = val == "true"
 	}
 	s.systemAppsAutoRefresh.Store(cfg.SystemAppsAutoRefresh)
+
+	s.loadNibletCloudEnabled()
 
 	// Load OIDC settings from DB
 	if val, err := s.getSetting("oidc_enabled"); err == nil {
