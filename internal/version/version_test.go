@@ -94,10 +94,13 @@ func TestEnvOverrides(t *testing.T) {
 // TestBranchFallbackWhenCommitUnknown verifies the expected behavior under test.
 func TestBranchFallbackWhenCommitUnknown(t *testing.T) {
 	origCommit, origBranch, origRepo, origURL := Commit, Branch, RepoURL, CommitURL
+	origAllow := AllowRemoteLookup
 	defer func() {
 		Commit, Branch, RepoURL, CommitURL = origCommit, origBranch, origRepo, origURL
+		AllowRemoteLookup = origAllow
 		ResetGitInfo()
 	}()
+	AllowRemoteLookup = false
 
 	t.Setenv("TRONBYT_COMMIT", "unknown")
 	t.Setenv("TRONBYT_BRANCH", "nonexistent-branch-xyz")

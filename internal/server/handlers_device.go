@@ -1075,6 +1075,10 @@ func (s *Server) handleTestSoundDevice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	baseURL := s.GetDeviceBaseURL(device)
+	if s.ResolveSoundPayload(device, baseURL, soundID) == "" {
+		http.Error(w, "Sound not found or not playable on this device", http.StatusBadRequest)
+		return
+	}
 	if err := s.TriggerDeviceSound(r.Context(), device, soundID, baseURL); err != nil {
 		slog.Error("Failed to trigger test sound on device", "device", device.ID, "sound", soundID, "error", err)
 		http.Error(w, "Failed to trigger sound on device", http.StatusInternalServerError)

@@ -346,6 +346,9 @@ func TestGetFirmwareReleaseInfo_DeviceSpecificIsolation(t *testing.T) {
 // TestFallbackOwnerRepoDetection verifies the expected behavior under test.
 func TestFallbackOwnerRepoDetection(t *testing.T) {
 	s := newTestServerAPI(t)
+	ts := httptest.NewServer(http.NotFoundHandler())
+	t.Cleanup(ts.Close)
+	s.githubAPIBase = ts.URL
 
 	// Case A: Only Tronberry binary exists -> selects Tronberry repo for fallback HTMLURL
 	tbVerDir := filepath.Join(s.DataDir, "firmware", "releases", "v4.0.0")

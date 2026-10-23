@@ -861,6 +861,18 @@ func TestHandleTestSoundDevice(t *testing.T) {
 	s.handleTestSoundDevice(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, 45, device.Volume)
+
+	// 4. Test sound with unknown/unplayable sound ID returns 400
+	form = strings.NewReader("sound=nonexistent-sound.wav")
+	req = httptest.NewRequest(http.MethodPost, "/devices/dev-test-sound/test_sound", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req = req.WithContext(context.WithValue(req.Context(), userContextKey, &user))
+	req = req.WithContext(context.WithValue(req.Context(), deviceContextKey, &device))
+	rr = httptest.NewRecorder()
+
+	s.handleTestSoundDevice(rr, req)
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Sound not found or not playable on this device")
 }
 
 // TestUpdateVolume verifies the expected behavior under test.

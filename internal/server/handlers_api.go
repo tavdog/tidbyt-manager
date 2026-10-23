@@ -369,7 +369,7 @@ func (s *Server) handlePushApp(w http.ResponseWriter, r *http.Request) {
 			if err := s.ensurePushedApp(r.Context(), device.ID, cachedID); err != nil {
 				slog.Error("Error adding pushed app", "error", err)
 			}
-			if dataReq.Sound != "" {
+			if dataReq.Sound != "" && !dataReq.Background {
 				baseURL := s.GetDeviceBaseURL(device)
 				soundID := s.qualifyAppSound(dataReq.AppID, dataReq.Sound)
 				if err := s.TriggerDeviceSound(r.Context(), device, soundID, baseURL); err != nil {
@@ -451,7 +451,7 @@ func (s *Server) handlePushApp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if dataReq.Sound != "" {
+	if dataReq.Sound != "" && !dataReq.Background {
 		baseURL := s.GetDeviceBaseURL(device)
 		soundID := s.qualifyAppSound(dataReq.AppID, dataReq.Sound)
 		if err := s.TriggerDeviceSound(r.Context(), device, soundID, baseURL); err != nil {
@@ -566,7 +566,7 @@ func (s *Server) handlePushImage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if dataReq.Sound != "" {
+	if dataReq.Sound != "" && !dataReq.Background {
 		baseURL := s.GetDeviceBaseURL(device)
 		if err := s.TriggerDeviceSound(r.Context(), device, dataReq.Sound, baseURL); err != nil {
 			slog.Error("Failed to trigger device sound on push image", "device", device.ID, "error", err)

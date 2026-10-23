@@ -14,6 +14,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWebsockets_Client(t *testing.T) {
@@ -202,7 +203,7 @@ func TestWebsockets_NotificationSoundUpdatedWhileWaitingForACK(t *testing.T) {
 	// Drain initial frame messages: dwell_secs, brightness, binary image
 	for range 3 {
 		_, _, err := conn.ReadMessage()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	// While server is waiting for ACK, update the app sound to "bell"
@@ -222,7 +223,7 @@ func TestWebsockets_NotificationSoundUpdatedWhileWaitingForACK(t *testing.T) {
 	assert.NoError(t, conn.SetReadDeadline(time.Now().Add(2*time.Second)))
 	for {
 		msgType, data, err := conn.ReadMessage()
-		assert.NoError(t, err)
+		require.NoError(t, err, "did not receive sound message")
 		if msgType == websocket.TextMessage {
 			var parsed map[string]any
 			if err := json.Unmarshal(data, &parsed); err == nil {

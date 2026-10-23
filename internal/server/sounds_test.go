@@ -370,90 +370,104 @@ func TestPatchAndGetInstallationNotificationSound(t *testing.T) {
 // TestNotificationSoundOptInAndTriggerLogic verifies the expected behavior under test.
 func TestNotificationSoundOptInAndTriggerLogic(t *testing.T) {
 	s := newTestServerAPI(t)
+	ctx := context.Background()
 	deviceID := "testdevice"
 	fullCap := data.AudioCapFull
-	_, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).Update(context.Background(), "audio_capability", fullCap)
+	_, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).Update(ctx, "audio_capability", fullCap)
 	require.NoError(t, err)
 
-	dev, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())
+	dev, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
+	require.NoError(t, err)
+	user, err := gorm.G[data.User](s.DB).Where("username = ?", dev.Username).First(ctx)
 	require.NoError(t, err)
 
-	baseURL := s.GetDeviceBaseURL(&dev)
+	appRelPath := filepath.Join("system-apps", "apps", "optinapp", "optinapp.star")
+	appFullPath := filepath.Join(s.DataDir, appRelPath)
+	require.NoError(t, os.MkdirAll(filepath.Dir(appFullPath), 0755))
+	starV1 := `
+load("render.star", "render")
+def main(config):
+    return render.Root(child=render.Box(width=64, height=32, color="#00ff00"))
+`
+	require.NoError(t, os.WriteFile(appFullPath, []byte(starV1), 0644))
 
 	// 1. App without notification sound (default: opt-in, sound off)
-	appOff := &data.App{
-		ID:                       10,
+	appOff := data.App{
+		Iname:                    "optin-1",
+		Name:                     "optinapp",
 		DeviceID:                 deviceID,
+		Path:                     &appRelPath,
 		NotificationSound:        nil,
 		NotificationSoundTrigger: "",
-		LastRenderHash:           "hash1",
 	}
-	// Trigger should not play when sound is nil
-	assert.Nil(t, appOff.NotificationSound)
+	require.NoError(t, gorm.G[data.App](s.DB).Create(ctx, &appOff))
+	require.True(t, s.possiblyRender(ctx, &appOff, &dev, &user))
+	devCheck, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, devCheck.PendingSound)
+	assert.Nil(t, appOff.LastSoundAt)
 
 	// 2. App with sound but empty trigger -> should not play (off by default)
 	soundName := "ding"
-	appUnsetTrigger := &data.App{
-		ID:                       11,
+	appUnsetTrigger := data.App{
+		Iname:                    "optin-2",
+		Name:                     "optinapp",
 		DeviceID:                 deviceID,
+		Path:                     &appRelPath,
 		NotificationSound:        &soundName,
 		NotificationSoundTrigger: "",
-		LastRenderHash:           "hash1",
 	}
-	newHash := "hash2"
-	contentChanged := (appUnsetTrigger.LastRenderHash != newHash)
-	shouldPlay := false
-	if appUnsetTrigger.NotificationSoundTrigger == "on_change" {
-		shouldPlay = contentChanged
-	}
-	assert.False(t, shouldPlay, "Unset trigger must be off by default")
+	require.NoError(t, gorm.G[data.App](s.DB).Create(ctx, &appUnsetTrigger))
+	require.True(t, s.possiblyRender(ctx, &appUnsetTrigger, &dev, &user))
+	devCheck, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, devCheck.PendingSound, "Unset trigger must be off by default")
+	assert.Nil(t, appUnsetTrigger.LastSoundAt)
 
 	// 3. App with on_change trigger:
-	appOnChange := &data.App{
-		ID:                       12,
+	appOnChange := data.App{
+		Iname:                    "optin-3",
+		Name:                     "optinapp",
 		DeviceID:                 deviceID,
+		Path:                     &appRelPath,
 		NotificationSound:        &soundName,
 		NotificationSoundTrigger: "on_change",
-		LastRenderHash:           "hash1",
 	}
+	require.NoError(t, gorm.G[data.App](s.DB).Create(ctx, &appOnChange))
 
-	// Same hash with on_change -> should NOT trigger
-	contentChanged = (appOnChange.LastRenderHash != "hash1")
-	assert.False(t, contentChanged)
-
-	// Different hash with on_change -> triggers
-	contentChanged = (appOnChange.LastRenderHash != newHash)
-	assert.True(t, contentChanged)
-	if contentChanged {
-		require.NoError(t, s.TriggerDeviceSound(context.Background(), &dev, *appOnChange.NotificationSound, baseURL))
-		appOnChange.LastRenderHash = newHash
-	}
-	devCheck, _ := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())
-	assert.NotEmpty(t, devCheck.PendingSound)
-
-	// Clear pending sound
-	_, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).Update(context.Background(), "pending_sound", "")
+	// First render (hash changes from empty to rendered hash) -> triggers sound
+	require.True(t, s.possiblyRender(ctx, &appOnChange, &dev, &user))
+	devCheck, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
 	require.NoError(t, err)
+	assert.NotEmpty(t, devCheck.PendingSound)
+	assert.NotNil(t, appOnChange.LastSoundAt)
 
-	// Same hash again -> should not trigger
-	contentChanged = (appOnChange.LastRenderHash != newHash)
-	assert.False(t, contentChanged)
-	devCheck, _ = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())
-	assert.Empty(t, devCheck.PendingSound)
+	// Clear pending sound and cooldown, then re-render identical content -> should NOT trigger
+	_, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).Update(ctx, "pending_sound", "")
+	require.NoError(t, err)
+	dev.PendingSound = ""
+	appOnChange.LastSoundAt = nil
+	appOnChange.LastRender = time.Time{}
+
+	require.True(t, s.possiblyRender(ctx, &appOnChange, &dev, &user))
+	devCheck, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, devCheck.PendingSound, "Same render hash with on_change must not trigger sound")
 
 	// 4. every_display triggers on device display, not during background render
-	appDisplay := &data.App{
-		ID:                       13,
+	appDisplay := data.App{
+		Iname:                    "optin-4",
+		Name:                     "optinapp",
 		DeviceID:                 deviceID,
+		Path:                     &appRelPath,
 		NotificationSound:        &soundName,
 		NotificationSoundTrigger: "every_display",
-		LastRenderHash:           newHash,
 	}
-	shouldPlayRender := false
-	if appDisplay.NotificationSoundTrigger == "on_change" {
-		shouldPlayRender = contentChanged
-	}
-	assert.False(t, shouldPlayRender, "every_display must not trigger in render loop")
+	require.NoError(t, gorm.G[data.App](s.DB).Create(ctx, &appDisplay))
+	require.True(t, s.possiblyRender(ctx, &appDisplay, &dev, &user))
+	devCheck, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, devCheck.PendingSound, "every_display must not trigger in render loop")
 }
 
 // TestGetNextAppImage_EveryDisplaySoundNotification verifies the expected behavior under test.
@@ -860,30 +874,77 @@ func TestDeviceEffectiveVolume_NightAndDimModes(t *testing.T) {
 
 // TestSoundDebounceCooldown verifies the expected behavior under test.
 func TestSoundDebounceCooldown(t *testing.T) {
+	s := newTestServerAPI(t)
+	ctx := context.Background()
+	deviceID := "testdevice"
+	fullCap := data.AudioCapFull
+	_, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).Update(ctx, "audio_capability", fullCap)
+	require.NoError(t, err)
+
+	dev, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
+	require.NoError(t, err)
+	user, err := gorm.G[data.User](s.DB).Where("username = ?", dev.Username).First(ctx)
+	require.NoError(t, err)
+
+	appRelPath := filepath.Join("system-apps", "apps", "cooldownapp", "cooldownapp.star")
+	appFullPath := filepath.Join(s.DataDir, appRelPath)
+	require.NoError(t, os.MkdirAll(filepath.Dir(appFullPath), 0755))
+
+	writeStar := func(color string) {
+		script := fmt.Sprintf(`
+load("render.star", "render")
+def main(config):
+    return render.Root(child=render.Box(width=64, height=32, color="%s"))
+`, color)
+		require.NoError(t, os.WriteFile(appFullPath, []byte(script), 0644))
+	}
+	writeStar("#ff0000")
+
 	sound := "default:chime"
-	app := &data.App{
-		ID:                       1001,
-		Name:                     "clock",
+	app := data.App{
+		Iname:                    "cooldown-1",
+		Name:                     "cooldownapp",
+		DeviceID:                 deviceID,
+		Path:                     &appRelPath,
 		NotificationSound:        &sound,
 		NotificationSoundTrigger: "on_change",
-		LastRenderHash:           "hash-1",
 	}
+	require.NoError(t, gorm.G[data.App](s.DB).Create(ctx, &app))
 
-	now := time.Now()
-	// Case 1: First sound trigger - LastSoundAt is nil
-	assert.Nil(t, app.LastSoundAt)
-	// Suppose sound triggers
-	app.LastSoundAt = &now
+	// Case 1: First render triggers sound and sets LastSoundAt
+	require.True(t, s.possiblyRender(ctx, &app, &dev, &user))
+	require.NotNil(t, app.LastSoundAt)
+	devCheck, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
+	require.NoError(t, err)
+	assert.NotEmpty(t, devCheck.PendingSound)
 
-	// Case 2: Render 5 seconds later with content change (newHash != lastHash)
-	renderTime1 := now.Add(5 * time.Second)
-	shouldPlay := (renderTime1.Sub(*app.LastSoundAt) >= 30*time.Second)
-	assert.False(t, shouldPlay, "Sound should be suppressed within 30s cooldown")
+	// Clear pending sound and simulate a render 5 seconds after LastSoundAt (within 30s cooldown)
+	_, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).Update(ctx, "pending_sound", "")
+	require.NoError(t, err)
+	dev.PendingSound = ""
+	writeStar("#0000ff")
+	recentSoundAt := time.Now().Add(-5 * time.Second)
+	app.LastSoundAt = &recentSoundAt
+	app.LastRender = time.Time{}
 
-	// Case 3: Render 35 seconds later with content change
-	renderTime2 := now.Add(35 * time.Second)
-	shouldPlay = (renderTime2.Sub(*app.LastSoundAt) >= 30*time.Second)
-	assert.True(t, shouldPlay, "Sound should play after 30s cooldown has elapsed")
+	// Case 2: Content changed within 30s cooldown -> suppressed by possiblyRender
+	require.True(t, s.possiblyRender(ctx, &app, &dev, &user))
+	devCheck, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, devCheck.PendingSound, "Sound should be suppressed within 30s cooldown")
+	assert.Equal(t, recentSoundAt, *app.LastSoundAt)
+
+	// Case 3: Simulate a render 35 seconds after LastSoundAt (beyond 30s cooldown)
+	writeStar("#00ff00")
+	expiredSoundAt := time.Now().Add(-35 * time.Second)
+	app.LastSoundAt = &expiredSoundAt
+	app.LastRender = time.Time{}
+
+	require.True(t, s.possiblyRender(ctx, &app, &dev, &user))
+	devCheck, err = gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(ctx)
+	require.NoError(t, err)
+	assert.NotEmpty(t, devCheck.PendingSound, "Sound should play after 30s cooldown has elapsed")
+	assert.True(t, app.LastSoundAt.After(expiredSoundAt))
 }
 
 // TestCustomSoundsSecurityAndDirectoryTraversal verifies the expected behavior under test.
