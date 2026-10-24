@@ -73,7 +73,8 @@ The `tronbyt-server` binary supports additional commands for administration:
 
 **Ports:** The web app is exposed on port `8000`.
 
-**Updating:**
+### Updating
+
 *   Docker containers: `docker compose pull && docker compose up -d`.
 
 **Migration from v1.x:**
