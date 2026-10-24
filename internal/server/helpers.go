@@ -99,6 +99,11 @@ type TemplateData struct {
 	Schema      template.JS
 	AppConfig   map[string]any
 	AppMetadata *apps.AppMetadata
+	OAuthFields template.JS // per OAuth2 field: clients and connection state
+
+	// OAuth Clients settings
+	OAuthClients    []oauthClientRow
+	OAuthClientForm oauthClientForm
 
 	// Device Update Extras
 	ColorFilterOptions       []ColorFilterOption
