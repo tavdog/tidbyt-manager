@@ -157,6 +157,12 @@ func initGitInfo() {
 	ShowBranchTag = ShouldShowBranchTag(RepoURL, Branch)
 }
 
+// UpdateInstructionsURL returns the repository README anchor for upgrade steps.
+func UpdateInstructionsURL() string {
+	EnsureGitInfo()
+	return RepoURL + "#updating"
+}
+
 // fetchGitHubCommitSHA queries the GitHub API to resolve the latest commit SHA for a repository branch.
 func fetchGitHubCommitSHA(repoURL, branch string) string {
 	u, err := url.Parse(repoURL)
