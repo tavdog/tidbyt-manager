@@ -367,8 +367,7 @@ func (s *Server) handleConfigAppGet(w http.ResponseWriter, r *http.Request) {
 			return
 		} else {
 			if !strings.HasSuffix(strings.ToLower(appPath), ".webp") {
-				schemaWidth, schemaHeight := device.Type.CanvasSize()
-				schemaBytes, err = renderer.GetSchema(r.Context(), appPath, schemaWidth, schemaHeight, device.Type.Supports2x())
+				schemaBytes, err = s.loadAppSchema(r.Context(), device, app)
 				if err != nil {
 					slog.Error("Failed to get app schema", "error", err)
 					// Fall through with empty schema
@@ -401,6 +400,7 @@ func (s *Server) handleConfigAppGet(w http.ResponseWriter, r *http.Request) {
 		App:                      app,
 		Schema:                   template.JS(schemaBytes),
 		AppConfig:                app.Config,
+		OAuthFields:              s.oauthFieldViews(r.Context(), user, device, app, schemaBytes),
 		DeleteOnCancel:           deleteOnCancel,
 		ColorFilterOptions:       s.getColorFilterChoices(),
 		ShowFullAnimationOptions: s.getShowFullAnimationChoices(),
@@ -949,6 +949,9 @@ func (s *Server) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Delete App
+		if err := deleteOAuthTokensForApp(r.Context(), tx, app); err != nil {
+			return err
+		}
 		if _, err := gorm.G[data.App](tx).Where("id = ?", app.ID).Delete(r.Context()); err != nil {
 			return err
 		}
