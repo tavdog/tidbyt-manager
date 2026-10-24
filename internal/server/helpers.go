@@ -116,9 +116,14 @@ type TemplateData struct {
 	FirmwareBinsAvailable     bool
 	FirmwareAvailable         bool
 	FirmwareVersion           string
+	FirmwareReleasesURL       string
 	AvailableFirmwareVersions []string
+	FirmwareReleases          map[string]FirmwareReleaseInfo
 	ServerVersion             string
 	CommitHash                string
+	CommitURL                 string
+	Branch                    string
+	ShowBranchTag             bool
 	IsAutoLoginActive         bool   // Indicate if single-user auto-login is active
 	UserCount                 int    // Number of users, for registration logic
 	DeleteOnCancel            bool   // Indicate if app should be deleted on cancel
@@ -138,6 +143,11 @@ type TemplateData struct {
 	OIDCUsernameClaim    string
 	OIDCAdminGroupClaim  string
 	OIDCAdminGroupValue  string
+
+	// Sound Management
+	DefaultSounds []SoundItem
+	CustomSounds  []SoundItem
+	AppSounds     []SoundItem
 }
 
 // CreateDeviceFormData represents the form data for creating a device.
@@ -156,6 +166,7 @@ type CreateDeviceFormData struct {
 	LocationJSON   string
 }
 
+// renderTemplate renders the named HTML template with populated standard and page-specific data.
 func (s *Server) renderTemplate(w http.ResponseWriter, r *http.Request, name string, tmplData TemplateData) {
 	if tmplData.Config == nil {
 		tmplData.Config = &config.TemplateConfig{
@@ -174,6 +185,9 @@ func (s *Server) renderTemplate(w http.ResponseWriter, r *http.Request, name str
 	// Set version
 	tmplData.ServerVersion = version.Version
 	tmplData.CommitHash = version.Commit
+	tmplData.CommitURL = version.CommitURL
+	tmplData.Branch = version.Branch
+	tmplData.ShowBranchTag = version.ShowBranchTag
 
 	// Suggest a LAN URL to replace localhost on login pages
 	if name == "login" && tmplData.DetectedAccessURL == "" {
@@ -770,7 +784,23 @@ func (s *Server) notifyDashboard(username string, event WSEvent) {
 	}
 }
 
+// GetBaseURL constructs the external base URL from the incoming request or server configuration.
 func (s *Server) GetBaseURL(r *http.Request) string {
+	if r == nil {
+		host := s.Config.Host
+		if host == "" {
+			host = "localhost"
+		}
+		if s.Config.Port != "" && s.Config.Port != "80" && s.Config.Port != "443" {
+			host = net.JoinHostPort(host, s.Config.Port)
+		}
+		scheme := "http"
+		if s.Config.SSLKeyFile != "" && s.Config.SSLCertFile != "" {
+			scheme = "https"
+		}
+		return fmt.Sprintf("%s://%s", scheme, host)
+	}
+
 	scheme := "http"
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
 		scheme = "https"
@@ -788,6 +818,23 @@ func (s *Server) GetBaseURL(r *http.Request) string {
 	}
 
 	return fmt.Sprintf("%s://%s", scheme, host)
+}
+
+// GetDeviceBaseURL resolves the base URL for device communication, normalizing WebSocket URLs to HTTP.
+func (s *Server) GetDeviceBaseURL(device *data.Device) string {
+	if device != nil && device.ImgURL != "" {
+		if u, err := url.Parse(device.ImgURL); err == nil && u.Host != "" && u.Scheme != "" {
+			scheme := u.Scheme
+			switch scheme {
+			case "ws":
+				scheme = "http"
+			case "wss":
+				scheme = "https"
+			}
+			return fmt.Sprintf("%s://%s", scheme, u.Host)
+		}
+	}
+	return s.GetBaseURL(nil)
 }
 
 func (s *Server) getImageURL(r *http.Request, deviceID string) string {
@@ -896,6 +943,7 @@ func (s *Server) sendFirmwareSettingsCommand(ctx context.Context, deviceID strin
 	return nil
 }
 
+// sendPendingHTTPDeviceHeaders injects pending sound, volume, and OTA headers into HTTP device responses.
 func (s *Server) sendPendingHTTPDeviceHeaders(w http.ResponseWriter, ctx context.Context, device *data.Device) {
 	if updateURL := device.PendingUpdateURL; updateURL != "" {
 		slog.Info("Sending OTA update header", "device", device.ID, "url", updateURL)
@@ -927,6 +975,22 @@ func (s *Server) sendPendingHTTPDeviceHeaders(w http.ResponseWriter, ctx context
 			slog.Error("Failed to clear pending reboot", "error", err)
 		} else {
 			device.PendingReboot = false
+		}
+	}
+
+	if device.PendingSound != "" {
+		if !device.IsMuted() {
+			slog.Info("Sending sound header", "device", device.ID, "sound", device.PendingSound)
+			w.Header().Set("Tronbyt-Sound", device.PendingSound)
+			w.Header().Set("Tronbyt-Volume", strconv.Itoa(device.GetEffectiveVolume()))
+		} else {
+			slog.Debug("Dropping pending sound: device is muted", "device", device.ID)
+		}
+
+		if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_sound", ""); err != nil {
+			slog.Error("Failed to clear pending sound", "error", err)
+		} else {
+			device.PendingSound = ""
 		}
 	}
 }

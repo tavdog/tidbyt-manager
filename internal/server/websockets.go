@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"tronbyt-server/internal/data"
@@ -43,6 +45,7 @@ type ClientInfo struct {
 	ColorOrder         *string `json:"color_order"`
 	DisableTouch       *bool   `json:"disable_touch"`
 	TouchBeep          *bool   `json:"touch_beep"`
+	StartupSound       *bool   `json:"startup_sound"`
 	ImageURL           *string `json:"image_url"`
 	Hostname           *string `json:"hostname"`
 	SNTPServer         *string `json:"sntp_server"`
@@ -60,6 +63,7 @@ type DeviceCommandMessage struct {
 	Payload []byte
 }
 
+// handleWS upgrades HTTP connections to WebSockets for live image streaming, notifications, and device commands.
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.PathValue("id")
 
@@ -177,6 +181,9 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 				if msg.ClientInfo.TouchBeep != nil {
 					device.Info.TouchBeep = msg.ClientInfo.TouchBeep
 				}
+				if msg.ClientInfo.StartupSound != nil {
+					device.Info.StartupSound = msg.ClientInfo.StartupSound
+				}
 				if msg.ClientInfo.ImageURL != nil {
 					device.Info.ImageURL = msg.ClientInfo.ImageURL
 				}
@@ -226,6 +233,22 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 	var pendingImage []byte
 	device := *initialDevice
 	lastSentBrightness := -1
+	lastSentVolume := -1
+	// Send any pending OTA update on connection
+	if device.PendingUpdateURL != "" {
+		updateURL := device.PendingUpdateURL
+		slog.Info("Sending pending OTA update on WS connect", "device", device.ID, "url", updateURL)
+		payload := map[string]string{"ota_url": updateURL}
+		if jsonPayload, err := json.Marshal(payload); err == nil {
+			if err := conn.WriteMessage(websocket.TextMessage, jsonPayload); err == nil {
+				if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "pending_update_url", ""); err != nil {
+					slog.Error("Failed to clear pending update", "error", err)
+				} else {
+					device.PendingUpdateURL = ""
+				}
+			}
+		}
+	}
 	sendImmediate := false
 
 	for {
@@ -295,6 +318,18 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 			lastSentBrightness = effectiveBrightness
 		}
 
+		// Only send volume if device has speaker capability and volume changed
+		if device.HasSpeaker() {
+			effectiveVolume := device.GetEffectiveVolume()
+			if effectiveVolume != lastSentVolume {
+				if err := conn.WriteJSON(map[string]int{"volume": effectiveVolume}); err != nil {
+					slog.Error("Failed to write volume WS message", "error", err)
+					return
+				}
+				lastSentVolume = effectiveVolume
+			}
+		}
+
 		if err := conn.WriteMessage(websocket.BinaryMessage, imgData); err != nil {
 			return
 		}
@@ -335,6 +370,13 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 
 					// Update DisplayingApp confirmation in DB
 					if app != nil {
+						// Ensure app metadata reflects the latest configuration from device.Apps
+						for i := range device.Apps {
+							if device.Apps[i].ID == app.ID {
+								app = device.Apps[i]
+								break
+							}
+						}
 						slog.Debug("Received ACK, updating DisplayingApp", "app", app.Iname, "device", device.ID)
 						// Only now do we update the database that the device is truly displaying this app.
 						if _, err := gorm.G[data.Device](s.DB).Where("id = ?", device.ID).Update(ctx, "displaying_app", app.Iname); err != nil {
@@ -342,6 +384,26 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 						}
 						// Notify Dashboard
 						s.notifyDashboard(user.Username, WSEvent{Type: "image_updated", DeviceID: device.ID})
+
+						// Play notification sound on every display if configured
+						if app.NotificationSound != nil && *app.NotificationSound != "" && *app.NotificationSound != "none" && app.NotificationSoundTrigger == "every_display" {
+							if device.HasSpeaker() && !device.IsMuted() {
+								baseURLToUse := s.GetDeviceBaseURL(&device)
+								if baseURLToUse == "" || (!strings.Contains(baseURLToUse, ":") && strings.Contains(baseURL, ":")) {
+									baseURLToUse = baseURL
+								}
+								payload := s.ResolveSoundPayload(&device, baseURLToUse, *app.NotificationSound)
+								if payload != "" {
+									if err := conn.WriteJSON(map[string]any{
+										"type":   "sound",
+										"sound":  payload,
+										"volume": device.GetEffectiveVolume(),
+									}); err != nil {
+										slog.Error("Failed to write sound WS message on display", "error", err)
+									}
+								}
+							}
+						}
 					} else {
 						slog.Debug("Received ACK for default or pushed image (no app context)", "device", device.ID)
 					}
@@ -354,6 +416,14 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 					return
 				}
 				device = reloaded
+				if app != nil {
+					for i := range device.Apps {
+						if device.Apps[i].ID == app.ID {
+							app = device.Apps[i]
+							break
+						}
+					}
+				}
 
 				var isCommand bool
 				var isImage bool
@@ -388,7 +458,7 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 					waiting = false
 					sendImmediate = true
 				} else {
-					// State Change: Update Brightness immediately, but don't interrupt current app
+					// State Change: Update Brightness and Volume immediately, but don't interrupt current app
 					newBrightness := device.GetEffectiveBrightness()
 
 					if newBrightness != lastSentBrightness {
@@ -397,6 +467,17 @@ func (s *Server) wsWriteLoop(ctx context.Context, conn *websocket.Conn, initialD
 							return
 						}
 						lastSentBrightness = newBrightness
+					}
+
+					if device.HasSpeaker() {
+						newVolume := device.GetEffectiveVolume()
+						if newVolume != lastSentVolume {
+							if err := conn.WriteJSON(map[string]int{"volume": newVolume}); err != nil {
+								slog.Error("Failed to write volume WS message", "error", err)
+								return
+							}
+							lastSentVolume = newVolume
+						}
 					}
 				}
 			case <-timerC:

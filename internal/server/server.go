@@ -14,6 +14,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,7 +24,10 @@ import (
 	"tronbyt-server/internal/apps"
 	"tronbyt-server/internal/config"
 	syncer "tronbyt-server/internal/sync"
+	"tronbyt-server/internal/version"
 	"tronbyt-server/web"
+
+	securejoin "github.com/cyphar/filepath-securejoin"
 
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/gorilla/sessions"
@@ -101,7 +105,11 @@ var templateFiles = map[string]string{
 	"settings":         "admin/settings.html",
 }
 
+// NewServer creates and initializes a new Server instance with the provided database and settings.
 func NewServer(db *gorm.DB, cfg *config.Settings) *Server {
+	version.AllowRemoteLookup = cfg.EnableUpdateChecks
+	version.EnsureGitInfo()
+
 	s := &Server{
 		DB:          db,
 		Router:      http.NewServeMux(),
@@ -272,6 +280,7 @@ func NewServer(db *gorm.DB, cfg *config.Settings) *Server {
 	return s
 }
 
+// routes registers all HTTP endpoints, static assets, and websocket handlers.
 func (s *Server) routes() {
 	// Conflict Resolution Handlers (Must be registered before conflicting wildcards?)
 	// Actually order of registration doesn't matter in Go 1.22 for correctness, but presence matters.
@@ -289,12 +298,46 @@ func (s *Server) routes() {
 		s.Router.Handle("GET /static/js/", http.StripPrefix("/static/", fileServer))
 		s.Router.Handle("GET /static/webfonts/", http.StripPrefix("/static/", fileServer))
 		s.Router.Handle("GET /static/images/", http.StripPrefix("/static/", fileServer))
+		s.Router.Handle("GET /static/sounds/", http.StripPrefix("/static/", fileServer))
 		s.Router.Handle("GET /static/favicon.ico", http.StripPrefix("/static/", fileServer))
 	}
 
 	// Serve firmware binaries
 	firmwareDir := filepath.Join(s.DataDir, "firmware")
 	s.Router.Handle("GET /static/firmware/", http.StripPrefix("/static/firmware/", http.FileServer(http.Dir(firmwareDir))))
+
+	// Serve custom sound files (files only, audio extensions only, no directory browsing)
+	soundsDir := filepath.Join(s.DataDir, "sounds")
+	s.Router.HandleFunc("GET /static/custom_sounds/", http.NotFound)
+	s.Router.HandleFunc("GET /static/custom_sounds/{filename}", func(w http.ResponseWriter, r *http.Request) {
+		rawFilename := r.PathValue("filename")
+		filename := filepath.Base(rawFilename)
+		if filename == "" || filename == "." || filename != rawFilename {
+			http.NotFound(w, r)
+			return
+		}
+		ext := strings.ToLower(filepath.Ext(filename))
+		if !slices.Contains(allowedAudioExtensions, ext) {
+			http.NotFound(w, r)
+			return
+		}
+		targetPath, err := securejoin.SecureJoin(soundsDir, filename)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		fi, err := os.Stat(targetPath)
+		if err != nil || fi.IsDir() {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		http.ServeFile(w, r, targetPath)
+	})
+
+	// Unified sound route for apps, custom uploads, and built-in sounds
+	s.Router.HandleFunc("GET /sounds/{appId}/{filename}", s.handleUnifiedSound)
+	s.Router.HandleFunc("GET /api/sounds/{filename}", s.handleUnifiedSound)
 
 	// App Preview (Specific path)
 	s.Router.HandleFunc("GET /preview/app/{id}", s.RequireLogin(s.handleAppThumbnail))
@@ -319,15 +362,20 @@ func (s *Server) routes() {
 	s.Router.HandleFunc("DELETE /admin/users/{username}", s.RequireLogin(s.handleDeleteUser))
 	s.Router.HandleFunc("DELETE /settings/admin/users/{username}", s.RequireLogin(s.handleDeleteUser))
 	s.Router.HandleFunc("POST /settings/admin/users/{username}/email", s.RequireLogin(s.handleAdminUpdateUserEmail))
+	s.Router.HandleFunc("POST /settings/admin/sounds/upload", s.RequireLogin(s.handleAdminUploadSound))
+	s.Router.HandleFunc("POST /settings/admin/sounds/{filename}/delete", s.RequireLogin(s.handleAdminDeleteSound))
 
 	s.Router.HandleFunc("GET /devices/create", s.RequireLogin(s.handleCreateDeviceGet))
 	s.Router.HandleFunc("POST /devices/create", s.RequireLogin(s.handleCreateDevicePost))
 	s.Router.HandleFunc("POST /devices/import", s.RequireLogin(s.handleImportNewDeviceConfig))
 
 	s.Router.HandleFunc("POST /devices/{id}/update_brightness", s.RequireLogin(s.RequireDevice(s.handleUpdateBrightness)))
+	s.Router.HandleFunc("POST /devices/{id}/update_volume", s.RequireLogin(s.RequireDevice(s.handleUpdateVolume)))
 	s.Router.HandleFunc("POST /devices/{id}/update_interval", s.RequireLogin(s.RequireDevice(s.handleUpdateInterval)))
 	s.Router.HandleFunc("POST /devices/{id}/set_night_mode_override", s.RequireLogin(s.RequireDevice(s.handleSetNightModeOverride)))
 	s.Router.HandleFunc("POST /devices/{id}/set_dim_mode_override", s.RequireLogin(s.RequireDevice(s.handleSetDimModeOverride)))
+	s.Router.HandleFunc("POST /devices/{id}/set_mute", s.RequireLogin(s.RequireDevice(s.handleSetMute)))
+	s.Router.HandleFunc("POST /devices/{id}/test_sound", s.RequireLogin(s.RequireDevice(s.handleTestSoundDevice)))
 
 	s.Router.HandleFunc("GET /devices/{id}/addapp", s.RequireLogin(s.RequireDevice(s.handleAddAppGet)))
 	s.Router.HandleFunc("POST /devices/{id}/addapp", s.RequireLogin(s.RequireDevice(s.handleAddAppPost)))
@@ -373,6 +421,7 @@ func (s *Server) routes() {
 
 	// Firmware
 	s.Router.HandleFunc("GET /devices/{id}/firmware", s.RequireLogin(s.RequireDevice(s.handleFirmwareGenerateGet)))
+	s.Router.HandleFunc("GET /devices/{id}/firmware/release_notes", s.RequireLogin(s.RequireDevice(s.handleFirmwareReleaseNotes)))
 	s.Router.HandleFunc("POST /devices/{id}/firmware", s.RequireLogin(s.RequireDevice(s.handleFirmwareGeneratePost)))
 	s.Router.HandleFunc("POST /devices/{id}/ota", s.RequireLogin(s.RequireDevice(s.handleTriggerOTA))) // OTA Update
 
